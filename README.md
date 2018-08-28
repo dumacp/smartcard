@@ -9,7 +9,9 @@ package main
 
 import (
   "log"
+  "strings"
   "github.com/dumacp/smartcard"
+  "github.com/dumacp/smartcard/nxp/mifare"
 )
 
 func main() {
@@ -29,14 +31,14 @@ func main() {
     }
   }
   for _, samReader := range samReaders {
-    sam, err := ConnectSamAv2(samReader)
+    sam, err := mifare.ConnectSamAv2(samReader)
     if err != nil {
       log.Printf("%s\n",err)
       continue
     }
     version, err := sam.GetVersion()
     if err != nil {
-      log.Fataln("Not GetVersion: ", err)
+      log.Fatalln("Not GetVersion: ", err)
     }
     log.Printf("GetVersion sam: % X\n", version)
   }
