@@ -3,7 +3,7 @@ smartcard devices under the PCSC implementation
 
 Implementation for mifare smartcard family (Mifare Plus, Desfire, SamAV2, ...)
 
-## example 1
+## example 1 (SAMav2)
 ```
 package main
 
@@ -44,7 +44,7 @@ func main() {
   }
 }
 ```
-## example 1 (Mifare Plus SL3 auth)
+## example 2 (Mifare Plus SL3 auth)
 ```
 package main
 
