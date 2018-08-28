@@ -33,7 +33,7 @@ func main() {
     if err != nil {
       log.Printf("%s\n",err)
       continue
-      }
+    }
     version, err := sam.GetVersion()
     if err != nil {
       log.Fataln("Not GetVersion: ", err)
