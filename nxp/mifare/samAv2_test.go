@@ -149,14 +149,10 @@ func TestNonAuthMFP(t *testing.T) {
 			t.Error("Not GetVersion: ", err)
 		}
 		t.Logf("GetVersion sam: % X\n", version)
-		keyI, err := hex.DecodeString(keyS)
+
+		key, err := hex.DecodeString(keyS)
 		if err != nil {
 			t.Fatal(err)
-		}
-		key := make([]byte, 16)
-
-		for i, v := range keyI {
-			key[i] = byte(v)
 		}
 
 		resp, err := sam.AuthHostAV2(key, 100)
@@ -200,6 +196,7 @@ func TestNonAuthMFP(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s\n",err)
 		}
+		t.Logf("aid f2: [% X]\n", resp)
 		resp, err = mplus.FirstAuthf2(resp[0:len(resp)-2])
 		if err != nil {
 			t.Errorf("%s\n",err)

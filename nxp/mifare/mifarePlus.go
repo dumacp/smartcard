@@ -21,6 +21,8 @@ type MifarePlus interface{
 	smartcard.Card
 	UID()	([]byte, error)
 	ATS()	([]byte, error)
+	WritePerso(int, []byte) ([]byte, error)
+	CommitPerso() ([]byte, error)
 	FirstAuthf1(keyBNr int) ([]byte, error)
 	FirstAuthf2([]byte) ([]byte, error)
 	FirstAuth(keyBNr int, key []byte) ([]byte, error)
@@ -85,6 +87,29 @@ func (mplus *mifarePlus) ATS() ([]byte, error) {
 		return nil, fmt.Errorf("bad response: [% X]", response)
 	}
 	return response[0:len(response)-2], nil
+}
+
+//Write Perso (Security Level 0)
+func (mplus *mifarePlus) WritePerso(bNr int, key []byte) ([]byte, error) {
+	keyB1 := byte((bNr >> 8) & 0xFF)
+	keyB2 := byte(bNr & 0xFF)
+	aid := []byte{0xA8,keyB2,keyB1}
+	aid = append(aid, key...)
+	response, err :=  mplus.Apdu(aid)
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
+//Commit Perso (Security Level 0)
+func (mplus *mifarePlus) CommitPerso() ([]byte, error) {
+	aid := []byte{0xAA}
+	response, err :=  mplus.Apdu(aid)
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
 }
 
 //First Authentication first step
@@ -155,8 +180,9 @@ func (mplus *mifarePlus) FirstAuth(keyBNr int, key []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	rndBc := response[1:17]
-	//fmt.Printf("rndBc: [% X]", rndBc)
+	//fmt.Printf("resp: [% X]\n", response)
+	rndBc := response
+	//fmt.Printf("rndBc: [% X]\n", rndBc)
 
 	iv := make([]byte,16)
 	block, err := aes.NewCipher(key)
@@ -168,31 +194,31 @@ func (mplus *mifarePlus) FirstAuth(keyBNr int, key []byte) ([]byte, error) {
 
 	rndB := make([]byte,16)
 	modeD.CryptBlocks(rndB, rndBc)
+	//fmt.Printf("rndB: [% X]\n", rndB)
 
 	//rotate rndB
-	rndB = append(rndB,rndB[1])
+	rndB = append(rndB,rndB[0])
 	rndB = rndB[1:]
+	//fmt.Printf("rndBrot: [% X]\n", rndB)
 
 	rndA := make([]byte,16)
 	rand.Read(rndA)
+	//fmt.Printf("rndA: [% X]\n", rndA)
 
 	rndD := make([]byte,0)
 	rndD = append(rndD, rndA...)
 	rndD = append(rndD, rndB...)
+	//fmt.Printf("rndD: [% X]\n", rndD)
 
 	rndDc := make([]byte,len(rndD))
 	modeE.CryptBlocks(rndDc, rndD)
+	//fmt.Printf("rndDc: [% X]\n", rndDc)
 
 	response, err = mplus.FirstAuthf2(rndDc)
 	if err != nil {
 		return nil, err
 	}
-
-	if response[len(response) -1] != byte(0x90) {
-		return nil, fmt.Errorf("bad response: [% X]", response)
-	}
-
-	return response[1:], nil
+	return response, nil
 }
 
 //Read in plain, MAC on response, MAC on command

@@ -94,7 +94,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo int) ([]byte, error) {
 	aid2 = append(aid2, cmac2...)
 	aid2 = append(aid2, rnd1...)
 	aid2 = append(aid2, byte(0x00))
-	fmt.Printf("aid2: [% X]\n", aid2)
+	//fmt.Printf("aid2: [% X]\n", aid2)
 	response, err = sam.Apdu(aid2)
 	if err != nil {
 		return nil, err
