@@ -27,6 +27,14 @@ type samAv2 struct {
 	smartcard.Card
 }
 
+func verifyResponseIso7816(response []byte) error {
+	if response[len(response)-1] != byte(0x00) || response[len(response)-2] != byte(0x90) {
+		return fmt.Errorf("error in response [%X %X]; response: [% X]\n", response[len(response)-2], response[len(response)-1], response)
+	}
+	return nil
+}
+
+
 //Create SamAv2 interface
 func ConnectSamAv2(r smartcard.Reader) (SamAv2, error) {
 
@@ -163,10 +171,9 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo int) ([]byte, error) {
 		return nil, err
 	}
 
-	if response[len(response)-1] != byte(0x00) || response[len(response)-2] != byte(0x90) {
-		return nil, fmt.Errorf("bad formed response: [% X]\n", response)
+	if err := verifyResponseIso7816(response); err != nil {
+		return nil, err
 	}
-
 	return response, nil
 }
 
@@ -217,9 +224,10 @@ func (sam *samAv2) DumpSessionKey() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if response[len(response)-1] != byte(0x00) || response[len(response)-2] != byte(0x90) {
-		return nil, fmt.Errorf("bad formed response: [% X]\n", response)
+	if err := verifyResponseIso7816(response); err != nil {
+		return nil, err
 	}
+	return response, nil
 
 	return response, nil
 }
