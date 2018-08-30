@@ -23,6 +23,8 @@ type Card interface {
 	DiconnectResetCard()	error
 	DisconnectUnpowerCard()	error
 	DisconnectEjectCard()	error
+	UID()	([]byte, error)
+	ATS()	([]byte, error)
 	TransparentSessionStart() ([]byte, error)
 	TransparentSessionStartOnly() ([]byte, error)
 	TransparentSessionResetRF() ([]byte, error)
@@ -80,6 +82,18 @@ func (c *card) ATR() ([]byte, error) {
 		return nil, err
 	}
 	return status.Atr, nil
+}
+
+//Get Data 0x00
+func (c *card) UID() ([]byte, error) {
+	aid := []byte{0xFF,0xCA,0x00,0x00,0x00}
+	return  c.Apdu(aid)
+}
+
+//Get Data 0x01
+func (c *card) ATS() ([]byte, error) {
+	aid := []byte{0xFF,0xCA,0x01,0x00,0x00}
+	return  c.Apdu(aid)
 }
 
 //Transparent Session (PCSC)

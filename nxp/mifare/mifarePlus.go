@@ -19,8 +19,6 @@ import (
 //Mifare Plus Interface
 type MifarePlus interface{
 	smartcard.Card
-	UID()	([]byte, error)
-	ATS()	([]byte, error)
 	WritePerso(int, []byte) ([]byte, error)
 	CommitPerso() ([]byte, error)
 	FirstAuthf1(keyBNr int) ([]byte, error)
@@ -50,43 +48,14 @@ func ConnectMplus(r smartcard.Reader) (MifarePlus, error) {
 
 /**/
 //Valid response: response[0] == 0x90
-func isValidResponse(data []byte) bool {
+func verifyResponse(data []byte) error {
 	if data == nil {
-		return false
+		return fmt.Errorf("null response")
 	}
-	if len(data) < 2 {
-		return false
+	if data[0] != 0x90 {
+		return fmt.Errorf("error in response SC: %X, response [% X]", data[0], data)
 	}
-	if data[len(data)-2] == 0x90 && data[len(data)-1] == 0x00 {
-		return true
-	}
-	return false
-}
-
-//Get Data 0x00
-func (mplus *mifarePlus) UID() ([]byte, error) {
-	aid := []byte{0xFF,0xCA,0x00,0x00,0x00}
-	response, err :=  mplus.Apdu(aid)
-	if err != nil {
-		return nil, err
-	}
-	if !isValidResponse(response) {
-		return nil, fmt.Errorf("bad response: [% X]", response)
-	}
-	return response[0:len(response)-2], nil
-}
-
-//Get Data 0x01
-func (mplus *mifarePlus) ATS() ([]byte, error) {
-	aid := []byte{0xFF,0xCA,0x01,0x00,0x00}
-	response, err :=  mplus.Apdu(aid)
-	if err != nil {
-		return nil, err
-	}
-	if !isValidResponse(response) {
-		return nil, fmt.Errorf("bad response: [% X]", response)
-	}
-	return response[0:len(response)-2], nil
+	return nil
 }
 
 //Write Perso (Security Level 0)
@@ -99,6 +68,9 @@ func (mplus *mifarePlus) WritePerso(bNr int, key []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := verifyResponse(response); err != nil {
+		return nil, err
+	}
 	return response, nil
 }
 
@@ -107,6 +79,9 @@ func (mplus *mifarePlus) CommitPerso() ([]byte, error) {
 	aid := []byte{0xAA}
 	response, err :=  mplus.Apdu(aid)
 	if err != nil {
+		return nil, err
+	}
+	if err := verifyResponse(response); err != nil {
 		return nil, err
 	}
 	return response, nil
@@ -122,8 +97,8 @@ func (mplus *mifarePlus) FirstAuthf1(keyBNr int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if response[0] != byte(0x90) {
-		return nil, fmt.Errorf("bad response: [% X]", response)
+	if err := verifyResponse(response); err != nil {
+		return nil, err
 	}
 	//fmt.Printf("response: [% X]", response)
 	return response[1:], nil
@@ -138,8 +113,8 @@ func (mplus *mifarePlus) FirstAuthf2(data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if response[0] != byte(0x90) {
-		return nil, fmt.Errorf("bad response: [% X]", response)
+	if err := verifyResponse(response); err != nil {
+		return nil, err
 	}
 	return response[1:], nil
 }
@@ -153,8 +128,8 @@ func (mplus *mifarePlus) FallowAuthf1(keyBNr int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if response[0] != byte(0x90) {
-		return nil, fmt.Errorf("bad response: [% X]", response)
+	if err := verifyResponse(response); err != nil {
+		return nil, err
 	}
 	return response[1:], nil
 }
@@ -167,8 +142,8 @@ func (mplus *mifarePlus) FallowtAuthf2(data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if response[0] != byte(0x90) {
-		return nil, fmt.Errorf("bad response: [% X]", response)
+	if err := verifyResponse(response); err != nil {
+		return nil, err
 	}
 	return response[1:], nil
 }
@@ -260,8 +235,8 @@ func (mplus *mifarePlus) ReadPlainMacMac(keyBNr, ext, readCounter int, Ti , keyM
 	if err != nil {
 		return nil, err
 	}
-	if response[0] != byte(0x90) {
-		return nil, fmt.Errorf("bad response: [% X]\n", response)
+	if err := verifyResponse(response); err != nil {
+		return nil, err
 	}
 
 	data := response[1:len(response)-8]
@@ -339,8 +314,8 @@ func (mplus *mifarePlus) ReadEncMacMac(keyBNr, ext, readCounter, writeCounter in
 	if err != nil {
 		return nil, err
 	}
-	if response[0] != byte(0x90) {
-		return nil, fmt.Errorf("bad response: [% X]\n", response)
+	if err := verifyResponse(response); err != nil {
+		return nil, err
 	}
 
 	dataE := response[1:len(response)-8]
@@ -456,8 +431,8 @@ func (mplus *mifarePlus) WriteEncMacMac(keyBNr int, data []byte, readCounter, wr
 	if err != nil {
 		return err
 	}
-	if response[0] != byte(0x90) {
-		return fmt.Errorf("bad response: [% X]\n", response)
+	if err := verifyResponse(response); err != nil {
+		return err
 	}
 
 	macResp := response[len(response)-8:]
