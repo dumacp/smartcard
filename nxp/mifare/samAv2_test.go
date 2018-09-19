@@ -180,11 +180,12 @@ func TestNonAuthMFP(t *testing.T) {
 			t.Errorf("%s\n",err)
 		}
 		resp, err := mplus.UID()
+		t.Logf("mplus uuid: % X\n", resp)
 		if err != nil {
 			t.Error("%s\n",err)
 		}
 		dataDiv := make([]byte,4)
-		dataDiv = append(dataDiv,resp...)
+		dataDiv = append(dataDiv,resp[0:4]...)
 
 		//resp, err = mplus.FirstAuthf1(0x4002)
 		resp, err = mplus.FirstAuthf1(0x4005)
@@ -223,18 +224,20 @@ func TestNonAuthMFP(t *testing.T) {
 		readCounter := resp[36:38]
 		t.Logf("Read Counter: [% X]\n", readCounter)
 
-		//resp, err = mplus.ReadEncMacMac(4,1,0,0,Ti,keyMac,keyEnc)
+		//resp, err = mplus.ReadEncMacMac(4,1,rCounter,wCounter,Ti,keyMac,keyEnc)
 		resp, err = mplus.ReadEncMacMac(8,1,rCounter,wCounter,Ti,keyMac,keyEnc)
 		if err != nil {
 			t.Fatalf("%s\n",err)
 		}
 		t.Logf("read 4 resp: [% X]\n", resp)
 
+		/**
 		rCounter++
 		err = mplus.WriteEncMacMac(8,resp,rCounter,wCounter,Ti,keyMac,keyEnc)
 		if err != nil {
 			t.Fatalf("%s\n",err)
 		}
+		**/
 
 		//mplus.DisconnectCard()
 	}

@@ -27,6 +27,8 @@ type MifarePlus interface{
 	ReadPlainMacMac(keyBNr, ext, readCounter int, ti, keyMac []byte) ([]byte, error)
 	ReadEncMacMac(keyBNr, ext, readCounter, writeCounter int, ti, keyMac, keyEnc []byte) ([]byte, error)
 	WriteEncMacMac(keyBNr int, data []byte, readCounter, writeCounter int, ti, keyMac, keyEnc []byte) (error)
+	IncEncMacMac(bNr int, data []byte, readCounter, writeCounter int, ti , keyMac, keyEnc []byte) (error)
+	TransMacMac(bNr, writeCounter int, ti , keyMac []byte) (error)
 }
 
 type mifarePlus struct {
@@ -274,10 +276,10 @@ func (mplus *mifarePlus) ReadPlainMacMac(keyBNr, ext, readCounter int, Ti , keyM
 }
 
 //Read encrypted, MAC on response, MAC on command
-func (mplus *mifarePlus) ReadEncMacMac(keyBNr, ext, readCounter, writeCounter int, ti , keyMac, keyEnc []byte) ([]byte, error) {
+func (mplus *mifarePlus) ReadEncMacMac(bNr, ext, readCounter, writeCounter int, ti , keyMac, keyEnc []byte) ([]byte, error) {
 
-	keyB1 := byte((keyBNr >> 8) & 0xFF)
-	keyB2 := byte(keyBNr & 0xFF)
+	keyB1 := byte((bNr >> 8) & 0xFF)
+	keyB2 := byte(bNr & 0xFF)
 
 	rCountB1 := byte((readCounter >> 8) & 0xFF)
 	rCountB2 := byte(readCounter & 0xFF)
@@ -371,10 +373,10 @@ func (mplus *mifarePlus) ReadEncMacMac(keyBNr, ext, readCounter, writeCounter in
 }
 
 //Write encrypted, MAC on response, MAC on command
-func (mplus *mifarePlus) WriteEncMacMac(keyBNr int, data []byte, readCounter, writeCounter int, ti , keyMac, keyEnc []byte) (error) {
+func (mplus *mifarePlus) WriteEncMacMac(bNr int, data []byte, readCounter, writeCounter int, ti , keyMac, keyEnc []byte) (error) {
 
-	keyB1 := byte((keyBNr >> 8) & 0xFF)
-	keyB2 := byte(keyBNr & 0xFF)
+	keyB1 := byte((bNr >> 8) & 0xFF)
+	keyB2 := byte(bNr & 0xFF)
 
 	rCountB1 := byte((readCounter >> 8) & 0xFF)
 	rCountB2 := byte(readCounter & 0xFF)
@@ -463,3 +465,177 @@ func (mplus *mifarePlus) WriteEncMacMac(keyBNr int, data []byte, readCounter, wr
 
 	return nil
 }
+
+//Increment encrypted, MAC on response, MAC on command
+func (mplus *mifarePlus) IncEncMacMac(bNr int, data []byte, readCounter, writeCounter int, ti , keyMac, keyEnc []byte) (error) {
+
+	if len(data) > 4 {
+		return fmt.Errorf("length Data Value is incorrect (must 4)")
+	}
+
+	keyB1 := byte((bNr >> 8) & 0xFF)
+	keyB2 := byte(bNr & 0xFF)
+
+	rCountB1 := byte((readCounter >> 8) & 0xFF)
+	rCountB2 := byte(readCounter & 0xFF)
+	wCountB1 := byte((writeCounter >> 8) & 0xFF)
+	wCountB2 := byte(writeCounter & 0xFF)
+
+	ivEnc := make([]byte,0)
+	ivEnc = append(ivEnc, ti...)
+	for i:=0; i<3; i++ {
+		ivEnc = append(ivEnc, rCountB2)
+		ivEnc = append(ivEnc, rCountB1)
+		ivEnc = append(ivEnc, wCountB2)
+		ivEnc = append(ivEnc, wCountB1)
+	}
+
+	/**/
+        block, err := aes.NewCipher(keyEnc)
+        if err != nil {
+                return err
+        }
+	modeE := cipher.NewCBCEncrypter(block, ivEnc)
+	/**/
+	padding := make([]byte,16-len(data))
+	padding = append(padding, byte(0x80))
+	data = append(data, padding...)
+	dataE := make([]byte,len(data))
+	modeE.CryptBlocks(dataE, data)
+
+        blockMac, err := aes.NewCipher(keyMac)
+        if err != nil {
+                return err
+        }
+
+	var1 := []byte{0xB1}
+        var1 = append(var1, wCountB2)
+        var1 = append(var1, wCountB1)
+        var1 = append(var1, ti...)
+        var1 = append(var1, keyB2)
+        var1 = append(var1, keyB1)
+        var1 = append(var1, dataE...)
+
+        cmacS, err := cmac.Sum(var1, blockMac, 16)
+        if err != nil {
+                return err
+        }
+        cmac1 := make([]byte,0)
+        for i, v := range cmacS {
+                if i%2 != 0 {
+                        cmac1 = append(cmac1, v)
+                }
+        }
+
+	aid := []byte{0xB1,keyB2,keyB1}
+	aid = append(aid,dataE...)
+	aid = append(aid,cmac1...)
+	response, err :=  mplus.Apdu(aid)
+	if err != nil {
+		return err
+	}
+	if err := verifyResponse(response); err != nil {
+		return err
+	}
+
+	macResp := response[len(response)-8:]
+
+	wCountB1 = byte((writeCounter+1 >> 8) & 0xFF)
+	wCountB2 = byte(writeCounter+1 & 0xFF)
+	var2 := make([]byte,0)
+	var2 = append(var2, response[0])
+        var2 = append(var2, wCountB2)
+        var2 = append(var2, wCountB1)
+        var2 = append(var2, ti...)
+
+        cmacS2, err := cmac.Sum(var2, blockMac, 16)
+        if err != nil {
+                return err
+        }
+
+        cmac2 := make([]byte,0)
+	for i, v := range cmacS2 {
+                if i%2 != 0 {
+                        cmac2 = append(cmac2, v)
+                }
+        }
+
+	if !bytes.Equal(macResp, cmac2) {
+		return fmt.Errorf("Mac Fail in response, response: [% X]; macCalc: [% X]\n", response, cmac2)
+	}
+
+	return nil
+}
+
+//Transfer encrypted, MAC on response, MAC on command
+func (mplus *mifarePlus) TransMacMac(bNr, writeCounter int, ti , keyMac []byte) (error) {
+
+	keyB1 := byte((bNr >> 8) & 0xFF)
+	keyB2 := byte(bNr & 0xFF)
+
+	wCountB1 := byte((writeCounter >> 8) & 0xFF)
+	wCountB2 := byte(writeCounter & 0xFF)
+
+        blockMac, err := aes.NewCipher(keyMac)
+        if err != nil {
+                return err
+        }
+
+	var1 := []byte{0xB5}
+        var1 = append(var1, wCountB2)
+        var1 = append(var1, wCountB1)
+        var1 = append(var1, ti...)
+        var1 = append(var1, keyB2)
+        var1 = append(var1, keyB1)
+
+        cmacS, err := cmac.Sum(var1, blockMac, 16)
+        if err != nil {
+                return err
+        }
+        cmac1 := make([]byte,0)
+        for i, v := range cmacS {
+                if i%2 != 0 {
+                        cmac1 = append(cmac1, v)
+                }
+        }
+
+	aid := []byte{0xB5,keyB2,keyB1}
+	aid = append(aid,cmac1...)
+	response, err :=  mplus.Apdu(aid)
+	if err != nil {
+		return err
+	}
+	if err := verifyResponse(response); err != nil {
+		return err
+	}
+
+	macResp := response[len(response)-8:]
+
+	wCountB1 = byte((writeCounter+1 >> 8) & 0xFF)
+	wCountB2 = byte(writeCounter+1 & 0xFF)
+	var2 := make([]byte,0)
+	var2 = append(var2, response[0])
+        var2 = append(var2, wCountB2)
+        var2 = append(var2, wCountB1)
+        var2 = append(var2, ti...)
+
+        cmacS2, err := cmac.Sum(var2, blockMac, 16)
+        if err != nil {
+                return err
+        }
+
+        cmac2 := make([]byte,0)
+	for i, v := range cmacS2 {
+                if i%2 != 0 {
+                        cmac2 = append(cmac2, v)
+                }
+        }
+
+	if !bytes.Equal(macResp, cmac2) {
+		return fmt.Errorf("Mac Fail in response, response: [% X]; macCalc: [% X]\n", response, cmac2)
+	}
+
+	return nil
+}
+
+

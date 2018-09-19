@@ -16,7 +16,6 @@ import (
 type SamAv2 interface {
 	smartcard.Card
 	GetVersion()	([]byte, error)
-	//Connect()	(bool, error)
 	AuthHostAV2([]byte, int)	([]byte, error)
 	NonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte ) ([]byte, error)
 	NonXauthMFPf2(data []byte ) ([]byte, error)
@@ -25,13 +24,6 @@ type SamAv2 interface {
 
 type samAv2 struct {
 	smartcard.Card
-}
-
-func verifyResponseIso7816(response []byte) error {
-	if response[len(response)-1] != byte(0x00) || response[len(response)-2] != byte(0x90) {
-		return fmt.Errorf("error in response [%X %X]; response: [% X]\n", response[len(response)-2], response[len(response)-1], response)
-	}
-	return nil
 }
 
 
@@ -49,8 +41,11 @@ func ConnectSamAv2(r smartcard.Reader) (SamAv2, error) {
 }
 
 //SAM_GetVersion
+func ApduGetVersion() ([]byte) {
+	return []byte{0x80,0x60,0x00,0x00,0x00}
+}
 func (sam *samAv2) GetVersion() ([]byte, error) {
-	return sam.Apdu([]byte{0x80,0x60,0x00,0x00,0x00})
+	return sam.Apdu(ApduGetVersion())
 }
 
 //SAM_AuthenticationHost AV2 mode
@@ -171,14 +166,14 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo int) ([]byte, error) {
 		return nil, err
 	}
 
-	if err := verifyResponseIso7816(response); err != nil {
+	if err := VerifyResponseIso7816(response); err != nil {
 		return nil, err
 	}
 	return response, nil
 }
 
 //SAM_AuthenticationMFP (non-X-mode) first part
-func (sam *samAv2) NonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte ) ([]byte, error) {
+func ApduNonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte ) ([]byte) {
 	p1 := byte(0x00)
 	if dataDiv != nil {
 		p1 = byte(0x01)
@@ -204,33 +199,77 @@ func (sam *samAv2) NonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDi
 	}
 
 	aid1 = append(aid1, byte(0x00))
-	return sam.Apdu(aid1)
+	return aid1
+}
+
+//SAM_AuthenticationMFP (non-X-mode) first part
+func (sam *samAv2) NonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte ) ([]byte, error) {
+	return sam.Apdu(ApduNonXauthMFPf1(first, sl, keyNo, keyVer, data, dataDiv))
 }
 
 
 //SAM_AuthenticationMFP (non-X-mode) second part
-func (sam *samAv2) NonXauthMFPf2(data []byte ) ([]byte, error) {
+func ApduNonXauthMFPf2(data []byte ) ([]byte) {
 
 	aid1 := []byte{0x80,0xA3,0x00,0x00,byte(len(data))}
 	aid1 = append(aid1, data...)
 	aid1 = append(aid1, byte(0x00))
 
-	return sam.Apdu(aid1)
+	return aid1
+}
+
+//SAM_AuthenticationMFP (non-X-mode) second part
+func (sam *samAv2) NonXauthMFPf2(data []byte ) ([]byte, error) {
+	return sam.Apdu(ApduNonXauthMFPf2(data))
+}
+
+//SAM_DumpSessionKey (session key of an established authentication with a DESFire or MIFARE Plus PICC)
+func ApduDumpSessionKey() ([]byte) {
+	return []byte{0x80,0xD5,0x00,0x00,0x00}
 }
 
 //SAM_DumpSessionKey (session key of an established authentication with a DESFire or MIFARE Plus PICC)
 func (sam *samAv2) DumpSessionKey() ([]byte, error) {
-	response, err := sam.Apdu([]byte{0x80,0xD5,0x00,0x00,0x00})
+	response, err := sam.Apdu(ApduDumpSessionKey())
 	if err != nil {
 		return nil, err
 	}
-	if err := verifyResponseIso7816(response); err != nil {
+	if err := VerifyResponseIso7816(response); err != nil {
 		return nil, err
 	}
 	return response, nil
-
-	return response, nil
 }
 
+//SAM_KillAuthentication invalidates any kind authentication PICC
+func ApduSamKillAuthPICC() ([]byte) {
+	return []byte{0x80,0xCA,0x01,0x00}
+}
 
+//SAM_ActivateOfflineKey
+func ApduActivateOfflineKey(keyNo, keyVer int, dataDiv []byte) ([]byte) {
+	p1 := byte(0x00)
+	if divInput != nil {
+		p1 = byte(0x01)
+	}
+	aid1 := []byte{0x80,0x01,p1,0x00}
+	aid1 = append(aid1, byte(len(dataDiv)+2))
+	aid1 = append(aid1, byte(keyNo))
+	aid1 = append(aid1, byte(keyVer))
+	aid1 = append(aid1, dataDiv...)
+
+	return aid
+}
+
+//SAM_EncipherOffile_Data command encrypts data received from any other system based on the given cipher text data andt the current valid cryptographic OfflineCrypto Key.
+func ApduEncipherOffline_Data(last bool, offset int, dataPlain []byte) ([]byte) {
+	p1 := byte(0x00)
+	if !last {
+		p1 = byte(0xAF)
+	}
+	aid1 := []byte{0x80,0xED,byte(p1),byte(offset)}
+	aid1 = append(aid1, byte(len(dataPlain)))
+	aid1 = append(aid1, dataPlain...)
+
+	return aid
+}
 
