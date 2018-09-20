@@ -248,7 +248,7 @@ func ApduSamKillAuthPICC() ([]byte) {
 //SAM_ActivateOfflineKey
 func ApduActivateOfflineKey(keyNo, keyVer int, dataDiv []byte) ([]byte) {
 	p1 := byte(0x00)
-	if divInput != nil {
+	if  dataDiv!= nil {
 		p1 = byte(0x01)
 	}
 	aid1 := []byte{0x80,0x01,p1,0x00}
@@ -257,7 +257,7 @@ func ApduActivateOfflineKey(keyNo, keyVer int, dataDiv []byte) ([]byte) {
 	aid1 = append(aid1, byte(keyVer))
 	aid1 = append(aid1, dataDiv...)
 
-	return aid
+	return aid1
 }
 
 //SAM_EncipherOffile_Data command encrypts data received from any other system based on the given cipher text data andt the current valid cryptographic OfflineCrypto Key.
@@ -270,6 +270,6 @@ func ApduEncipherOffline_Data(last bool, offset int, dataPlain []byte) ([]byte) 
 	aid1 = append(aid1, byte(len(dataPlain)))
 	aid1 = append(aid1, dataPlain...)
 
-	return aid
+	return aid1
 }
 
