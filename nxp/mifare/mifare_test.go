@@ -4,7 +4,7 @@ package mifare
 import (
         _ "fmt"
 	"flag"
-	"encoding/hex"
+	_ "encoding/hex"
 	"strings"
         "testing"
 	"github.com/dumacp/smartcard"
@@ -57,6 +57,56 @@ func TestGetVersion(t *testing.T) {
 		}
 		t.Logf("ATR sam: % X\n", atr)
 		sam.DisconnectCard()
+	}
+}
+/**/
+/**/
+func TestGetData(t *testing.T) {
+	t.Log("Start Logs")
+	flag.Parse()
+	ctx, err := smartcard.NewContext()
+	if err != nil {
+                t.Fatal("Not connection")
+        }
+	defer ctx.Release()
+
+	readers, err := smartcard.ListReaders(ctx)
+	for i, el := range readers {
+		t.Logf("reader %v: %s\n", i, el)
+	}
+
+	piccReaders := make([]smartcard.Reader,0)
+	for _, el := range readers {
+		if strings.Contains(el, "PICC") {
+			piccReaders = append(piccReaders, smartcard.NewReader(ctx, el))
+		}
+	}
+
+	for _, piccReader := range piccReaders {
+		t.Logf("picc reader: %s\n", piccReader)
+		picc, err := piccReader.ConnectCard()
+		if err != nil {
+			t.Errorf("%s\n",err)
+		}
+
+		resp1, err := picc.UID()
+		t.Logf("picc UID: % X\n", resp1)
+		if err != nil {
+			t.Error("%s\n",err)
+		}
+
+		resp2, err := picc.ATR()
+		t.Logf("picc ATR: % X\n", resp2)
+		if err != nil {
+			t.Error("%s\n",err)
+		}
+
+		resp3, err := picc.ATS()
+		t.Logf("picc ATS: % X\n", resp3)
+		if err != nil {
+			t.Error("%s\n",err)
+		}
+		picc.DisconnectCard()
 	}
 }
 /**/
@@ -113,7 +163,7 @@ func TestAuthHostAV2(t *testing.T) {
 	}
 }
 /**/
-/**/
+/**
 func TestNonAuthMFP(t *testing.T) {
 	t.Log("Start Logs")
 	flag.Parse()
@@ -202,13 +252,11 @@ func TestNonAuthMFP(t *testing.T) {
 		if err != nil {
 			t.Errorf("%s\n",err)
 		}
-		/**/
 		resp, err = sam.NonXauthMFPf2(resp)
 		if err != nil {
 			t.Errorf("%s\n",err)
 		}
 		t.Logf("auth mplus: [% X]\n", resp)
-		/**/
 
 		resp, err = sam.DumpSessionKey()
 		if err != nil {
@@ -231,13 +279,11 @@ func TestNonAuthMFP(t *testing.T) {
 		}
 		t.Logf("read 4 resp: [% X]\n", resp)
 
-		/**
-		rCounter++
-		err = mplus.WriteEncMacMac(8,resp,rCounter,wCounter,Ti,keyMac,keyEnc)
-		if err != nil {
-			t.Fatalf("%s\n",err)
-		}
-		**/
+		//rCounter++
+		//err = mplus.WriteEncMacMac(8,resp,rCounter,wCounter,Ti,keyMac,keyEnc)
+		//if err != nil {
+		//	t.Fatalf("%s\n",err)
+		//}
 
 		//mplus.DisconnectCard()
 	}
