@@ -261,7 +261,7 @@ func ApduActivateOfflineKey(keyNo, keyVer int, dataDiv []byte) ([]byte) {
 }
 
 //SAM_EncipherOffile_Data command encrypts data received from any other system based on the given cipher text data andt the current valid cryptographic OfflineCrypto Key.
-func ApduEncipherOffline_Data(last bool, offset int, dataPlain []byte) ([]byte) {
+func ApduEncipher_Data(last bool, offset int, dataPlain []byte) ([]byte) {
 	p1 := byte(0x00)
 	if !last {
 		p1 = byte(0xAF)
@@ -269,6 +269,7 @@ func ApduEncipherOffline_Data(last bool, offset int, dataPlain []byte) ([]byte) 
 	aid1 := []byte{0x80,0xED,byte(p1),byte(offset)}
 	aid1 = append(aid1, byte(len(dataPlain)))
 	aid1 = append(aid1, dataPlain...)
+	aid1 = append(aid1, 0x00)
 
 	return aid1
 }
