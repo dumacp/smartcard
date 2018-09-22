@@ -274,3 +274,46 @@ func ApduEncipher_Data(last bool, offset int, dataPlain []byte) ([]byte) {
 	return aid1
 }
 
+func ApduDecipher_Data(last bool, mifare int, cipher []byte) ([]byte) {
+	p1 := byte(0x00)
+	if !last {
+		p1 = byte(0xAF)
+	}
+	aid1 := []byte{0x80,0xDD,byte(p1),0x00}
+	length := len(cipher)
+	if p1 == byte(0x00) || mifare <= 0 {
+		length = length + 3
+	}
+	aid1 = append(aid1, byte(length))
+	aid1 = append(aid1, cipher...)
+	aid1 = append(aid1, 0x00)
+
+	return aid1
+}
+
+//SAM_EncipherOffile_Data command encrypts data received from any other system based on the given cipher text data andt the current valid cryptographic OfflineCrypto Key.
+func ApduEncipherOffline_Data(last bool, dataPlain []byte) ([]byte) {
+	p1 := byte(0x00)
+	if !last {
+		p1 = byte(0xAF)
+	}
+	aid1 := []byte{0x80,0x0E,byte(p1),0x00}
+	aid1 = append(aid1, byte(len(dataPlain)))
+	aid1 = append(aid1, dataPlain...)
+	aid1 = append(aid1, 0x00)
+
+	return aid1
+}
+
+func ApduDecipherOffline_Data(last bool, cipher []byte) ([]byte) {
+	p1 := byte(0x00)
+	if !last {
+		p1 = byte(0xAF)
+	}
+	aid1 := []byte{0x80,0x0D,byte(p1),0x00}
+	aid1 = append(aid1, byte(len(cipher)))
+	aid1 = append(aid1, cipher...)
+	aid1 = append(aid1, 0x00)
+
+	return aid1
+}
