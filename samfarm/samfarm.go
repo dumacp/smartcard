@@ -40,7 +40,7 @@ func GetSamDevices(ctx *Context) (map[uint64]SamDevice, error) {
 			reader := smartcard.NewReader(ctx.Context, r)
 			sam, err := mifare.ConnectSamAv2(reader)
 			if  err != nil {
-				log.Println(err)
+				//log.Println(err)
 				continue
 			}
 			samVersion, err := sam.GetVersion()
