@@ -134,7 +134,7 @@ var f MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 func verifyCreateSamChannels(ctx *samfarm.Context) {
 	sams, err := samfarm.GetSamDevices(ctx)
 	if err != nil {
-		log.Println(err)
+		//log.Println(err)
 		return
 	}
 
