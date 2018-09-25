@@ -270,7 +270,7 @@ func TestNonAuthMFP(t *testing.T) {
 		Ti := resp[32:36]
 		t.Logf("Ti: [% X]\n", Ti)
 		readCounter := resp[36:38]
-		readCounter := resp[38:40]
+		writeCounter := resp[38:40]
 		t.Logf("Read Counter: [% X]\n", readCounter)
 
 		//resp, err = mplus.ReadEncMacMac(4,1,rCounter,wCounter,Ti,keyMac,keyEnc)
