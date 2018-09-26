@@ -4,7 +4,7 @@ package mifare
 import (
         _ "fmt"
 	"flag"
-	_ "encoding/hex"
+	"encoding/hex"
 	"strings"
         "testing"
 	"github.com/dumacp/smartcard"
@@ -163,7 +163,7 @@ func TestAuthHostAV2(t *testing.T) {
 	}
 }
 /**/
-/**
+/**/
 func TestNonAuthMFP(t *testing.T) {
 	t.Log("Start Logs")
 	flag.Parse()
@@ -270,8 +270,9 @@ func TestNonAuthMFP(t *testing.T) {
 		Ti := resp[32:36]
 		t.Logf("Ti: [% X]\n", Ti)
 		readCounter := resp[36:38]
-		writeCounter := resp[38:40]
 		t.Logf("Read Counter: [% X]\n", readCounter)
+		writeCounter := resp[38:40]
+		t.Logf("wrtie Counter: [% X]\n", writeCounter)
 
 		//resp, err = mplus.ReadEncMacMac(4,1,rCounter,wCounter,Ti,keyMac,keyEnc)
 		resp, err = mplus.ReadEncMacMac(8,1,rCounter,wCounter,Ti,keyMac,keyEnc)
