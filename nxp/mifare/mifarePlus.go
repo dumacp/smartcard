@@ -293,23 +293,22 @@ func (mplus *mifarePlus) ReadEncMacMac(bNr, ext, readCounter, writeCounter int, 
         }
 
 	var1 := []byte{0x31}
-        var1 = append(var1, rCountB2)
-        var1 = append(var1, rCountB1)
-        var1 = append(var1, ti...)
-        var1 = append(var1, bNB2)
-        var1 = append(var1, bNB1)
-        var1 = append(var1, byte(ext))
-        cmacS, err := cmac.Sum(var1, blockMac, 16)
-        if err != nil {
-                return nil, err
-        }
-        cmac1 := make([]byte,0)
-        for i, v := range cmacS {
-                if i%2 != 0 {
-                        cmac1 = append(cmac1, v)
-                }
-        }
-
+	var1 = append(var1, rCountB2)
+	var1 = append(var1, rCountB1)
+	var1 = append(var1, ti...)
+	var1 = append(var1, bNB2)
+	var1 = append(var1, bNB1)
+	var1 = append(var1, byte(ext))
+	cmacS, err := cmac.Sum(var1, blockMac, 16)
+	if err != nil {
+		return nil, err
+	}
+	cmac1 := make([]byte,0)
+	for i, v := range cmacS {
+		if i%2 != 0 {
+			cmac1 = append(cmac1, v)
+		}
+	}
 	aid := []byte{0x31,bNB2,bNB1,byte(ext)}
 	aid = append(aid,cmac1...)
 	response, err :=  mplus.Apdu(aid)
@@ -322,29 +321,28 @@ func (mplus *mifarePlus) ReadEncMacMac(bNr, ext, readCounter, writeCounter int, 
 
 	dataE := response[1:len(response)-8]
 	macResp := response[len(response)-8:]
-
 	rCountB1 = byte((readCounter+1 >> 8) & 0xFF)
 	rCountB2 = byte(readCounter+1 & 0xFF)
 	var2 := make([]byte,0)
 	var2 = append(var2, response[0])
-        var2 = append(var2, rCountB2)
-        var2 = append(var2, rCountB1)
-        var2 = append(var2, ti...)
-        var2 = append(var2, bNB2)
-        var2 = append(var2, bNB1)
-        var2 = append(var2, byte(ext))
-        var2 = append(var2, dataE...)
+	var2 = append(var2, rCountB2)
+	var2 = append(var2, rCountB1)
+	var2 = append(var2, ti...)
+	var2 = append(var2, bNB2)
+	var2 = append(var2, bNB1)
+	var2 = append(var2, byte(ext))
+	var2 = append(var2, dataE...)
 
         cmacS2, err := cmac.Sum(var2, blockMac, 16)
-        if err != nil {
-                return nil, err
-        }
+	if err != nil {
+		return nil, err
+	}
 
         cmac2 := make([]byte,0)
 	for i, v := range cmacS2 {
-                if i%2 != 0 {
-                        cmac2 = append(cmac2, v)
-                }
+		if i%2 != 0 {
+			cmac2 = append(cmac2, v)
+		}
         }
 
 	if !bytes.Equal(macResp, cmac2) {
@@ -361,9 +359,9 @@ func (mplus *mifarePlus) ReadEncMacMac(bNr, ext, readCounter, writeCounter int, 
 	ivDec = append(ivDec, ti...)
 
         block, err := aes.NewCipher(keyEnc)
-        if err != nil {
-                return nil, err
-        }
+	if err != nil {
+		return nil, err
+	}
 	modeD := cipher.NewCBCDecrypter(block, ivDec)
 
 	data := make([]byte,len(dataE))
