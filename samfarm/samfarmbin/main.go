@@ -7,6 +7,7 @@ import (
 	"time"
 	"strings"
 	"bytes"
+	"net/url"
 	"encoding/hex"
 	"github.com/dumacp/smartcard/samfarm"
 	_ "github.com/dumacp/smartcard/nxp/mifare"
@@ -20,6 +21,8 @@ var samInputChannels map[uint64]chan []byte
 var samOutputChannels map[uint64]chan []byte
 
 var urlBroker string
+var username string
+var password string
 var topicNameAsyncInputs string
 var topicNameSyncInputs string
 var topicNameOutputs string
@@ -29,6 +32,8 @@ var isShared bool
 
 func init() {
 	flag.StringVar(&urlBroker, "urlBroker", "tcp://127.0.0.1:1883", "MQTT url broker")
+	flag.StringVar(&urlBroker, "username", "", "MQTT Username broker")
+	flag.StringVar(&urlBroker, "password", "", "MQTT Password broker")
 	flag.StringVar(&topicNameAsyncInputs, "topicNameAsyncInputs", "SAMFARM/ASYN/", "MQTT topic name to cmd requests Async")
 	flag.StringVar(&topicNameSyncInputs, "topicNameiSyncInputs", "SAMFARM/SYN/", "MQTT topic name to cmd request Sync")
 	flag.StringVar(&topicNameOutputs, "topicNameOutputs", "SAMFARM/RESP/", "MQTT topic name to cmd responses")
@@ -170,7 +175,18 @@ func verifyCreateSamChannels(ctx *samfarm.Context) {
 		clientId := fmt.Sprintf("go-samfarm-client-%X", k)
 		fmt.Printf("clientId: %s\n", clientId)
 		fmt.Printf("topic sam: %s\n",  strTopicName.String())
-		opts := MQTT.NewClientOptions().AddBroker(urlBroker)
+
+		uri, err := url.Parse(urlBroker)
+		if err != nil {
+			log.Fatal(err)
+		}
+		opts := MQTT.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s", uri.Host))
+		if uri.User != nil {
+			opts.SetUsername(uri.User.Username())
+			password, _ := uri.User.Password()
+			opts.SetPassword(password)
+		}
+
 	        opts.SetClientID(clientId)
 		opts.SetDefaultPublishHandler(f2)
 		var fDisconnect MQTT.ConnectionLostHandler = func(client MQTT.Client, err error) {
@@ -238,13 +254,26 @@ func main() {
 		errDisconnect <- err
 	}
 
+	fmt.Printf("go-samfarm-client: %s\n", clientName)
+	fmt.Printf("go-samfarm-client topic: %s\n", strTopicName.String())
+
+	uri, err := url.Parse(urlBroker)
+	if err != nil {
+		log.Fatal(err)
+	}
+	opts := MQTT.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s", uri.Host))
+	if uri.User != nil {
+		opts.SetUsername(uri.User.Username())
+		password, _ := uri.User.Password()
+		opts.SetPassword(password)
+	}
+
+	opts.SetClientID(clientName)
+	opts.SetDefaultPublishHandler(f)
+	opts.SetConnectionLostHandler(fDisconnect)
+
+
 	for {
-		fmt.Printf("go-samfarm-client: %s\n", clientName)
-		fmt.Printf("go-samfarm-client topic: %s\n", strTopicName.String())
-		opts := MQTT.NewClientOptions().AddBroker(urlBroker)
-	        opts.SetClientID(clientName)
-		opts.SetDefaultPublishHandler(f)
-		opts.SetConnectionLostHandler(fDisconnect)
 		client, err := createClientMQTT(opts, strTopicName.String())
 		if err != nil {
 			time.Sleep(time.Second * 5)
