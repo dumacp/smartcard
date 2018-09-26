@@ -48,8 +48,8 @@ func uniqListen(samInput chan []byte) func(MQTT.Client, MQTT.Message) {
 		log.Printf("SYN MSG: [% X]\n", msg.Payload())
 
 		spl1 := strings.Split(msg.Topic(), "/")
-		samid := spl1[len(spl1) -2]
-		appid := spl1[len(spl1) -1]
+		samid := spl1[len(spl1) -1]
+		appid := spl1[len(spl1) -2]
 
 		select {
 		case samInput <- msg.Payload():
@@ -108,10 +108,13 @@ var f MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 				return
 			}
 			spl1 := strings.Split(msg.Topic(), "/")
-			appid := spl1[len(spl1) -1]
+			appid := spl1[len(spl1) -2]
+			uuid := spl1[len(spl1) -1]
 			var strRespName bytes.Buffer
 			strRespName.WriteString(topicNameOutputs)
 			strRespName.WriteString(appid)
+			strRespName.WriteString("/")
+			strRespName.WriteString(uuid)
 			strRespName.WriteString("/")
 			strRespName.WriteString(fmt.Sprintf("%X",samOutKeys[chosen2]))
 			token := client.Publish(strRespName.String(), 0, false, data)
