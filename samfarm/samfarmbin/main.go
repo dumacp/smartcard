@@ -14,9 +14,10 @@ The "<topicNameAsyncInputs/*>" should end with suffix "/id1/id2". Where "id1" (h
 identifier for transaction, and "id2" (hexstring) is the identifier for app client who sent the 
 command and will be receiver of the response.
 
-The "<topicNameSyncInputs/*> should end with suffix "/id3/id2". Where "id3" (hexstring) is the 
+The "<topicNameSyncInputs/*> should end with suffix "/id3/id1/id2". Where "id3" (hexstring) is the 
 identifier for the SAM device that should reciver the APDU command, and "id2" (hexstring) is the 
-identifier for app client who sent the command and will be receiver of the response.
+identifier for app client who sent the command and will be receiver of the response and "id1" 
+(hexstring) is the identifier of the transaction.
 
 The "<topicNameOutput/*>" end with suffix "/id2/id1/id3". Where "id3" (hexstring) is the identifier 
 for the SAM device that left the response, "id2" (hexstring) is the identifier for app client who 
@@ -104,7 +105,8 @@ func uniqListen(samInput chan []byte) func(MQTT.Client, MQTT.Message) {
 		log.Printf("SYN MSG: [% X]\n", msg.Payload())
 
 		spl1 := strings.Split(msg.Topic(), "/")
-		samid := spl1[len(spl1) -2]
+		samid := spl1[len(spl1) -3]
+		txid := spl1[len(spl1) -2]
 		appid := spl1[len(spl1) -1]
 
 		select {
@@ -125,6 +127,8 @@ func uniqListen(samInput chan []byte) func(MQTT.Client, MQTT.Message) {
 		var strRespName bytes.Buffer
 		strRespName.WriteString(topicNameOutputs)
 		strRespName.WriteString(appid)
+		strRespName.WriteString("/")
+		strRespName.WriteString(txid)
 		strRespName.WriteString("/")
 		strRespName.WriteString(samid)
 		log.Printf("apdu2 topic: %s", strRespName.String())
