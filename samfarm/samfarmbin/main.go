@@ -1,3 +1,50 @@
+/**
+this app implements a SAMav2 cluster through MQTT topics
+
+
+The messages are APDU Commands ([]byte) sent to "<topicName*Inputs>",
+and APDU Responses ([]byte) that are left in "<topicNameOutput>"
+
+
+* <topicNameAsyncInputs> is the prefix of topic to generic command (sent to any SAM device).
+* <topicNameSyncInputs> is the prefix of topic to especific command (sent to especific SAM device).
+* <topicNameOutput> is the prefix of topic to responses.
+
+The "<topicNameAsyncInputs/*>" should end with suffix "/id1/id2". Where "id1" (hexstring) is a 
+identifier for transaction, and "id2" (hexstring) is the identifier for app client who sent the 
+command and will be receiver of the response.
+
+The "<topicNameSyncInputs/*> should end with suffix "/id3/id2". Where "id3" (hexstring) is the 
+identifier for the SAM device that should reciver the APDU command, and "id2" (hexstring) is the 
+identifier for app client who sent the command and will be receiver of the response.
+
+The "<topicNameOutput/*>" end with suffix "/id2/id1/id3". Where "id3" (hexstring) is the identifier 
+for the SAM device that left the response, "id2" (hexstring) is the identifier for app client who 
+will be receiver of the response and "id1" (hexstring) is the identifier of the transaction. 
+
+
+
+Usage of ./samfarmbin:
+  -clientName string
+    	Client Name conecction mqtt (default "go-samfarm-client-1541166125194006904")
+  -isShared
+    	is shared subcription? 
+  -key string
+    	key aes128 (default "00000000000000000000000000000000")
+  -password string
+    	MQTT Password broker
+  -topicNameAsyncInputs string
+    	MQTT topic name to cmd requests Async (default "SAMFARM/ASYN/")
+  -topicNameOutputs string
+    	MQTT topic name to cmd responses (default "SAMFARM/RESP/")
+  -topicNameSyncInputs string
+    	MQTT topic name to cmd request Sync (default "SAMFARM/SYN/")
+  -urlBroker string
+    	MQTT url broker (default "tcp://127.0.0.1:1883")
+  -username string
+    	MQTT Username broker
+
+/**/
 package main
 
 import (
@@ -35,7 +82,7 @@ func init() {
 	flag.StringVar(&urlBroker, "username", "", "MQTT Username broker")
 	flag.StringVar(&urlBroker, "password", "", "MQTT Password broker")
 	flag.StringVar(&topicNameAsyncInputs, "topicNameAsyncInputs", "SAMFARM/ASYN/", "MQTT topic name to cmd requests Async")
-	flag.StringVar(&topicNameSyncInputs, "topicNameiSyncInputs", "SAMFARM/SYN/", "MQTT topic name to cmd request Sync")
+	flag.StringVar(&topicNameSyncInputs, "topicNameSyncInputs", "SAMFARM/SYN/", "MQTT topic name to cmd request Sync")
 	flag.StringVar(&topicNameOutputs, "topicNameOutputs", "SAMFARM/RESP/", "MQTT topic name to cmd responses")
 	flag.StringVar(&keyS, "key", "00000000000000000000000000000000", "key aes128")
 	flag.StringVar(&clientName, "clientName", fmt.Sprintf("go-samfarm-client-%v", time.Now().UnixNano()), "Client Name conecction mqtt")
@@ -46,15 +93,19 @@ func init() {
 	samOutputChannels = make(map[uint64]chan []byte)
 }
 
-//func(client MQTT.Client, msg MQTT.Message) {
+/**
+Receiver of Messages sent to specific SAM devices (topic: "topicNameSyncInputs/samid/appid")
+
+This function send response Messages in topic "topicNameOutputs/appid/samid"
+/**/
 func uniqListen(samInput chan []byte) func(MQTT.Client, MQTT.Message) {
 	return func(client MQTT.Client, msg MQTT.Message) {
 		log.Printf("SYN TOPIC: %s\n", msg.Topic())
 		log.Printf("SYN MSG: [% X]\n", msg.Payload())
 
 		spl1 := strings.Split(msg.Topic(), "/")
-		samid := spl1[len(spl1) -1]
-		appid := spl1[len(spl1) -2]
+		samid := spl1[len(spl1) -2]
+		appid := spl1[len(spl1) -1]
 
 		select {
 		case samInput <- msg.Payload():
@@ -76,11 +127,17 @@ func uniqListen(samInput chan []byte) func(MQTT.Client, MQTT.Message) {
 		strRespName.WriteString(appid)
 		strRespName.WriteString("/")
 		strRespName.WriteString(samid)
+		log.Printf("apdu2 topic: %s", strRespName.String())
 		token := client.Publish(strRespName.String(), 0, false, data)
                 token.Wait()
 	}
 }
 
+/**
+Receiver of Messages sent to generic SAM devices (topic: "topicNameAsyncInputs/uuid/appid")
+
+This function send response Messages in topic "topicNameOutputs/appid/uuid"
+/**/
 var f MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 	log.Printf("TOPIC: %s\n", msg.Topic())
 	log.Printf("MSG: [% X]\n", msg.Payload())
@@ -113,8 +170,8 @@ var f MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 				return
 			}
 			spl1 := strings.Split(msg.Topic(), "/")
-			appid := spl1[len(spl1) -2]
-			uuid := spl1[len(spl1) -1]
+			appid := spl1[len(spl1) -1]
+			uuid := spl1[len(spl1) -2]
 			var strRespName bytes.Buffer
 			strRespName.WriteString(topicNameOutputs)
 			strRespName.WriteString(appid)
