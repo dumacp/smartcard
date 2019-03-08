@@ -92,19 +92,19 @@ func TestGetData(t *testing.T) {
 		resp1, err := picc.UID()
 		t.Logf("picc UID: % X\n", resp1)
 		if err != nil {
-			t.Error("%s\n",err)
+			t.Errorf("%s\n",err)
 		}
 
 		resp2, err := picc.ATR()
 		t.Logf("picc ATR: % X\n", resp2)
 		if err != nil {
-			t.Error("%s\n",err)
+			t.Errorf("%s\n",err)
 		}
 
 		resp3, err := picc.ATS()
 		t.Logf("picc ATS: % X\n", resp3)
 		if err != nil {
-			t.Error("%s\n",err)
+			t.Errorf("%s\n",err)
 		}
 		picc.DisconnectCard()
 	}
@@ -192,11 +192,11 @@ func TestNonAuthMFP(t *testing.T) {
 		//sam, err := samReader.ConnectSamAv2()
 		sam, err = ConnectSamAv2(samReader)
 		if err != nil {
-			t.Error("%s\n",err)
+			t.Errorf("%s\n",err)
 		}
 		version, err := sam.GetVersion()
 		if err != nil {
-			t.Error("Not GetVersion: ", err)
+			t.Errorf("Not GetVersion: %s", err)
 		}
 		t.Logf("GetVersion sam: % X\n", version)
 
@@ -232,7 +232,7 @@ func TestNonAuthMFP(t *testing.T) {
 		resp, err := mplus.UID()
 		t.Logf("mplus uuid: % X\n", resp)
 		if err != nil {
-			t.Error("%s\n",err)
+			t.Errorf("%s\n",err)
 		}
 		dataDiv := make([]byte,4)
 		dataDiv = append(dataDiv,resp[0:4]...)

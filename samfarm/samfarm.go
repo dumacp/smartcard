@@ -70,11 +70,36 @@ func ReaderChannel(sam mifare.SamAv2, input, output chan []byte) {
 			return
 		}
 		//fmt.Printf("send to SAM: %v\n", dataIn)
-		resp, err := sam.Apdu(dataIn)
-		if err != nil {
-			log.Printf("SAM error: %s\n", err)
-			return
+		last := false
+		var resp []byte
+		var err error
+		for {
+			var dataSub []byte
+			lenT := int(dataIn[4])+5
+			if len(dataIn) > 5 && (lenT+1 < len(dataIn)) {
+				dataSub = dataIn[0:lenT]
+				if dataIn[lenT+1] == 0x00 {
+					dataSub = append(dataIn,0x00)
+				}
+			} else {
+				dataSub = dataIn
+				last = true
+			}
+			resp, err = sam.Apdu(dataSub)
+			if err != nil {
+				log.Printf("SAM error: %s\n", err)
+				return
+			}
+			if mifare.VerifyResponseIso7816(resp) != nil {
+				break
+			}
+			if last {
+				break
+			}
+			dataIn = dataIn[len(dataSub):]
 		}
+
+
 
 		//fmt.Printf("output to SAM: %v\n", resp)
 		timeout := 10
