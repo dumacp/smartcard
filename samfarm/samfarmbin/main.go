@@ -101,8 +101,8 @@ This function send response Messages in topic "topicNameOutputs/appid/samid"
 /**/
 func uniqListen(samInput chan []byte) func(MQTT.Client, MQTT.Message) {
 	return func(client MQTT.Client, msg MQTT.Message) {
-		log.Printf("SYN TOPIC: %s\n", msg.Topic())
-		log.Printf("SYN MSG: [% X]\n", msg.Payload())
+		log.Printf("INFO: SYN TOPIC: %s\n", msg.Topic())
+		log.Printf("INFO: SYN MSG: [% X]\n", msg.Payload())
 
 		spl1 := strings.Split(msg.Topic(), "/")
 		samid := spl1[len(spl1) -3]
@@ -131,7 +131,8 @@ func uniqListen(samInput chan []byte) func(MQTT.Client, MQTT.Message) {
 		strRespName.WriteString(txid)
 		strRespName.WriteString("/")
 		strRespName.WriteString(samid)
-		log.Printf("apdu2 topic: %s", strRespName.String())
+		log.Printf("apdu1 topic: %s", strRespName.String())
+		log.Printf("apdu1 data: %X", data)
 		token := client.Publish(strRespName.String(), 0, false, data)
                 token.Wait()
 	}
@@ -143,8 +144,8 @@ Receiver of Messages sent to generic SAM devices (topic: "topicNameAsyncInputs/u
 This function send response Messages in topic "topicNameOutputs/appid/uuid"
 /**/
 var f MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
-	log.Printf("TOPIC: %s\n", msg.Topic())
-	log.Printf("MSG: [% X]\n", msg.Payload())
+	log.Printf("INFO: TOPIC async: %s\n", msg.Topic())
+	log.Printf("INFO: MSG async: [% X]\n", msg.Payload())
 
 	samInputs := make([]chan []byte,0)
 	samInKeys := make([]uint64,0)
@@ -170,6 +171,7 @@ var f MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 					log.Printf("delete sam: %v, %v\n", k, chosen2)
 					delete(samInputChannels, k)
 					delete(samOutputChannels, k)
+					delete(samDevices,k)
 				}
 				return
 			}
@@ -183,6 +185,8 @@ var f MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 			strRespName.WriteString(uuid)
 			strRespName.WriteString("/")
 			strRespName.WriteString(fmt.Sprintf("%X",samOutKeys[chosen2]))
+			log.Printf("apdu2 topic: %s", strRespName.String())
+			log.Printf("apdu2 data: %X", data)
 			token := client.Publish(strRespName.String(), 0, false, data)
                         token.Wait()
 		}()
@@ -218,11 +222,11 @@ func verifyCreateSamChannels(ctx *samfarm.Context) {
 			close(chOld)
 		}
 		/**/
-		log.Printf("device %v: %+v\n",k, sam)
+		log.Printf("New device %v: %+v\n",k, sam)
 
                 resp, err := sam.AuthHostAV2(key, 100)
                 if err != nil {
-                        log.Println("Not Auth: ", err)
+                        log.Print("Not Auth: ", err)
 			continue
                 }
                 log.Printf("auth sam: [% X]\n", resp)
@@ -237,14 +241,14 @@ func verifyCreateSamChannels(ctx *samfarm.Context) {
 		strTopicName.WriteString("/#")
 		f2 := uniqListen(outCh)
 		clientId := fmt.Sprintf("go-samfarm-client-%X", k)
-		fmt.Printf("clientId: %s\n", clientId)
-		fmt.Printf("topic sam: %s\n",  strTopicName.String())
+		//fmt.Printf("clientId: %s\n", clientId)
+		//fmt.Printf("topic sam: %s\n",  strTopicName.String())
 
 		uri, err := url.Parse(urlBroker)
 		if err != nil {
 			log.Fatal(err)
 		}
-		opts := MQTT.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s", uri.Host))
+		opts := MQTT.NewClientOptions().AddBroker(fmt.Sprintf("%s://%s%s", uri.Scheme, uri.Host, uri.Path))
 		if uri.User != nil {
 			opts.SetUsername(uri.User.Username())
 			password, _ := uri.User.Password()
@@ -259,13 +263,13 @@ func verifyCreateSamChannels(ctx *samfarm.Context) {
 					log.Printf("lost, run time panic: %v", x)
 				}
 			}()
-			log.Printf("%s", err)
+			log.Printf("Disconnect error: %s", err)
 			close(inCh)
 		}
 		opts.SetConnectionLostHandler(fDisconnect)
 		c, err := createClientMQTT(opts, strTopicName.String())
 		if err != nil {
-			log.Printf("error client: %s",err)
+			log.Printf("Create client error: %s",err)
 			continue
 		}
                 go func() {
@@ -325,12 +329,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	opts := MQTT.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s", uri.Host))
+	log.Printf(fmt.Sprintf("%s://%s%s", uri.Scheme, uri.Host, uri.Path))
+	/**/
+	opts := MQTT.NewClientOptions().AddBroker(fmt.Sprintf("%s://%s%s", uri.Scheme, uri.Host, uri.Path))
 	if uri.User != nil {
 		opts.SetUsername(uri.User.Username())
 		password, _ := uri.User.Password()
 		opts.SetPassword(password)
 	}
+	/**/
 
 	opts.SetClientID(clientName)
 	opts.SetDefaultPublishHandler(f)
@@ -347,12 +354,14 @@ func main() {
 
 		ctx, err := samfarm.NewContext()
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
+			break
 		}
 
 		verifyCreateSamChannels(ctx)
 
-		timeout := time.Tick(time.Second * 10)
+		timeout := time.NewTicker(time.Second * 10)
+		defer timeout.Stop()
 
 
 OuterLoop:
@@ -360,7 +369,7 @@ OuterLoop:
 			select {
 			case <-errDisconnect:
 				break OuterLoop
-			case <-timeout:
+			case <-timeout.C:
 				verifyCreateSamChannels(ctx)
 			}
 		}
