@@ -20,6 +20,7 @@ type Context struct {
 //Interface to Reader device
 type Reader interface {
 	ConnectCard()	(Card, error)
+	ConnectDirect()	(Card, error)
 }
 
 type reader struct {
@@ -87,6 +88,22 @@ func (r *reader) connectCard() (*card, error) {
 	}
 	cardS := &card{
 		CONNECTED,
+		c,
+	}
+	return cardS, nil
+}
+
+func (r *reader) ConnectDirect() (Card, error) {
+	if ok, err := r.Context.IsValid(); err != nil && !ok {
+		return nil, err
+	}
+
+	c, err := r.Context.Connect(r.ReaderName, scard.ShareDirect, scard.ProtocolUndefined)
+	if err != nil {
+		return nil, err
+	}
+	cardS := &card{
+		CONNECTEDDirect,
 		c,
 	}
 	return cardS, nil
