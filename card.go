@@ -18,6 +18,7 @@ import (
 //Card Interface
 type Card interface {
 	Apdu(apdu []byte)	([]byte, error)
+	ControlApdu(ioctl uint32, apdu []byte)	([]byte, error)
 	ATR()			([]byte, error)
 	DisconnectCard()	error
 	DiconnectResetCard()	error
@@ -37,6 +38,7 @@ type State int
 
 const (
     CONNECTED	State = iota
+    CONNECTEDDirect
     DISCONNECTED
 )
 type card struct {
@@ -70,6 +72,14 @@ func (c *card) Apdu(apdu []byte) ([]byte, error) {
 		return nil, errors.New("Don't Connect to Card")
 	}
 	return c.Transmit(apdu)
+}
+
+//Primitive channel to send command
+func (c *card) ControlApdu(ioctl uint32, apdu []byte) ([]byte, error) {
+	if c.State != CONNECTEDDirect {
+		return nil, errors.New("Don't Connect to Card")
+	}
+	return c.Control(ioctl, apdu)
 }
 
 //Get ATR of Card
