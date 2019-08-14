@@ -18,7 +18,6 @@ import (
 
 //Mifare Plus Interface
 type MifarePlus interface{
-	smartcard.Card
 	WritePerso(int, []byte) ([]byte, error)
 	CommitPerso() ([]byte, error)
 	FirstAuthf1(keyBNr int) ([]byte, error)
@@ -37,7 +36,7 @@ type MifarePlus interface{
 }
 
 type mifarePlus struct {
-	smartcard.Card
+	Card	interface{}
 	keyMac	[]byte
 	keyEnc	[]byte
 	readCounter	int
@@ -46,7 +45,7 @@ type mifarePlus struct {
 }
 
 //Create Mifare Plus Interface
-func ConnectMplus(r smartcard.Reader) (MifarePlus, error) {
+func ConnectMplus(r smartcard.IReader) (MifarePlus, error) {
 
 	c, err := r.ConnectCard()
 	if err != nil {
