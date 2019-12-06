@@ -9,16 +9,10 @@ projects on which it is based:
 /**/
 package smartcard
 
-import (
-	//"fmt"
-	"errors"
-	"github.com/ebfe/scard"
-)
-
-//Card Interface
+//ICard Interface
 type ICard interface {
-	Apdu(apdu []byte)	([]byte, error)
-	ATR()			([]byte, error)
-	UID()	([]byte, error)
-	ATS()	([]byte, error)
+	Apdu(apdu []byte) ([]byte, error)
+	ATR() ([]byte, error)
+	UID() ([]byte, error)
+	ATS() ([]byte, error)
 }
