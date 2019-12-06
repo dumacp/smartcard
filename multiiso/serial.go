@@ -1,4 +1,4 @@
-package isoserial
+package multiiso
 
 import (
 	"bufio"
@@ -22,16 +22,13 @@ func NewDevice(portName string, baudRate int) (*Device, error) {
 		Baud: baudRate,
 		//ReadTimeout: time.Second * 3,
 	}
-	sentencesFilter := make([]string, 0)
-	sentencesFilter = append(sentencesFilter, filters...)
 	s, err := serial.OpenPort(config)
 	if err != nil {
 		return nil, err
 	}
 	dev := &Device{
-		port:   s,
-		filter: sentencesFilter,
-		ok:     true,
+		port: s,
+		ok:   true,
 	}
 	log.Println("port serial Open!")
 	return dev, nil
@@ -61,7 +58,7 @@ func (dev *Device) Read() chan []byte {
 	go func() {
 		defer close(ch)
 		countError := 0
-		funcerr := func() {
+		funcerr := func(err error) {
 			log.Println(err)
 			if countError > 3 {
 				dev.Close()
@@ -71,31 +68,33 @@ func (dev *Device) Read() chan []byte {
 			countError++
 		}
 		bf := bufio.NewReader(dev.port)
-		lendata := make([]byte, 2)
 		tempb := make([]byte, 1024)
-		lenb := 0
+		indxb := 0
 		for {
 			b, err := bf.ReadByte()
 			if err != nil {
-				funcerr()
+				funcerr(err)
 				continue
 			}
 			countError = 0
-			if lenb <= 0 {
+			if indxb <= 0 {
 				if b == '\x02' {
 					tempb[0] = b
-					lenb = 1
+					indxb = 0
 				}
 				continue
 			}
-			lenb++
-			tempb[lenb] = b
-			if lenb < 6 {
+			indxb++
+			tempb[indxb] = b
+			if indxb < 6 {
 				continue
 			}
-			if b == '\x03' && (lenb >= int(empb[2])+5) {
-				ch <- tempb[0:lenb]
-				lenb = 0
+			if b == '\x03' && (indxb >= int(tempb[2])+5) {
+				select {
+				case ch <- tempb[0:indxb]:
+				case <-time.After(3 * time.Second):
+				}
+				indxb = 0
 			}
 		}
 	}()

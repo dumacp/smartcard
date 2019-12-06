@@ -12,18 +12,19 @@ package pcsc
 import (
 	//"fmt"
 	"errors"
-	"github.com/ebfe/scard"
+
 	"github.com/dumacp/smartcard"
+	"github.com/ebfe/scard"
 )
 
 //Card Interface
 type Card interface {
-	smartcad.ICard
-	ControlApdu(ioctl uint32, apdu []byte)	([]byte, error)
-	DisconnectCard()	error
-	DiconnectResetCard()	error
-	DisconnectUnpowerCard()	error
-	DisconnectEjectCard()	error
+	smartcard.ICard
+	ControlApdu(ioctl uint32, apdu []byte) ([]byte, error)
+	DisconnectCard() error
+	DiconnectResetCard() error
+	DisconnectUnpowerCard() error
+	DisconnectEjectCard() error
 	TransparentSessionStart() ([]byte, error)
 	TransparentSessionStartOnly() ([]byte, error)
 	TransparentSessionResetRF() ([]byte, error)
@@ -35,31 +36,32 @@ type Card interface {
 type State int
 
 const (
-    CONNECTED	State = iota
-    CONNECTEDDirect
-    DISCONNECTED
+	CONNECTED State = iota
+	CONNECTEDDirect
+	DISCONNECTED
 )
 
 type card struct {
+	State State
 	*scard.Card
 }
 
-func (c *card) DisconnectCard() (error) {
+func (c *card) DisconnectCard() error {
 	c.State = DISCONNECTED
 	return c.Disconnect(0x00)
 }
 
-func (c *card) DiconnectResetCard() (error) {
+func (c *card) DiconnectResetCard() error {
 	c.State = DISCONNECTED
 	return c.Disconnect(0x01)
 }
 
-func (c *card) DisconnectUnpowerCard() (error) {
+func (c *card) DisconnectUnpowerCard() error {
 	c.State = DISCONNECTED
 	return c.Disconnect(0x02)
 }
 
-func (c *card) DisconnectEjectCard() (error) {
+func (c *card) DisconnectEjectCard() error {
 	c.State = DISCONNECTED
 	return c.Disconnect(0x03)
 }
@@ -94,32 +96,32 @@ func (c *card) ATR() ([]byte, error) {
 
 //Get Data 0x00
 func (c *card) UID() ([]byte, error) {
-	aid := []byte{0xFF,0xCA,0x00,0x00,0x00}
-	return  c.Apdu(aid)
+	aid := []byte{0xFF, 0xCA, 0x00, 0x00, 0x00}
+	return c.Apdu(aid)
 }
 
 //Get Data 0x01
 func (c *card) ATS() ([]byte, error) {
-	aid := []byte{0xFF,0xCA,0x01,0x00,0x00}
-	return  c.Apdu(aid)
+	aid := []byte{0xFF, 0xCA, 0x01, 0x00, 0x00}
+	return c.Apdu(aid)
 }
 
 //Transparent Session (PCSC)
 func (c *card) TransparentSessionStart() ([]byte, error) {
-	apdu := []byte{0xFF,0xC2,0x00,0x00,0x04,0x81,0x00,0x84,0x00}
+	apdu := []byte{0xFF, 0xC2, 0x00, 0x00, 0x04, 0x81, 0x00, 0x84, 0x00}
 	return c.Transmit(apdu)
 }
 func (c *card) TransparentSessionStartOnly() ([]byte, error) {
-	apdu := []byte{0xFF,0xC2,0x00,0x00,0x02,0x81,0x00}
+	apdu := []byte{0xFF, 0xC2, 0x00, 0x00, 0x02, 0x81, 0x00}
 	return c.Transmit(apdu)
 }
 func (c *card) TransparentSessionResetRF() ([]byte, error) {
-	apdu1 := []byte{0xFF,0xC2,0x00,0x00,0x02,0x83,0x00}
+	apdu1 := []byte{0xFF, 0xC2, 0x00, 0x00, 0x02, 0x83, 0x00}
 	resp, err := c.Transmit(apdu1)
 	if err != nil {
 		return nil, err
 	}
-	apdu2 := []byte{0xFF,0xC2,0x00,0x00,0x02,0x84,0x00}
+	apdu2 := []byte{0xFF, 0xC2, 0x00, 0x00, 0x02, 0x84, 0x00}
 	resp, err = c.Transmit(apdu2)
 	if err != nil {
 		return nil, err
@@ -127,14 +129,14 @@ func (c *card) TransparentSessionResetRF() ([]byte, error) {
 	return resp, nil
 }
 func (c *card) TransparentSessionEnd() ([]byte, error) {
-	apdu := []byte{0xFF,0xC2,0x00,0x00,0x02,0x82,0x00,0x00}
+	apdu := []byte{0xFF, 0xC2, 0x00, 0x00, 0x02, 0x82, 0x00, 0x00}
 	return c.Transmit(apdu)
 }
 func (c *card) Switch1444_4() ([]byte, error) {
-	apdu := []byte{0xff,0xc2,0x00,0x02,0x04,0x8F,0x02,0x00,0x04}
+	apdu := []byte{0xff, 0xc2, 0x00, 0x02, 0x04, 0x8F, 0x02, 0x00, 0x04}
 	return c.Transmit(apdu)
 }
 func (c *card) Switch1444_3() ([]byte, error) {
-	apdu := []byte{0xff,0xc2,0x00,0x02,0x04,0x8f,0x02,0x00,0x03}
+	apdu := []byte{0xff, 0xc2, 0x00, 0x02, 0x04, 0x8f, 0x02, 0x00, 0x03}
 	return c.Transmit(apdu)
 }

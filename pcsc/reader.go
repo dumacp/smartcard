@@ -10,8 +10,8 @@ projects on which it is based:
 package pcsc
 
 import (
-	"github.com/ebfe/scard"
 	"github.com/dumacp/smartcard"
+	"github.com/ebfe/scard"
 )
 
 type Context struct {
@@ -21,12 +21,12 @@ type Context struct {
 //Interface to Reader device
 type Reader interface {
 	smartcard.IReader
-	ConnectDirect()	(Card, error)
+	ConnectDirect() (Card, error)
 }
 
 type reader struct {
-	Context		*Context
-	ReaderName	string
+	Context    *Context
+	ReaderName string
 }
 
 //Establish Context to Reader in pcscd
@@ -47,7 +47,7 @@ func ListReaders(ctx *Context) ([]string, error) {
 //Create New Reader interface
 func NewReader(ctx *Context, readerName string) Reader {
 	r := &reader{
-		Context: ctx,
+		Context:    ctx,
 		ReaderName: readerName,
 	}
 	return r
@@ -55,14 +55,14 @@ func NewReader(ctx *Context, readerName string) Reader {
 
 func newReader(ctx *Context, readerName string) *reader {
 	r := &reader{
-		Context: ctx,
+		Context:    ctx,
 		ReaderName: readerName,
 	}
 	return r
 }
 
 //Create New Card interface
-func (r *reader) ConnectCard() (Card, error) {
+func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	if ok, err := r.Context.IsValid(); err != nil && !ok {
 		return nil, err
 	}
@@ -114,5 +114,3 @@ func (r *reader) ConnectDirect() (Card, error) {
 func (c *Context) Release() error {
 	return c.Context.Release()
 }
-
-
