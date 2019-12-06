@@ -9,8 +9,7 @@ projects on which it is based:
 /**/
 package smartcard
 
-//Interface to Reader device
+//IReader Interface to Reader device
 type IReader interface {
-	ConnectCard()	(Card, error)
+	ConnectCard() (ICard, error)
 }
-
