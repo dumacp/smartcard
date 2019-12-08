@@ -10,6 +10,7 @@ projects on which it is based:
 package multiiso
 
 import (
+	"encoding/hex"
 	"fmt"
 
 	"github.com/dumacp/smartcard"
@@ -18,8 +19,9 @@ import (
 //Reader implement IReader interface
 type Reader interface {
 	smartcard.IReader
-	TransmitAscii([]byte) ([]byte, error)
-	TransmitBinary([]byte) ([]byte, error)
+	Transmit([]byte, []byte) ([]byte, error)
+	TransmitAscii([]byte, []byte) ([]byte, error)
+	TransmitBinary([]byte, []byte) ([]byte, error)
 	SendDataFrameTransfer([]byte) ([]byte, error)
 	SetRegister(register byte, data []byte) error
 	GetRegister(register byte) ([]byte, error)
@@ -54,14 +56,21 @@ const (
 )
 
 type ErrorCode byte
-type BADResponse []byte
+type BadResponse []byte
+type BadChecsum []byte
+type NilResponse int
 
 func (e ErrorCode) Error() string {
 	return fmt.Sprintf("code error: %X", e)
 }
-
-func (e BADResponse) Error() string {
+func (e BadResponse) Error() string {
 	return fmt.Sprintf("bad response: [% X]", e)
+}
+func (e BadChecsum) Error() string {
+	return fmt.Sprintf("bad checksum: [% X], %X", e, e[len(e)-3])
+}
+func (e NilResponse) Error() string {
+	return fmt.Sprintf("nil response")
 }
 
 type reader struct {
@@ -69,6 +78,7 @@ type reader struct {
 	readerName   string
 	idx          int
 	ModeProtocol int
+	transmit     transmitfunc
 }
 
 //NewReader Create New Reader interface
@@ -78,34 +88,113 @@ func NewReader(dev *Device, readerName string, idx int) Reader {
 		readerName: readerName,
 		idx:        idx,
 	}
+	r.transmit = r.TransmitBinary
 	return r
 }
 
+func checksum(data []byte) byte {
+	sum := byte(0)
+	for _, v := range data {
+		sum = sum ^ v
+	}
+	return sum
+}
+
+type transmitfunc func([]byte, []byte) ([]byte, error)
+
+func (r *reader) SetModeProtocol(mode int) {
+	if mode == BinaryMode {
+		r.transmit = r.TransmitBinary
+	} else {
+		r.transmit = r.TransmitAscii
+	}
+}
+
+//Transmit send data byte to reader in actual mode
+func (r *reader) Transmit(cmd, data []byte) ([]byte, error) {
+	return r.transmit(cmd, data)
+}
+
 //TransmitAscii send in ascii protocol mode
-func (*reader) TransmitAscii(data []byte) ([]byte, error) {
-	return nil, nil
+func (r *reader) TransmitAscii(cmd, data []byte) ([]byte, error) {
+	apdu := make([]byte, 0)
+	apdu = append(apdu, cmd...)
+	apdu = append(apdu, hex.EncodeToString(data)...)
+	resp1, err := r.device.SendRecv(apdu)
+	if err != nil {
+		return nil, err
+	}
+	return resp1, nil
 }
 
 //TransmitBinary send in binary protocol mode
-func (*reader) TransmitBinary(data []byte) ([]byte, error) {
-	return nil, nil
+func (r *reader) TransmitBinary(cmd, data []byte) ([]byte, error) {
+	apdu := make([]byte, 0)
+	apdu = append(apdu, 0x02)
+	apdu = append(apdu, byte(r.idx))
+	apdu = append(apdu, byte(len(data)+len(cmd)))
+	apdu = append(apdu, cmd...)
+	apdu = append(apdu, data...)
+	apdu = append(apdu, checksum(apdu[1:len(apdu)-1]))
+	resp1, err := r.device.SendRecv(apdu)
+	if err != nil {
+		return nil, err
+	}
+	if err := verifyresponse(resp1); err != nil {
+		return nil, err
+	}
+	return resp1[3 : len(resp1)-3], nil
+}
+
+func verifyresponse(data []byte) error {
+	if data == nil || len(data) <= 0 {
+		return NilResponse(-1)
+	}
+	if data[0] != 0x02 || data[len(data)-1] != 0x03 {
+		return BadResponse(data)
+	}
+	if len(data) < 6 {
+		return BadResponse(data)
+	}
+	if checksum(data[1:len(data)-3]) != data[len(data)-2] {
+		return BadChecsum(data)
+	}
+	return nil
 }
 
 //SendDataFrameTransfer send in format Data Frame Transfer
-func (*reader) SendDataFrameTransfer(data []byte) ([]byte, error) {
+func (r *reader) SendDataFrameTransfer(data []byte) ([]byte, error) {
+	cmd := make([]byte, 0)
+	cmd = append(cmd, []byte(datatransfer)...)
 	apdu := make([]byte, 0)
-	apdu = append(apdu, []byte(datatransfer)...)
 	apdu = append(apdu, data...)
-	return nil, nil
+	resp1, err := r.TransmitBinary(cmd, apdu)
+	if err != nil {
+		return nil, err
+	}
+	return resp1, nil
 }
 
 //GetRegister send in format Data Frame Transfer
-func (*reader) GetRegister(register byte) ([]byte, error) {
-	return nil, nil
+func (r *reader) GetRegister(register byte) ([]byte, error) {
+	cmd := []byte(readEEPROMregister)
+	apdu := make([]byte, 0)
+
+	apdu = append(apdu, register)
+	return r.transmit(cmd, apdu)
 }
 
 //SetRegister send in format Data Frame Transfer
-func (*reader) SetRegister(register byte, data []byte) error {
+func (r *reader) SetRegister(register byte, data []byte) error {
+	cmd := []byte(writeEEPROMregister)
+	apdu := make([]byte, 0)
+
+	apdu = append(apdu, register)
+	apdu = append(apdu, data...)
+	_, err := r.transmit(cmd, apdu)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -126,10 +215,10 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 		return nil, fmt.Errorf("OpMode in reader is not ISO 14443A")
 	}
 
+	cmd := []byte(highspeedselect)
 	apdu := make([]byte, 0)
-	apdu = append(apdu, []byte(highspeedselect)...)
 	apdu = append(apdu, 0x88)
-	resp2, err := r.TransmitBinary(apdu)
+	resp2, err := r.transmit(cmd, apdu)
 	if err != nil {
 		return nil, err
 	}
@@ -137,11 +226,12 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 		return nil, ErrorCode(resp2[0])
 	}
 	if len(resp2) < 5 {
-		return nil, BADResponse(resp2)
+		return nil, BadResponse(resp2)
 	}
 
 	card := &card{
-		Uuid: resp2[1:5],
+		uuid:   resp2[1:5],
+		reader: r,
 	}
 
 	return card, nil

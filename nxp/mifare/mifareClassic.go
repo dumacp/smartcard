@@ -1,38 +1,36 @@
 package mifare
 
-
 import (
 	_ "fmt"
+
 	"github.com/dumacp/smartcard"
 )
 
-
-//Mifare Plus Interface
-type MifareClassic interface{
-	smartcard.Card
+//Classic Mifare Plus Interface
+type Classic interface {
+	smartcard.ICard
 	Auth(bNr, keyType int, key []byte) ([]byte, error)
 	ReadBlocks(bNr, ext int) ([]byte, error)
 	WriteBlock(bNr int, data []byte) ([]byte, error)
 }
 
-type mifareClassic struct {
-	smartcard.Card
+type IReaderClassic interface {
+	ConnectMclassic() (Classic, error)
 }
 
-//Create Mifare Plus Interface
-func ConnectMclassic(r smartcard.Reader) (MifareClassic, error) {
+type classic struct{}
 
-	c, err := r.ConnectCard()
+//ConnectMclassic Create Mifare Plus Interface
+func ConnectMclassic(r IReaderClassic) (Classic, error) {
+
+	c, err := r.ConnectMclassic()
 	if err != nil {
 		return nil, err
 	}
-	mc := &mifareClassic{
-		Card: c,
-	}
-	return mc, nil
+	return c, nil
 }
 
-/**/
+/**
 
 func (mc *mifareClassic) Auth(bNr, keyType int, key []byte) ([]byte, error) {
 	aid := []byte{0xFF,0x82,0x00,0x00,0x06}
@@ -88,3 +86,4 @@ func (mc *mifareClassic) WriteBlock(bNr int, data []byte) ([]byte, error) {
 
 	return response, nil
 }
+/**/

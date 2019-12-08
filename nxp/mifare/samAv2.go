@@ -1,34 +1,32 @@
 package mifare
 
-
 import (
-	"fmt"
-	_ "github.com/ebfe/scard"
-	"math/rand"
-	"time"
-	"github.com/dumacp/smartcard"
 	"crypto/aes"
 	"crypto/cipher"
+	"fmt"
+	"math/rand"
+	"time"
+
 	"github.com/aead/cmac"
+	"github.com/dumacp/smartcard"
 )
 
 //SamAv2 Interface
 type SamAv2 interface {
-	smartcard.Card
-	GetVersion()	([]byte, error)
-	AuthHostAV2([]byte, int)	([]byte, error)
-	NonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte ) ([]byte, error)
-	NonXauthMFPf2(data []byte ) ([]byte, error)
-	DumpSessionKey()	([]byte, error)
+	smartcard.ICard
+	GetVersion() ([]byte, error)
+	AuthHostAV2([]byte, int) ([]byte, error)
+	NonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte) ([]byte, error)
+	NonXauthMFPf2(data []byte) ([]byte, error)
+	DumpSessionKey() ([]byte, error)
 }
 
 type samAv2 struct {
-	smartcard.Card
+	smartcard.ICard
 }
 
-
 //Create SamAv2 interface
-func ConnectSamAv2(r smartcard.Reader) (SamAv2, error) {
+func ConnectSamAv2(r smartcard.IReader) (SamAv2, error) {
 
 	c, err := r.ConnectCard()
 	if err != nil {
@@ -41,8 +39,8 @@ func ConnectSamAv2(r smartcard.Reader) (SamAv2, error) {
 }
 
 //SAM_GetVersion
-func ApduGetVersion() ([]byte) {
-	return []byte{0x80,0x60,0x00,0x00,0x00}
+func ApduGetVersion() []byte {
+	return []byte{0x80, 0x60, 0x00, 0x00, 0x00}
 }
 func (sam *samAv2) GetVersion() ([]byte, error) {
 	return sam.Apdu(ApduGetVersion())
@@ -51,7 +49,7 @@ func (sam *samAv2) GetVersion() ([]byte, error) {
 //SAM_AuthenticationHost AV2 mode
 func (sam *samAv2) AuthHostAV2(key []byte, keyNo int) ([]byte, error) {
 	rand.Seed(time.Now().UnixNano())
-	iv := make([]byte,16)
+	iv := make([]byte, 16)
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -59,7 +57,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo int) ([]byte, error) {
 	modeE := cipher.NewCBCEncrypter(block, iv)
 	modeD := cipher.NewCBCDecrypter(block, iv)
 
-	aid1 := []byte{0x80,0xa4,0x00,0x00,0x03,byte(keyNo),0x00,0x00,0x00}
+	aid1 := []byte{0x80, 0xa4, 0x00, 0x00, 0x03, byte(keyNo), 0x00, 0x00, 0x00}
 
 	response, err := sam.Apdu(aid1)
 	if err != nil {
@@ -68,21 +66,21 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo int) ([]byte, error) {
 	if response[len(response)-1] != byte(0xAF) {
 		return nil, fmt.Errorf("bad formed response: [% X]\n", response)
 	}
-	rnd2 := response[0:len(response)-2]
-	var1 := make([]byte,0)
+	rnd2 := response[0 : len(response)-2]
+	var1 := make([]byte, 0)
 	var1 = append(var1, rnd2...)
-	var1 = append(var1, make([]byte,4)...)
+	var1 = append(var1, make([]byte, 4)...)
 	cmacS, err := cmac.Sum(var1, block, 16)
 	if err != nil {
 		return nil, err
 	}
-	cmac2 := make([]byte,0)
+	cmac2 := make([]byte, 0)
 	for i, v := range cmacS {
 		if i%2 != 0 {
 			cmac2 = append(cmac2, v)
 		}
 	}
-	rnd1 := make([]byte,12)
+	rnd1 := make([]byte, 12)
 	rand.Read(rnd1)
 
 	/**
@@ -92,8 +90,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo int) ([]byte, error) {
 	fmt.Printf("rnd2: [% X]\n", rnd2)
 	/**/
 
-
-	aid2 := []byte{0x80,0xa4,0x00,0x00,0x14}
+	aid2 := []byte{0x80, 0xa4, 0x00, 0x00, 0x14}
 	aid2 = append(aid2, cmac2...)
 	aid2 = append(aid2, rnd1...)
 	aid2 = append(aid2, byte(0x00))
@@ -106,22 +103,22 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo int) ([]byte, error) {
 		return nil, fmt.Errorf("bad formed response: [% X]\n", response)
 	}
 
-	rndBc := response[8:len(response)-2]
+	rndBc := response[8 : len(response)-2]
 
-	aXor := make([]byte,5)
+	aXor := make([]byte, 5)
 	for i, _ := range aXor {
 		aXor[i] = rnd1[i] ^ rnd2[i]
 	}
-	divKey := make([]byte,0)
+	divKey := make([]byte, 0)
 	divKey = append(divKey, rnd1[7:12]...)
 	divKey = append(divKey, rnd2[7:12]...)
 	divKey = append(divKey, aXor...)
 	divKey = append(divKey, byte(0x91))
 
-	kex := make([]byte,16)
+	kex := make([]byte, 16)
 	modeE.CryptBlocks(kex, divKey)
 
-	rndB := make([]byte,len(rndBc))
+	rndB := make([]byte, len(rndBc))
 	block, err = aes.NewCipher(kex)
 	if err != nil {
 		return nil, err
@@ -129,7 +126,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo int) ([]byte, error) {
 	modeD = cipher.NewCBCDecrypter(block, iv)
 	modeD.CryptBlocks(rndB, rndBc)
 
-	rndA := make([]byte,len(rndB))
+	rndA := make([]byte, len(rndB))
 	rand.Read(rndA)
 	/**
 	fmt.Printf("rndA: [% X]\n", rndA)
@@ -142,12 +139,12 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo int) ([]byte, error) {
 		if i >= rotate {
 			break
 		}
-		rndB = append(rndB,v)
+		rndB = append(rndB, v)
 		rndB = rndB[1:]
 	}
 	//fmt.Printf("rndB2: [% X]\n", rndB)
 
-	rndD := make([]byte,0)
+	rndD := make([]byte, 0)
 	rndD = append(rndD, rndA...)
 	rndD = append(rndD, rndB...)
 
@@ -157,7 +154,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo int) ([]byte, error) {
 	modeE = cipher.NewCBCEncrypter(block, iv)
 	modeE.CryptBlocks(ecipher, rndD)
 
-	aid3 := []byte{0x80,0xa4,0x00,0x00,0x20}
+	aid3 := []byte{0x80, 0xa4, 0x00, 0x00, 0x20}
 	aid3 = append(aid3, ecipher...)
 	aid3 = append(aid3, byte(0x00))
 
@@ -173,7 +170,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo int) ([]byte, error) {
 }
 
 //SAM_AuthenticationMFP (non-X-mode) first part
-func ApduNonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte ) ([]byte) {
+func ApduNonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte) []byte {
 	p1 := byte(0x00)
 	if dataDiv != nil {
 		p1 = byte(0x01)
@@ -189,7 +186,7 @@ func ApduNonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte )
 		p1 = p1 + byte(0x80)
 	}
 
-	aid1 := []byte{0x80,0xA3,p1,0x00,byte(18+len(dataDiv))}
+	aid1 := []byte{0x80, 0xA3, p1, 0x00, byte(18 + len(dataDiv))}
 	aid1 = append(aid1, byte(keyNo))
 	aid1 = append(aid1, byte(keyVer))
 	aid1 = append(aid1, data...)
@@ -203,15 +200,14 @@ func ApduNonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte )
 }
 
 //SAM_AuthenticationMFP (non-X-mode) first part
-func (sam *samAv2) NonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte ) ([]byte, error) {
+func (sam *samAv2) NonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte) ([]byte, error) {
 	return sam.Apdu(ApduNonXauthMFPf1(first, sl, keyNo, keyVer, data, dataDiv))
 }
 
-
 //SAM_AuthenticationMFP (non-X-mode) second part
-func ApduNonXauthMFPf2(data []byte ) ([]byte) {
+func ApduNonXauthMFPf2(data []byte) []byte {
 
-	aid1 := []byte{0x80,0xA3,0x00,0x00,byte(len(data))}
+	aid1 := []byte{0x80, 0xA3, 0x00, 0x00, byte(len(data))}
 	aid1 = append(aid1, data...)
 	aid1 = append(aid1, byte(0x00))
 
@@ -219,13 +215,13 @@ func ApduNonXauthMFPf2(data []byte ) ([]byte) {
 }
 
 //SAM_AuthenticationMFP (non-X-mode) second part
-func (sam *samAv2) NonXauthMFPf2(data []byte ) ([]byte, error) {
+func (sam *samAv2) NonXauthMFPf2(data []byte) ([]byte, error) {
 	return sam.Apdu(ApduNonXauthMFPf2(data))
 }
 
 //SAM_DumpSessionKey (session key of an established authentication with a DESFire or MIFARE Plus PICC)
-func ApduDumpSessionKey() ([]byte) {
-	return []byte{0x80,0xD5,0x00,0x00,0x00}
+func ApduDumpSessionKey() []byte {
+	return []byte{0x80, 0xD5, 0x00, 0x00, 0x00}
 }
 
 //SAM_DumpSessionKey (session key of an established authentication with a DESFire or MIFARE Plus PICC)
@@ -241,17 +237,17 @@ func (sam *samAv2) DumpSessionKey() ([]byte, error) {
 }
 
 //SAM_KillAuthentication invalidates any kind authentication PICC
-func ApduSamKillAuthPICC() ([]byte) {
-	return []byte{0x80,0xCA,0x01,0x00}
+func ApduSamKillAuthPICC() []byte {
+	return []byte{0x80, 0xCA, 0x01, 0x00}
 }
 
 //SAM_ActivateOfflineKey
-func ApduActivateOfflineKey(keyNo, keyVer int, dataDiv []byte) ([]byte) {
+func ApduActivateOfflineKey(keyNo, keyVer int, dataDiv []byte) []byte {
 	p1 := byte(0x00)
-	if  dataDiv!= nil {
+	if dataDiv != nil {
 		p1 = byte(0x01)
 	}
-	aid1 := []byte{0x80,0x01,p1,0x00}
+	aid1 := []byte{0x80, 0x01, p1, 0x00}
 	aid1 = append(aid1, byte(len(dataDiv)+2))
 	aid1 = append(aid1, byte(keyNo))
 	aid1 = append(aid1, byte(keyVer))
@@ -261,12 +257,12 @@ func ApduActivateOfflineKey(keyNo, keyVer int, dataDiv []byte) ([]byte) {
 }
 
 //SAM_EncipherOffile_Data command encrypts data received from any other system based on the given cipher text data andt the current valid cryptographic OfflineCrypto Key.
-func ApduEncipher_Data(last bool, offset int, dataPlain []byte) ([]byte) {
+func ApduEncipher_Data(last bool, offset int, dataPlain []byte) []byte {
 	p1 := byte(0x00)
 	if !last {
 		p1 = byte(0xAF)
 	}
-	aid1 := []byte{0x80,0xED,byte(p1),byte(offset)}
+	aid1 := []byte{0x80, 0xED, byte(p1), byte(offset)}
 	aid1 = append(aid1, byte(len(dataPlain)))
 	aid1 = append(aid1, dataPlain...)
 	aid1 = append(aid1, 0x00)
@@ -274,12 +270,12 @@ func ApduEncipher_Data(last bool, offset int, dataPlain []byte) ([]byte) {
 	return aid1
 }
 
-func ApduDecipher_Data(last bool, mifare int, cipher []byte) ([]byte) {
+func ApduDecipher_Data(last bool, mifare int, cipher []byte) []byte {
 	p1 := byte(0x00)
 	if !last {
 		p1 = byte(0xAF)
 	}
-	aid1 := []byte{0x80,0xDD,byte(p1),0x00}
+	aid1 := []byte{0x80, 0xDD, byte(p1), 0x00}
 	length := len(cipher)
 	if p1 == byte(0x00) || mifare <= 0 {
 		length = length + 3
@@ -292,12 +288,12 @@ func ApduDecipher_Data(last bool, mifare int, cipher []byte) ([]byte) {
 }
 
 //SAM_EncipherOffile_Data command encrypts data received from any other system based on the given cipher text data andt the current valid cryptographic OfflineCrypto Key.
-func ApduEncipherOffline_Data(last bool, dataPlain []byte) ([]byte) {
+func ApduEncipherOffline_Data(last bool, dataPlain []byte) []byte {
 	p1 := byte(0x00)
 	if !last {
 		p1 = byte(0xAF)
 	}
-	aid1 := []byte{0x80,0x0E,byte(p1),0x00}
+	aid1 := []byte{0x80, 0x0E, byte(p1), 0x00}
 	aid1 = append(aid1, byte(len(dataPlain)))
 	aid1 = append(aid1, dataPlain...)
 	aid1 = append(aid1, 0x00)
@@ -305,12 +301,12 @@ func ApduEncipherOffline_Data(last bool, dataPlain []byte) ([]byte) {
 	return aid1
 }
 
-func ApduDecipherOffline_Data(last bool, cipher []byte) ([]byte) {
+func ApduDecipherOffline_Data(last bool, cipher []byte) []byte {
 	p1 := byte(0x00)
 	if !last {
 		p1 = byte(0xAF)
 	}
-	aid1 := []byte{0x80,0x0D,byte(p1),0x00}
+	aid1 := []byte{0x80, 0x0D, byte(p1), 0x00}
 	aid1 = append(aid1, byte(len(cipher)))
 	aid1 = append(aid1, cipher...)
 	aid1 = append(aid1, 0x00)
