@@ -10,8 +10,8 @@ projects on which it is based:
 package multiiso
 
 import (
-	//"fmt"
 	"errors"
+	"fmt"
 
 	"github.com/dumacp/smartcard"
 )
@@ -32,19 +32,23 @@ const (
 )
 
 type card struct {
-	Uuid []byte
+	uuid []byte
+	ats  []byte
 	State
+	reader Reader
 }
 
 func (c *card) DisconnectCard() error {
-	return nil
+	_, err := c.Apdu([]byte("q"))
+	return err
 }
 
 //Primitive channel to send command
 func (c *card) Apdu(apdu []byte) ([]byte, error) {
 	if c.State != CONNECTED {
-		return nil, errors.New("Don't Connect to Card")
+		return nil, fmt.Errorf("Don't Connect to Card")
 	}
+	c.reader.TransmitBinary([]byte{}, apdu)
 	return nil, nil
 }
 
@@ -58,22 +62,20 @@ func (c *card) ATR() ([]byte, error) {
 
 //Get Data 0x00
 func (c *card) UID() ([]byte, error) {
-	aid := []byte{0xFF, 0xCA, 0x00, 0x00, 0x00}
-	return c.Apdu(aid)
+	return c.uuid, nil
 }
 
 //Get Data 0x01
 func (c *card) ATS() ([]byte, error) {
-	aid := []byte{0xFF, 0xCA, 0x01, 0x00, 0x00}
-	return c.Apdu(aid)
+	return c.ats, nil
 }
 
 func (c *card) Switch1444_4() ([]byte, error) {
-	apdu := []byte{0xff, 0xc2, 0x00, 0x02, 0x04, 0x8F, 0x02, 0x00, 0x04}
+	//apdu := []byte{0xff, 0xc2, 0x00, 0x02, 0x04, 0x8F, 0x02, 0x00, 0x04}
 	return nil, nil
 }
 
 func (c *card) Switch1444_3() ([]byte, error) {
-	apdu := []byte{0xff, 0xc2, 0x00, 0x02, 0x04, 0x8f, 0x02, 0x00, 0x03}
+	//apdu := []byte{0xff, 0xc2, 0x00, 0x02, 0x04, 0x8f, 0x02, 0x00, 0x03}
 	return nil, nil
 }
