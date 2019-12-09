@@ -1,14 +1,14 @@
 package main
 
-
 import (
-        _ "fmt"
-	"flag"
-	"log"
 	"encoding/hex"
+	"flag"
+	_ "fmt"
+	"log"
 	"strings"
-	"github.com/dumacp/smartcard"
+
 	"github.com/dumacp/smartcard/nxp/mifare"
+	"github.com/dumacp/smartcard/pcsc"
 )
 
 var keyS string
@@ -21,23 +21,23 @@ func init() {
 func main() {
 	log.Println("Start Logs")
 	flag.Parse()
-	ctx, err := smartcard.NewContext()
+	ctx, err := pcsc.NewContext()
 	if err != nil {
-                log.Fatal("Not connection")
-        }
+		log.Fatal("Not connection")
+	}
 	defer ctx.Release()
 
-	readers, err := smartcard.ListReaders(ctx)
+	readers, err := pcsc.ListReaders(ctx)
 	for i, el := range readers {
 		log.Printf("reader %v: %s\n", i, el)
 	}
 
 	var sam mifare.SamAv2
 	var mplus mifare.MifarePlus
-	samReaders := make([]smartcard.Reader,0)
+	samReaders := make([]pcsc.Reader, 0)
 	for _, el := range readers {
 		if strings.Contains(el, "SAM") {
-			samReaders = append(samReaders, smartcard.NewReader(ctx, el))
+			samReaders = append(samReaders, pcsc.NewReader(ctx, el))
 		}
 	}
 
@@ -46,7 +46,7 @@ func main() {
 		//sam, err := samReader.ConnectSamAv2()
 		sam, err = mifare.ConnectSamAv2(samReader)
 		if err != nil {
-			log.Println("%s\n",err)
+			log.Println("%s\n", err)
 		}
 		version, err := sam.GetVersion()
 		if err != nil {
@@ -68,10 +68,10 @@ func main() {
 		//sam.DisconnectCard()
 	}
 
-	mplusReaders := make([]smartcard.Reader,0)
+	mplusReaders := make([]pcsc.Reader, 0)
 	for _, el := range readers {
 		if strings.Contains(el, "PICC") {
-			mplusReaders = append(mplusReaders, smartcard.NewReader(ctx, el))
+			mplusReaders = append(mplusReaders, pcsc.NewReader(ctx, el))
 		}
 	}
 
@@ -81,40 +81,40 @@ func main() {
 		log.Printf("mplus reader: %s\n", mplusReader)
 		mplus, err = mifare.ConnectMplus(mplusReader)
 		if err != nil {
-			log.Printf("%s\n",err)
+			log.Printf("%s\n", err)
 		}
 		resp, err := mplus.UID()
 		log.Printf("mplus uuid: % X\n", resp)
 		if err != nil {
-			log.Println("%s\n",err)
+			log.Println("%s\n", err)
 		}
-		dataDiv := make([]byte,4)
-		dataDiv = append(dataDiv,resp[0:4]...)
+		dataDiv := make([]byte, 4)
+		dataDiv = append(dataDiv, resp[0:4]...)
 
 		//resp, err = mplus.FirstAuthf1(0x4002)
 		resp, err = mplus.FirstAuthf1(0x4005)
 		if err != nil {
-			log.Fatalf("%s\n",err)
+			log.Fatalf("%s\n", err)
 		}
 		//resp, err = sam.NonXauthMFPf1(true,3,0x07,0x00,resp,nil)
-		resp, err = sam.NonXauthMFPf1(true,3,0x01,0x00,resp,dataDiv)
+		resp, err = sam.NonXauthMFPf1(true, 3, 0x01, 0x00, resp, dataDiv)
 		if err != nil {
-			log.Fatalf("%s\n",err)
+			log.Fatalf("%s\n", err)
 		}
 		log.Printf("aid f2: [% X]\n", resp)
-		resp, err = mplus.FirstAuthf2(resp[0:len(resp)-2])
+		resp, err = mplus.FirstAuthf2(resp[0 : len(resp)-2])
 		if err != nil {
-			log.Printf("%s\n",err)
+			log.Printf("%s\n", err)
 		}
 		resp, err = sam.NonXauthMFPf2(resp)
 		if err != nil {
-			log.Printf("%s\n",err)
+			log.Printf("%s\n", err)
 		}
 		log.Printf("auth mplus: [% X]\n", resp)
 
 		resp, err = sam.DumpSessionKey()
 		if err != nil {
-			log.Fatalf("%s\n",err)
+			log.Fatalf("%s\n", err)
 		}
 		log.Printf("sessionKey mplus: [% X]\n", resp)
 
@@ -127,9 +127,9 @@ func main() {
 		log.Printf("Read Counter: [% X]\n", readCounter)
 
 		//resp, err = mplus.ReadEncMacMac(4,1,rCounter,wCounter,Ti,keyMac,keyEnc)
-		resp, err = mplus.ReadEncMacMac(11,1,rCounter,wCounter,Ti,keyMac,keyEnc)
+		resp, err = mplus.ReadEncMacMac(11, 1)
 		if err != nil {
-			log.Fatalf("%s\n",err)
+			log.Fatalf("%s\n", err)
 		}
 		log.Printf("read 4 resp: [% X]\n", resp)
 
@@ -141,9 +141,9 @@ func main() {
 		resp[9] = 0xFF
 
 		/**/
-		err = mplus.WriteEncMacMac(11,resp,rCounter,wCounter,Ti,keyMac,keyEnc)
+		err = mplus.WriteEncMacMac(11, resp)
 		if err != nil {
-			log.Fatalf("%s\n",err)
+			log.Fatalf("%s\n", err)
 		}
 		/**/
 
@@ -152,5 +152,5 @@ func main() {
 	sam.DisconnectCard()
 	mplus.DisconnectCard()
 }
-/**/
 
+/**/
