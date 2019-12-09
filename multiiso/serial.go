@@ -17,6 +17,7 @@ type Device struct {
 	mux     sync.Mutex
 	timeout time.Duration
 	chRecv  chan []byte
+	mode    int
 }
 
 //NewDevice create new serial device
@@ -75,6 +76,18 @@ func (dev *Device) read() {
 		tempb := make([]byte, 1024)
 		indxb := 0
 		for {
+			if dev.mode != 0 {
+				line, _, err := bf.ReadLine()
+				if err != nil {
+					funcerr(err)
+					continue
+				}
+				select {
+				case dev.chRecv <- line:
+				case <-time.After(1 * time.Second):
+				}
+				continue
+			}
 			b, err := bf.ReadByte()
 			if err != nil {
 				funcerr(err)
@@ -108,14 +121,16 @@ func (dev *Device) read() {
 //Send write data bytes in serial device
 func (dev *Device) Send(data []byte) (int, error) {
 	dev.mux.Lock()
+	defer dev.mux.Unlock()
 	n, err := dev.port.Write(data)
-	dev.mux.Unlock()
+
 	return n, err
 }
 
 //SendRecv write daa bytes in serial device and wait by response
 func (dev *Device) SendRecv(data []byte) ([]byte, error) {
 	dev.mux.Lock()
+	defer dev.mux.Unlock()
 	var recv []byte
 	if n, err := dev.port.Write(data); err != nil {
 		return nil, err
