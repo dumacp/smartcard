@@ -24,11 +24,11 @@ const (
 
 type mifareClassic struct {
 	smartcard.ICard
-	reader *reader
+	Reader
 }
 
 //NewReaderMClassic Create Mifare Plus Interface
-func NewReaderMClassic(r *reader) (mifare.Classic, error) {
+func NewReaderMClassic(r Reader) (mifare.Classic, error) {
 
 	c, err := r.ConnectCard()
 	if err != nil {
@@ -36,7 +36,7 @@ func NewReaderMClassic(r *reader) (mifare.Classic, error) {
 	}
 	mc := &mifareClassic{
 		ICard:  c,
-		reader: r,
+		Reader: r,
 	}
 	return mc, nil
 }
@@ -56,7 +56,7 @@ func (mc *mifareClassic) Auth(bNr, keyType int, key []byte) ([]byte, error) {
 	}
 	apdu = append(apdu, key...)
 
-	return mc.reader.transmit(cmd, apdu)
+	return mc.Reader.Transmit(cmd, apdu)
 }
 
 func (mc *mifareClassic) ReadBlocks(bNr, ext int) ([]byte, error) {
@@ -65,7 +65,7 @@ func (mc *mifareClassic) ReadBlocks(bNr, ext int) ([]byte, error) {
 
 	apdu := make([]byte, 0)
 	apdu = append(apdu, byte(bNr))
-	return mc.reader.transmit(cmd, apdu)
+	return mc.Reader.Transmit(cmd, apdu)
 }
 
 func (mc *mifareClassic) WriteBlock(bNr int, data []byte) ([]byte, error) {
@@ -75,5 +75,5 @@ func (mc *mifareClassic) WriteBlock(bNr int, data []byte) ([]byte, error) {
 	apdu := make([]byte, 0)
 	apdu = append(apdu, byte(bNr))
 	apdu = append(apdu, data...)
-	return mc.reader.transmit(cmd, apdu)
+	return mc.Reader.Transmit(cmd, apdu)
 }
