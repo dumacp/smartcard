@@ -19,7 +19,6 @@ import (
 //Card Interface
 type Card interface {
 	smartcard.ICard
-	DisconnectCard() error
 	Switch1444_4() ([]byte, error)
 	Switch1444_3() ([]byte, error)
 }

@@ -21,7 +21,6 @@ import (
 type Card interface {
 	smartcard.ICard
 	ControlApdu(ioctl uint32, apdu []byte) ([]byte, error)
-	DisconnectCard() error
 	DiconnectResetCard() error
 	DisconnectUnpowerCard() error
 	DisconnectEjectCard() error

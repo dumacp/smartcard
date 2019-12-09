@@ -15,8 +15,9 @@ import (
 	"github.com/dumacp/smartcard"
 )
 
-//Mifare Plus Interface
+//MifarePlus MifarePlus Interface
 type MifarePlus interface {
+	smartcard.ICard
 	WritePerso(int, []byte) ([]byte, error)
 	CommitPerso() ([]byte, error)
 	FirstAuthf1(keyBNr int) ([]byte, error)
@@ -35,7 +36,7 @@ type MifarePlus interface {
 }
 
 type mifarePlus struct {
-	card         smartcard.ICard
+	smartcard.ICard
 	keyMac       []byte
 	keyEnc       []byte
 	readCounter  int
@@ -43,7 +44,7 @@ type mifarePlus struct {
 	ti           []byte
 }
 
-//Create Mifare Plus Interface
+//ConnectMplus Create Mifare Plus Interface
 func ConnectMplus(r smartcard.IReader) (MifarePlus, error) {
 
 	c, err := r.ConnectCard()
@@ -51,7 +52,7 @@ func ConnectMplus(r smartcard.IReader) (MifarePlus, error) {
 		return nil, err
 	}
 	mplus := &mifarePlus{
-		card: c,
+		ICard: c,
 	}
 	return mplus, nil
 }
@@ -94,7 +95,7 @@ func (mplus *mifarePlus) WritePerso(bNr int, key []byte) ([]byte, error) {
 	keyB2 := byte(bNr & 0xFF)
 	aid := []byte{0xA8, keyB2, keyB1}
 	aid = append(aid, key...)
-	response, err := mplus.card.Apdu(aid)
+	response, err := mplus.Apdu(aid)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +108,7 @@ func (mplus *mifarePlus) WritePerso(bNr int, key []byte) ([]byte, error) {
 //Commit Perso (Security Level 0)
 func (mplus *mifarePlus) CommitPerso() ([]byte, error) {
 	aid := []byte{0xAA}
-	response, err := mplus.card.Apdu(aid)
+	response, err := mplus.Apdu(aid)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +124,7 @@ func (mplus *mifarePlus) FirstAuthf1(keyBNr int) ([]byte, error) {
 	keyB2 := byte(keyBNr & 0xFF)
 	aid := []byte{0x70, keyB2, keyB1, 0x00}
 	//fmt.Printf("aid: [% X]", aid)
-	response, err := mplus.card.Apdu(aid)
+	response, err := mplus.Apdu(aid)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +140,7 @@ func (mplus *mifarePlus) FirstAuthf2(data []byte) ([]byte, error) {
 	aid := make([]byte, 0)
 	aid = append(aid, byte(0x72))
 	aid = append(aid, data...)
-	response, err := mplus.card.Apdu(aid)
+	response, err := mplus.Apdu(aid)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +157,7 @@ func (mplus *mifarePlus) FallowAuthf1(keyBNr int) ([]byte, error) {
 	keyB1 := byte((keyBNr >> 8) & 0xFF)
 	keyB2 := byte(keyBNr & 0xFF)
 	aid := []byte{0x76, keyB2, keyB1, 0x00}
-	response, err := mplus.card.Apdu(aid)
+	response, err := mplus.Apdu(aid)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +171,7 @@ func (mplus *mifarePlus) FallowAuthf1(keyBNr int) ([]byte, error) {
 func (mplus *mifarePlus) FallowtAuthf2(data []byte) ([]byte, error) {
 	aid := []byte{0x72}
 	aid = append(aid, data...)
-	response, err := mplus.card.Apdu(aid)
+	response, err := mplus.Apdu(aid)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +243,7 @@ func (mplus *mifarePlus) ReadPlainMacMac(bNr, ext int) ([]byte, error) {
 
 	aid := []byte{cmd, bNB2, bNB1, byte(ext)}
 	aid = append(aid, cmac1...)
-	response, err := mplus.card.Apdu(aid)
+	response, err := mplus.Apdu(aid)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +282,7 @@ func (mplus *mifarePlus) ReadEncMacMac(bNr, ext int) ([]byte, error) {
 
 	aid := []byte{cmd, bNB2, bNB1, byte(ext)}
 	aid = append(aid, cmac1...)
-	response, err := mplus.card.Apdu(aid)
+	response, err := mplus.Apdu(aid)
 	if err != nil {
 		return nil, err
 	}
@@ -363,7 +364,7 @@ func (mplus *mifarePlus) WriteEncMacMac(bNr int, data []byte) error {
 	aid := []byte{cmd, bNB2, bNB1}
 	aid = append(aid, dataE...)
 	aid = append(aid, cmac1...)
-	response, err := mplus.card.Apdu(aid)
+	response, err := mplus.Apdu(aid)
 	if err != nil {
 		return err
 	}
@@ -436,7 +437,7 @@ func (mplus *mifarePlus) IncTransfEncMacMac(bNr int, data []byte) error {
 	aid := []byte{cmd, bNB2, bNB1, bNB2, bNB1}
 	aid = append(aid, dataE...)
 	aid = append(aid, cmac1...)
-	response, err := mplus.card.Apdu(aid)
+	response, err := mplus.Apdu(aid)
 	if err != nil {
 		return err
 	}
@@ -473,7 +474,7 @@ func (mplus *mifarePlus) TransfMacMac(bNr int) error {
 
 	aid := []byte{0xB5, bNB2, bNB1}
 	aid = append(aid, cmac1...)
-	response, err := mplus.card.Apdu(aid)
+	response, err := mplus.Apdu(aid)
 	if err != nil {
 		return err
 	}

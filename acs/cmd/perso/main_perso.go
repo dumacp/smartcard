@@ -1,20 +1,21 @@
 package main
 
 import (
-	"log"
-	"flag"
-	"strings"
 	"encoding/hex"
-	"github.com/dumacp/smartcard"
+	"flag"
+	"log"
+	"strings"
+
 	"github.com/dumacp/smartcard/nxp/mifare"
+	"github.com/dumacp/smartcard/pcsc"
 )
 
 var keyS string
 var keyNbr int
 
 func init() {
-        flag.StringVar(&keyS, "key", "00000000000000000000000000000000", "key aes128")
-        flag.IntVar(&keyNbr, "keyNbr", 0x4002, "key Number")
+	flag.StringVar(&keyS, "key", "00000000000000000000000000000000", "key aes128")
+	flag.IntVar(&keyNbr, "keyNbr", 0x4002, "key Number")
 }
 
 func main() {
@@ -26,25 +27,25 @@ func main() {
 	}
 	log.Printf("key: [% X]\n", key)
 
-	ctx, err := smartcard.NewContext()
+	ctx, err := pcsc.NewContext()
 	if err != nil {
 		log.Fatal("Not connection")
 	}
 	defer ctx.Release()
-	readers, err := smartcard.ListReaders(ctx)
+	readers, err := pcsc.ListReaders(ctx)
 	for i, el := range readers {
 		log.Printf("reader %v: %s\n", i, el)
 	}
-	mplusReaders := make([]smartcard.Reader,0)
+	mplusReaders := make([]pcsc.Reader, 0)
 	for _, el := range readers {
 		if strings.Contains(el, "PICC") {
-			mplusReaders = append(mplusReaders, smartcard.NewReader(ctx, el))
+			mplusReaders = append(mplusReaders, pcsc.NewReader(ctx, el))
 		}
 	}
 	for _, mplusReader := range mplusReaders {
 		mplus, err := mifare.ConnectMplus(mplusReader)
 		if err != nil {
-			log.Printf("%s\n",err)
+			log.Printf("%s\n", err)
 			continue
 		}
 		uid, err := mplus.UID()
@@ -60,15 +61,15 @@ func main() {
 		log.Printf("card ATS: % X\n", ats)
 
 		/**/
-		resp, err := mplus.WritePerso(keyNbr,key)
+		resp, err := mplus.WritePerso(keyNbr, key)
 		if err != nil {
-			log.Fatalf("Error: %s\n",err)
+			log.Fatalf("Error: %s\n", err)
 		}
 		log.Printf("WritePerso resp: % X\n", resp)
 
-		resp, err = mplus.WritePerso(0x9001,key)
+		resp, err = mplus.WritePerso(0x9001, key)
 		if err != nil {
-			log.Fatalf("Error: %s\n",err)
+			log.Fatalf("Error: %s\n", err)
 		}
 		log.Printf("WritePerso resp: % X\n", resp)
 
@@ -129,4 +130,3 @@ func main() {
 		mplus.DisconnectCard()
 	}
 }
-

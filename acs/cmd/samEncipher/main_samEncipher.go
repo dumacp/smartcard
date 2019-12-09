@@ -1,14 +1,14 @@
 package main
 
-
 import (
-        _ "fmt"
-	"log"
-	"flag"
 	"encoding/hex"
+	"flag"
+	_ "fmt"
+	"log"
 	"strings"
-	"github.com/dumacp/smartcard"
+
 	"github.com/dumacp/smartcard/nxp/mifare"
+	"github.com/dumacp/smartcard/pcsc"
 )
 
 var keyS string
@@ -17,31 +17,30 @@ func init() {
 	flag.StringVar(&keyS, "key", "00000000000000000000000000000000", "key aes128")
 }
 
-
 /**/
 func main() {
 	flag.Parse()
 	log.Println("Start Logs")
-	ctx, err := smartcard.NewContext()
+	ctx, err := pcsc.NewContext()
 	if err != nil {
-                log.Fatal("Not connection")
-        }
+		log.Fatal("Not connection")
+	}
 	defer ctx.Release()
 
-	readers, err := smartcard.ListReaders(ctx)
+	readers, err := pcsc.ListReaders(ctx)
 	for i, el := range readers {
 		log.Printf("reader %v: %s\n", i, el)
 	}
 
-	samReaders := make([]smartcard.Reader,0)
+	samReaders := make([]pcsc.Reader, 0)
 	for _, el := range readers {
 		if strings.Contains(el, "SAM") {
-			samReaders = append(samReaders, smartcard.NewReader(ctx, el))
+			samReaders = append(samReaders, pcsc.NewReader(ctx, el))
 		}
 		for _, samReader := range samReaders {
 			sam, err := mifare.ConnectSamAv2(samReader)
 			if err != nil {
-				log.Printf("%s\n",err)
+				log.Printf("%s\n", err)
 				continue
 			}
 			version, err := sam.GetVersion()
@@ -73,7 +72,7 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			apdu2 := mifare.ApduActivateOfflineKey(72,0x00,nil)
+			apdu2 := mifare.ApduActivateOfflineKey(72, 0x00, nil)
 			log.Printf("active cipher: [% X]\n", apdu2)
 			resp2, err := sam.Apdu(apdu2)
 			if err != nil {
@@ -96,9 +95,9 @@ func main() {
 			}
 			log.Printf("decipher sam: [% X]\n", resp4)
 
-
 			sam.DisconnectCard()
 		}
 	}
 }
+
 /**/

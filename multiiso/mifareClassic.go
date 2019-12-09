@@ -5,23 +5,38 @@ import (
 	"github.com/dumacp/smartcard/nxp/mifare"
 )
 
+//commands
 const (
 	authentication string = "l"
+	readblock      string = "rb"
+	writeblock     string = "wb"
+)
+
+//response
+const (
+	Loginsucess          byte = 'L'
+	Authenticationfailed byte = 'X'
+	Generalfailure       byte = 'F'
+	Notaginfield         byte = 'N'
+	Operationmodefailure byte = 'O'
+	Outofrange           byte = 'R'
 )
 
 type mifareClassic struct {
 	smartcard.ICard
+	reader *reader
 }
 
-//ConnectMclassic Create Mifare Plus Interface
-func ConnectMclassic(r smartcard.IReader) (mifare.Classic, error) {
+//NewReaderMClassic Create Mifare Plus Interface
+func NewReaderMClassic(r *reader) (mifare.Classic, error) {
 
 	c, err := r.ConnectCard()
 	if err != nil {
 		return nil, err
 	}
 	mc := &mifareClassic{
-		c,
+		ICard:  c,
+		reader: r,
 	}
 	return mc, nil
 }
@@ -39,17 +54,26 @@ func (mc *mifareClassic) Auth(bNr, keyType int, key []byte) ([]byte, error) {
 	} else {
 		apdu = append(apdu, 0xAA)
 	}
-	apdu = append(append, key...)
+	apdu = append(apdu, key...)
 
-	return nil, nil
+	return mc.reader.transmit(cmd, apdu)
 }
 
 func (mc *mifareClassic) ReadBlocks(bNr, ext int) ([]byte, error) {
 
-	return nil, nil
+	cmd := []byte(readblock)
+
+	apdu := make([]byte, 0)
+	apdu = append(apdu, byte(bNr))
+	return mc.reader.transmit(cmd, apdu)
 }
 
 func (mc *mifareClassic) WriteBlock(bNr int, data []byte) ([]byte, error) {
 
-	return nil, nil
+	cmd := []byte(writeblock)
+
+	apdu := make([]byte, 0)
+	apdu = append(apdu, byte(bNr))
+	apdu = append(apdu, data...)
+	return mc.reader.transmit(cmd, apdu)
 }
