@@ -8,7 +8,7 @@ type Classic interface {
 }
 
 type IReaderClassic interface {
-	ConnectMclassic() (Classic, error)
+	ConnectMifareClassic() (Classic, error)
 }
 
 type classic struct{}
@@ -16,7 +16,7 @@ type classic struct{}
 //ConnectMclassic Create Mifare Plus Interface
 func ConnectMclassic(r IReaderClassic) (Classic, error) {
 
-	c, err := r.ConnectMclassic()
+	c, err := r.ConnectMifareClassic()
 	if err != nil {
 		return nil, err
 	}

@@ -12,6 +12,9 @@ package multiiso
 import (
 	"encoding/hex"
 	"fmt"
+	"strings"
+
+	"github.com/dumacp/smartcard/nxp/mifare"
 
 	"github.com/dumacp/smartcard"
 )
@@ -19,12 +22,14 @@ import (
 //Reader implement IReader interface
 type Reader interface {
 	smartcard.IReader
+	mifare.IReaderClassic
 	Transmit([]byte, []byte) ([]byte, error)
 	TransmitAscii([]byte, []byte) ([]byte, error)
 	TransmitBinary([]byte, []byte) ([]byte, error)
 	SendDataFrameTransfer([]byte) ([]byte, error)
 	SetRegister(register byte, data []byte) error
 	GetRegister(register byte) ([]byte, error)
+	SetModeProtocol(mode int)
 }
 
 const (
@@ -105,8 +110,12 @@ type transmitfunc func([]byte, []byte) ([]byte, error)
 func (r *reader) SetModeProtocol(mode int) {
 	if mode == BinaryMode {
 		r.transmit = r.TransmitBinary
+		r.ModeProtocol = BinaryMode
+		r.device.mode = 0
 	} else {
 		r.transmit = r.TransmitAscii
+		r.ModeProtocol = AsciiMode
+		r.device.mode = 1
 	}
 }
 
@@ -119,7 +128,9 @@ func (r *reader) Transmit(cmd, data []byte) ([]byte, error) {
 func (r *reader) TransmitAscii(cmd, data []byte) ([]byte, error) {
 	apdu := make([]byte, 0)
 	apdu = append(apdu, cmd...)
-	apdu = append(apdu, hex.EncodeToString(data)...)
+	if data != nil {
+		apdu = append(apdu, strings.ToUpper(hex.EncodeToString(data))...)
+	}
 	resp1, err := r.device.SendRecv(apdu)
 	if err != nil {
 		return nil, err
@@ -134,7 +145,9 @@ func (r *reader) TransmitBinary(cmd, data []byte) ([]byte, error) {
 	apdu = append(apdu, byte(r.idx))
 	apdu = append(apdu, byte(len(data)+len(cmd)))
 	apdu = append(apdu, cmd...)
-	apdu = append(apdu, data...)
+	if data != nil {
+		apdu = append(apdu, data...)
+	}
 	apdu = append(apdu, checksum(apdu[1:len(apdu)-1]))
 	resp1, err := r.device.SendRecv(apdu)
 	if err != nil {
@@ -200,7 +213,7 @@ func (r *reader) SetRegister(register byte, data []byte) error {
 
 //Create New Card interface
 func (r *reader) ConnectCard() (smartcard.ICard, error) {
-	if r.device.ok {
+	if !r.device.ok {
 		return nil, fmt.Errorf("serial device is not ready")
 	}
 	if r.ModeProtocol != BinaryMode {
