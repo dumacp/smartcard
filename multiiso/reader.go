@@ -66,13 +66,14 @@ type BadChecsum []byte
 type NilResponse int
 
 func (e ErrorCode) Error() string {
-	return fmt.Sprintf("code error: %X", e)
+	return fmt.Sprintf("code error: %X", byte(e))
 }
 func (e BadResponse) Error() string {
-	return fmt.Sprintf("bad response: [% X]", e)
+	return fmt.Sprintf("bad response: [% X]", []byte(e))
 }
 func (e BadChecsum) Error() string {
-	return fmt.Sprintf("bad checksum: [% X], %X", e, e[len(e)-3])
+	eb := []byte(e)
+	return fmt.Sprintf("bad checksum: [% X], %X", eb, eb[len(eb)-3])
 }
 func (e NilResponse) Error() string {
 	return fmt.Sprintf("nil response")
@@ -102,6 +103,7 @@ func checksum(data []byte) byte {
 	for _, v := range data {
 		sum = sum ^ v
 	}
+	// fmt.Printf("checksum: %X; data: [% X]\n", sum, data)
 	return sum
 }
 
@@ -132,6 +134,8 @@ func (r *reader) TransmitAscii(cmd, data []byte) ([]byte, error) {
 		apdu = append(apdu, strings.ToUpper(hex.EncodeToString(data))...)
 	}
 	resp1, err := r.device.SendRecv(apdu)
+	fmt.Printf("resp TransmitAscii: [% X]\n", resp1)
+	fmt.Printf("resp TransmitAscii: %q\n", resp1)
 	if err != nil {
 		return nil, err
 	}
@@ -148,15 +152,18 @@ func (r *reader) TransmitBinary(cmd, data []byte) ([]byte, error) {
 	if data != nil {
 		apdu = append(apdu, data...)
 	}
-	apdu = append(apdu, checksum(apdu[1:len(apdu)-1]))
+	apdu = append(apdu, checksum(apdu[1:]))
+	apdu = append(apdu, 0x03)
+	// fmt.Printf("apdu TransmitBinary: [% X]\n", apdu)
 	resp1, err := r.device.SendRecv(apdu)
+	// fmt.Printf("resp TransmitBinary: [% X]\n", resp1)
 	if err != nil {
 		return nil, err
 	}
 	if err := verifyresponse(resp1); err != nil {
 		return nil, err
 	}
-	return resp1[3 : len(resp1)-3], nil
+	return resp1[3 : len(resp1)-2], nil
 }
 
 func verifyresponse(data []byte) error {
@@ -169,7 +176,7 @@ func verifyresponse(data []byte) error {
 	if len(data) < 6 {
 		return BadResponse(data)
 	}
-	if checksum(data[1:len(data)-3]) != data[len(data)-2] {
+	if checksum(data[1:len(data)-2]) != data[len(data)-2] {
 		return BadChecsum(data)
 	}
 	return nil
@@ -216,17 +223,17 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	if !r.device.ok {
 		return nil, fmt.Errorf("serial device is not ready")
 	}
-	if r.ModeProtocol != BinaryMode {
-		return nil, fmt.Errorf("protocol mode is not binary, ascii mode is not support")
-	}
+	// if r.ModeProtocol != BinaryMode {
+	// 	return nil, fmt.Errorf("protocol mode is not binary, ascii mode is not support")
+	// }
 
-	resp1, err := r.GetRegister(OpMode)
+	_, err := r.GetRegister(OpMode)
 	if err != nil {
 		return nil, err
 	}
-	if resp1[0] != 0x01 {
-		return nil, fmt.Errorf("OpMode in reader is not ISO 14443A")
-	}
+	// if resp1[0] != 0x01 {
+	// 	return nil, fmt.Errorf("OpMode in reader is not ISO 14443A")
+	// }
 
 	cmd := []byte(highspeedselect)
 	apdu := make([]byte, 0)

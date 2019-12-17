@@ -1,7 +1,12 @@
 package mifare
 
+import (
+	"github.com/dumacp/smartcard"
+)
+
 //Classic Mifare Plus Interface
 type Classic interface {
+	smartcard.ICard
 	Auth(bNr, keyType int, key []byte) ([]byte, error)
 	ReadBlocks(bNr, ext int) ([]byte, error)
 	WriteBlock(bNr int, data []byte) ([]byte, error)
