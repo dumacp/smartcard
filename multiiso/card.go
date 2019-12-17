@@ -47,8 +47,7 @@ func (c *card) Apdu(apdu []byte) ([]byte, error) {
 	if c.State != CONNECTED {
 		return nil, fmt.Errorf("Don't Connect to Card")
 	}
-	c.reader.TransmitBinary([]byte{}, apdu)
-	return nil, nil
+	return c.reader.TransmitBinary([]byte{}, apdu)
 }
 
 //Get ATR of Card

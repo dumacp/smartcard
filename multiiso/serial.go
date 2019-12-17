@@ -93,20 +93,25 @@ func (dev *Device) read() {
 				funcerr(err)
 				continue
 			}
+			// fmt.Printf("byte: %X\n", b)
+			// fmt.Printf("tempb: [% X]\n", tempb[:indxb])
 			countError = 0
 			if indxb <= 0 {
 				if b == '\x02' {
 					tempb[0] = b
-					indxb = 0
+					indxb = 1
 				}
 				continue
 			}
-			indxb++
+
 			tempb[indxb] = b
+			indxb++
+			// fmt.Printf("len: %v, %v\n", indxb, int(tempb[2])+5)
 			if indxb < 6 {
 				continue
 			}
 			if b == '\x03' && (indxb >= int(tempb[2])+5) {
+				// fmt.Printf("tempb final: [% X]\n", tempb[:indxb])
 				select {
 				case dev.chRecv <- tempb[0:indxb]:
 				case <-time.After(1 * time.Second):

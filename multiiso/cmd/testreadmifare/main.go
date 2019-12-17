@@ -40,10 +40,12 @@ func main() {
 	fmt.Printf("response: [% X]\n", resp1)
 	fmt.Printf("response: [%q]\n", resp1)
 
-	_, err = mifare.ConnectMclassic(reader)
+	resp2, err := mifare.ConnectMclassic(reader)
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	fmt.Printf("response: [% X]\n", resp2)
 
 	fmt.Println("FIN")
 
