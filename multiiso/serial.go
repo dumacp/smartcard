@@ -13,7 +13,7 @@ import (
 //Device struct
 type Device struct {
 	port    *serial.Port
-	ok      bool
+	Ok      bool
 	mux     sync.Mutex
 	timeout time.Duration
 	chRecv  chan []byte
@@ -35,7 +35,7 @@ func NewDevice(portName string, baudRate int, timeout time.Duration) (*Device, e
 
 	dev := &Device{
 		port:    s,
-		ok:      true,
+		Ok:      true,
 		timeout: timeout,
 	}
 	dev.read()
@@ -45,7 +45,7 @@ func NewDevice(portName string, baudRate int, timeout time.Duration) (*Device, e
 
 //Close close serial device
 func (dev *Device) Close() bool {
-	dev.ok = false
+	dev.Ok = false
 	if err := dev.port.Close(); err != nil {
 		log.Println(err)
 		return false
@@ -55,18 +55,27 @@ func (dev *Device) Close() bool {
 
 //Read read serial device with a channel
 func (dev *Device) read() {
-	if !dev.ok {
+	if !dev.Ok {
 		log.Println("Device is closed")
 		return
 	}
 	dev.chRecv = make(chan []byte, 0)
 	go func() {
-		defer close(dev.chRecv)
+		defer func() {
+			select {
+			case _, ok := <-dev.chRecv:
+				if !ok {
+					break
+				}
+			default:
+				close(dev.chRecv)
+			}
+		}()
 		countError := 0
 		funcerr := func(err error) {
 			log.Println(err)
 			if countError > 3 {
-				dev.Close()
+				dev.Ok = false
 				return
 			}
 			time.Sleep(1 * time.Second)
