@@ -220,7 +220,7 @@ func (r *reader) SetRegister(register byte, data []byte) error {
 
 //Create New Card interface
 func (r *reader) ConnectCard() (smartcard.ICard, error) {
-	if !r.device.ok {
+	if !r.device.Ok {
 		return nil, fmt.Errorf("serial device is not ready")
 	}
 	// if r.ModeProtocol != BinaryMode {
