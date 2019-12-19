@@ -43,7 +43,7 @@ var names = []string{
 	"Tarjeta prueba 7",
 	"Tarjeta prueba 8",
 	"Tarjeta prueba 9",
-	"Tarjeta prueba N",
+	"Tarjeta prueba X",
 }
 
 var docs = []uint32{
