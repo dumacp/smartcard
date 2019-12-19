@@ -72,10 +72,20 @@ func (mc *mifareClassic) Auth(bNr, keyType int, key []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	if resp1[0] == 0x4C {
+	if resp1[0] == Loginsucess {
 		return resp1, nil
 	}
 	return resp1, ErrorCode(resp1[0])
+}
+
+func verifyblockresponse(resp []byte) error {
+	if len(resp) < 16 {
+		if len(resp) == 1 {
+			return ErrorCode(resp[0])
+		}
+		return BadResponse(resp)
+	}
+	return nil
 }
 
 func (mc *mifareClassic) ReadBlocks(bNr, ext int) ([]byte, error) {
@@ -85,7 +95,14 @@ func (mc *mifareClassic) ReadBlocks(bNr, ext int) ([]byte, error) {
 	apdu := make([]byte, 0)
 	apdu = append(apdu, cmd...)
 	apdu = append(apdu, byte(bNr))
-	return mc.Apdu(apdu)
+	resp1, err := mc.Apdu(apdu)
+	if err != nil {
+		return nil, err
+	}
+	if err := verifyblockresponse(resp1); err != nil {
+		return nil, err
+	}
+	return resp1, nil
 }
 
 func (mc *mifareClassic) WriteBlock(bNr int, data []byte) ([]byte, error) {
