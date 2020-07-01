@@ -4,10 +4,11 @@ import (
 	"encoding/hex"
 	"flag"
 	"log"
+	"os"
 	"strings"
 
-	"github.com/dumacp/smartcard"
-	"github.com/dumacp/smartcard/nxp/mifare"
+	"github.com/dumacp/smartcard/acs"
+	"github.com/dumacp/smartcard/pcsc"
 )
 
 var op string
@@ -16,6 +17,11 @@ var keytype int
 var data string
 var key string
 var isdatastring bool
+var version bool
+
+const (
+	versionString = "1.0.0"
+)
 
 func init() {
 	flag.StringVar(&op, "op", "read", "operation in card: \"write\" or \"read\"")
@@ -23,13 +29,19 @@ func init() {
 	flag.StringVar(&data, "data", "00000000000000000000000000000000", "data to write (hextring)")
 	flag.StringVar(&key, "key", "000000000000", "key to Auth (hexstring)")
 	flag.IntVar(&keytype, "keytype", 0, "key type")
-	flag.BoolVar(&isdatastring, "isdatastring", false, "Is the data in string? / default: Not (false), it's in hexstring")
+	flag.BoolVar(&isdatastring, "isDataString", false, "Is the data in string? / default: Not (false), it's in hexstring")
+	flag.BoolVar(&version, "version", false, "show version")
 }
 
 func main() {
 	flag.Parse()
 
-	ctx, err := smartcard.NewContext()
+	if version {
+		log.Printf("version: %s", versionString)
+		os.Exit(2)
+	}
+
+	ctx, err := pcsc.NewContext()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -56,9 +68,14 @@ func main() {
 		log.Fatalln("dont exist a PICC reader")
 	}
 
-	reader := smartcard.NewReader(ctx, picc)
+	reader := pcsc.NewReader(ctx, picc)
 
-	card, err := mifare.ConnectMclassic(reader)
+	cardi, err := reader.ConnectCardPCSC()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	card, err := acs.MClassic(cardi)
 	if err != nil {
 		log.Fatalln(err)
 	}

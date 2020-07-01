@@ -1,35 +1,35 @@
 package samfarm
 
-
 import (
-	"fmt"
+	"encoding/binary"
 	"errors"
-	"reflect"
+	"fmt"
 	"log"
+	"reflect"
 	"strings"
 	"time"
-	"encoding/binary"
-	"github.com/dumacp/smartcard"
+
 	"github.com/dumacp/smartcard/nxp/mifare"
+	"github.com/dumacp/smartcard/pcsc"
 )
 
 type SamDevice mifare.SamAv2
 
-type Context struct{
-	*smartcard.Context
+type Context struct {
+	*pcsc.Context
 }
 
 func NewContext() (*Context, error) {
-	ctx, err := smartcard.NewContext()
+	ctx, err := pcsc.NewContext()
 	if err != nil {
-                return nil, err
-        }
+		return nil, err
+	}
 	return &Context{ctx}, nil
 }
 
 func GetSamDevices(ctx *Context) (map[uint64]SamDevice, error) {
 	//ctx, err := mifare.NewContext()
-	readers, err := smartcard.ListReaders(ctx.Context)
+	readers, err := pcsc.ListReaders(ctx.Context)
 	if err != nil {
 		return nil, err
 	}
@@ -37,9 +37,9 @@ func GetSamDevices(ctx *Context) (map[uint64]SamDevice, error) {
 	samReaders := make(map[uint64]SamDevice)
 	for _, r := range readers {
 		if strings.Contains(strings.ToUpper(r), "SAM") {
-			reader := smartcard.NewReader(ctx.Context, r)
+			reader := pcsc.NewReader(ctx.Context, r)
 			sam, err := mifare.ConnectSamAv2(reader)
-			if  err != nil {
+			if err != nil {
 				//log.Println(err)
 				continue
 			}
@@ -57,7 +57,7 @@ func GetSamDevices(ctx *Context) (map[uint64]SamDevice, error) {
 }
 
 func ReaderChannel(sam mifare.SamAv2, input, output chan []byte) {
-//	log.Printf("readerChannel: in => %v, out => %v\n", input, output)
+	//	log.Printf("readerChannel: in => %v, out => %v\n", input, output)
 	defer func() {
 		close(output)
 		log.Printf("exit to readerChannel: in => %v, out => %v\n", input, output)
@@ -75,11 +75,11 @@ func ReaderChannel(sam mifare.SamAv2, input, output chan []byte) {
 		var err error
 		for {
 			var dataSub []byte
-			lenT := int(dataIn[4])+5
+			lenT := int(dataIn[4]) + 5
 			if len(dataIn) > 5 && (lenT+1 < len(dataIn)) {
 				dataSub = dataIn[0:lenT]
 				if dataIn[lenT+1] == 0x00 {
-					dataSub = append(dataIn,0x00)
+					dataSub = append(dataIn, 0x00)
 				}
 			} else {
 				dataSub = dataIn
@@ -99,8 +99,6 @@ func ReaderChannel(sam mifare.SamAv2, input, output chan []byte) {
 			dataIn = dataIn[len(dataSub):]
 		}
 
-
-
 		//fmt.Printf("output to SAM: %v\n", resp)
 		timeout := 10
 		if dataIn[1] == byte(mifare.SamAuthMFP) {
@@ -111,7 +109,7 @@ func ReaderChannel(sam mifare.SamAv2, input, output chan []byte) {
 		case output <- resp:
 		case <-time.After(time.Millisecond * time.Duration(timeout)):
 			continue
-		//default:
+			//default:
 		}
 		if dataIn[1] == byte(mifare.SamAuthMFP) {
 			select {
@@ -132,7 +130,7 @@ func ReaderChannel(sam mifare.SamAv2, input, output chan []byte) {
 				resp3, err := sam.DumpSessionKey()
 				if err != nil {
 					log.Printf("SAM error: %s\n", err)
-                                        return
+					return
 				}
 				if err := mifare.VerifyResponseIso7816(resp2); err != nil {
 					log.Println(err)
@@ -142,10 +140,10 @@ func ReaderChannel(sam mifare.SamAv2, input, output chan []byte) {
 				case output <- resp3:
 				case <-time.After(time.Millisecond * time.Duration(timeout)):
 					continue
-				//default:
+					//default:
 				}
 			case <-time.After(time.Millisecond * time.Duration(timeout)):
-//				log.Println("channel free!!!")
+				//				log.Println("channel free!!!")
 				sam.Apdu(mifare.ApduSamKillAuthPICC())
 				continue
 			}
@@ -154,10 +152,10 @@ func ReaderChannel(sam mifare.SamAv2, input, output chan []byte) {
 }
 
 func SendCmd(input []byte, chns []chan []byte) (int, error) {
-//	log.Printf("sendCmd: in => %v\n", chns)
+	//	log.Printf("sendCmd: in => %v\n", chns)
 	timeout := time.After(20 * time.Millisecond)
 
-	cases := make([]reflect.SelectCase, len(chns) +1)
+	cases := make([]reflect.SelectCase, len(chns)+1)
 	for i, ch := range chns {
 		cases[i] = reflect.SelectCase{Dir: reflect.SelectSend, Chan: reflect.ValueOf(ch), Send: reflect.ValueOf(input)}
 	}
@@ -181,7 +179,7 @@ func SendCmd(input []byte, chns []chan []byte) (int, error) {
 		log.Printf("SendCmd timeOut!!!; value: %v; isOK?: %v\n", value, ok)
 		return -2, errors.New(fmt.Sprintf("timeout"))
 	default:
-//		log.Printf("channel: %#v\n", cases[chosen])
+		//		log.Printf("channel: %#v\n", cases[chosen])
 	}
 
 	return -3, nil
@@ -190,32 +188,30 @@ func SendCmd(input []byte, chns []chan []byte) (int, error) {
 }
 
 func RecvResp(chns []chan []byte) ([]byte, int, error) {
-//	log.Printf("RecvResp: out => %v\n", chns)
+	//	log.Printf("RecvResp: out => %v\n", chns)
 	timeout := time.After(120 * time.Millisecond)
 
-        cases := make([]reflect.SelectCase, len(chns) +1)
-        for i, ch := range chns {
-                cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
-        }
+	cases := make([]reflect.SelectCase, len(chns)+1)
+	for i, ch := range chns {
+		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
+	}
 
-        cases[len(chns)] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(timeout)}
+	cases[len(chns)] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(timeout)}
 
-        chosen, value, ok := reflect.Select(cases)
+	chosen, value, ok := reflect.Select(cases)
 
 	if !ok {
-                return nil, chosen, errors.New(fmt.Sprintf("channel %v is closed", chosen))
-        }
+		return nil, chosen, errors.New(fmt.Sprintf("channel %v is closed", chosen))
+	}
 
-        switch value.Interface().(type) {
-        case time.Time:
+	switch value.Interface().(type) {
+	case time.Time:
 		log.Printf("RecvResp timeOut!!!; value: %v; isOK?: %v\n", value, ok)
 		return nil, -1, errors.New("timeout")
-        default:
-//		log.Printf("channel: %#v; value: [% X]\n", chns[chosen], value)
+	default:
+		//		log.Printf("channel: %#v; value: [% X]\n", chns[chosen], value)
 		return value.Bytes(), chosen, nil
-        }
+	}
 
 	return nil, chosen, nil
 }
-
-

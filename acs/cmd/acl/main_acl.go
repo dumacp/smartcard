@@ -77,7 +77,7 @@ func main() {
 
 	for _, mplusReader := range mplusReaders {
 		rCounter := 0
-		wCounter := 0
+		// wCounter := 0
 		log.Printf("mplus reader: %s\n", mplusReader)
 		mplus, err = mifare.ConnectMplus(mplusReader)
 		if err != nil {
@@ -118,7 +118,7 @@ func main() {
 		}
 		log.Printf("sessionKey mplus: [% X]\n", resp)
 
-		keyEnc := resp[0:16]
+		// keyEnc := resp[0:16]
 		keyMac := resp[16:32]
 		log.Printf("key Mac: [% X]\n", keyMac)
 		Ti := resp[32:36]

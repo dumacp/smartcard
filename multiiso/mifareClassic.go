@@ -37,6 +37,15 @@ func NewMifareClassicReader(dev *Device, readerName string, idx int) Reader {
 	return r
 }
 
+//MifareClassic Create Mifare Plus Interface
+func MifareClassic(c smartcard.ICard) (mifare.Classic, error) {
+
+	mc := &mifareClassic{
+		ICard: c,
+	}
+	return mc, nil
+}
+
 //NewMClassic Create Mifare Plus Interface
 func (r *reader) ConnectMifareClassic() (mifare.Classic, error) {
 
@@ -113,5 +122,14 @@ func (mc *mifareClassic) WriteBlock(bNr int, data []byte) ([]byte, error) {
 	apdu = append(apdu, cmd...)
 	apdu = append(apdu, byte(bNr))
 	apdu = append(apdu, data...)
-	return mc.Apdu(apdu)
+	resp1, err := mc.Apdu(apdu)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp1) < 2 {
+		return resp1, ErrorCode(resp1[0])
+	}
+
+	return resp1, nil
 }

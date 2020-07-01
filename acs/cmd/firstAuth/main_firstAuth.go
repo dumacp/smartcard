@@ -143,15 +143,15 @@ func main() {
 		}
 		respSam2 := respSam21.data
 		log.Printf("SAM resp: % X\n", respSam2)
-		keyEnc := respSam2[0:16]
+		// keyEnc := respSam2[0:16]
 		keyMac := respSam2[16:32]
 		log.Printf("key Mac: [% X]\n", keyMac)
 		Ti := respSam2[32:36]
 		log.Printf("Ti: [% X]\n", Ti)
 		readCounter := respSam2[36:38]
 		log.Printf("Read Counter: [% X]\n", readCounter)
-		rCounter := 0
-		wCounter := 0
+		// rCounter := 0
+		// wCounter := 0
 		//resp, err = mplus.ReadEncMacMac(4,1,rCounter,wCounter,Ti,keyMac,keyEnc)
 		resp3, err := mplus.ReadEncMacMac(8, 4)
 		if err != nil {
