@@ -243,14 +243,18 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 		return nil, err
 	}
 	if len(resp2) <= 1 {
-		return nil, ErrorCode(resp2[0])
+		code := resp2[0]
+		return nil, ErrorCode(code)
 	}
 	if len(resp2) < 5 {
-		return nil, BadResponse(resp2)
+		bad := resp2[:]
+		return nil, BadResponse(bad)
 	}
 
+	uid := make([]byte, 4)
+	copy(uid, resp2[1:5])
 	card := &card{
-		uuid:   resp2[1:5],
+		uuid:   uid,
 		reader: r,
 	}
 

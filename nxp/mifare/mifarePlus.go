@@ -57,6 +57,19 @@ func ConnectMplus(r smartcard.IReader) (MifarePlus, error) {
 	return mplus, nil
 }
 
+//Mplus Create Mifare Plus Interface
+func Mplus(c smartcard.ICard) (MifarePlus, error) {
+
+	// c, err := r.ConnectCard()
+	// if err != nil {
+	// 	return nil, err
+	// }
+	mplus := &mifarePlus{
+		ICard: c,
+	}
+	return mplus, nil
+}
+
 /**/
 //Valid response: response[0] == 0x90
 func verifyResponse(data []byte) error {
@@ -205,8 +218,10 @@ func (mplus *mifarePlus) FirstAuth(keyBNr int, key []byte) ([]byte, error) {
 	//fmt.Printf("rndB: [% X]\n", rndB)
 
 	//rotate rndB
-	rndB = append(rndB, rndB[0])
-	rndB = rndB[1:]
+	rndBr := make([]byte, 16)
+	copy(rndBr, rndB)
+	rndBr = append(rndBr, rndBr[0])
+	rndBr = rndB[1:]
 	//fmt.Printf("rndBrot: [% X]\n", rndB)
 
 	rndA := make([]byte, 16)
@@ -215,7 +230,7 @@ func (mplus *mifarePlus) FirstAuth(keyBNr int, key []byte) ([]byte, error) {
 
 	rndD := make([]byte, 0)
 	rndD = append(rndD, rndA...)
-	rndD = append(rndD, rndB...)
+	rndD = append(rndD, rndBr...)
 	//fmt.Printf("rndD: [% X]\n", rndD)
 
 	rndDc := make([]byte, len(rndD))
@@ -226,6 +241,12 @@ func (mplus *mifarePlus) FirstAuth(keyBNr int, key []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	keySessionBase := make([]byte, 0)
+	keySessionBase = append(keySessionBase, rndA[11:]...)
+	keySessionBase = append(keySessionBase, rndB[11:]...)
+	keySessionBase = append(keySessionBase, rndA[11:]...)
+
 	return response, nil
 }
 

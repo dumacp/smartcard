@@ -60,12 +60,14 @@ func (c *card) ATR() ([]byte, error) {
 
 //Get Data 0x00
 func (c *card) UID() ([]byte, error) {
-	return c.uuid, nil
+	uuid := c.uuid
+	return uuid, nil
 }
 
 //Get Data 0x01
 func (c *card) ATS() ([]byte, error) {
-	return c.ats, nil
+	ats := c.ats
+	return ats, nil
 }
 
 func (c *card) Switch1444_4() ([]byte, error) {

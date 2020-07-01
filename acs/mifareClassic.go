@@ -1,30 +1,40 @@
-package mifare
+package acs
 
 import (
 	_ "fmt"
 
-	"github.com/dumacp/smartcard"
+	"github.com/dumacp/smartcard/nxp/mifare"
+	"github.com/dumacp/smartcard/pcsc"
 )
 
-//Mifare Plus Interface
-type MifareClassic interface {
-	smartcard.Card
-	Auth(bNr, keyType int, key []byte) ([]byte, error)
-	ReadBlocks(bNr, ext int) ([]byte, error)
-	WriteBlock(bNr int, data []byte) ([]byte, error)
-}
+// //Mifare Plus Interface
+// type MifareClassic interface {
+// 	pcsc.Card
+// 	Auth(bNr, keyType int, key []byte) ([]byte, error)
+// 	ReadBlocks(bNr, ext int) ([]byte, error)
+// 	WriteBlock(bNr int, data []byte) ([]byte, error)
+// }
 
 type mifareClassic struct {
-	smartcard.Card
+	pcsc.Card
 }
 
-//Create Mifare Plus Interface
-func ConnectMclassic(r smartcard.Reader) (MifareClassic, error) {
+//ConnectMclassic Create Mifare Plus Interface
+func ConnectMclassic(r pcsc.Reader) (mifare.Classic, error) {
 
-	c, err := r.ConnectCard()
+	c, err := r.ConnectCardPCSC()
 	if err != nil {
 		return nil, err
 	}
+	mc := &mifareClassic{
+		Card: c,
+	}
+	return mc, nil
+}
+
+//MClassic Create Mifare Plus Interface
+func MClassic(c pcsc.Card) (mifare.Classic, error) {
+
 	mc := &mifareClassic{
 		Card: c,
 	}
@@ -41,7 +51,7 @@ func (mc *mifareClassic) Auth(bNr, keyType int, key []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := VerifyResponseIso7816(response); err != nil {
+	if err := mifare.VerifyResponseIso7816(response); err != nil {
 		return nil, err
 	}
 	if keyType == 0 {
@@ -54,7 +64,7 @@ func (mc *mifareClassic) Auth(bNr, keyType int, key []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := VerifyResponseIso7816(response); err != nil {
+	if err := mifare.VerifyResponseIso7816(response); err != nil {
 		return nil, err
 	}
 
@@ -67,7 +77,7 @@ func (mc *mifareClassic) ReadBlocks(bNr, ext int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := VerifyResponseIso7816(response); err != nil {
+	if err := mifare.VerifyResponseIso7816(response); err != nil {
 		return nil, err
 	}
 
@@ -81,7 +91,7 @@ func (mc *mifareClassic) WriteBlock(bNr int, data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := VerifyResponseIso7816(response); err != nil {
+	if err := mifare.VerifyResponseIso7816(response); err != nil {
 		return nil, err
 	}
 
