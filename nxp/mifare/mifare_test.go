@@ -205,7 +205,7 @@ func TestNonAuthMFP(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		resp, err := sam.AuthHostAV2(key, 100)
+		resp, err := sam.AuthHostAV2(key, 100, 0, 0)
 		if err != nil {
 			t.Error("Not Auth: ", err)
 		}

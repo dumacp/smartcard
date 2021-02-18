@@ -16,7 +16,7 @@ var speed int
 var mode int
 
 func init() {
-	flag.StringVar(&port, "port", "/dev/tty4", "port serial device")
+	flag.StringVar(&port, "port", "/dev/ttyS4", "port serial device")
 	flag.IntVar(&speed, "speed", 115200, "port serial speed in bauds")
 	flag.IntVar(&mode, "mode", 0, "modeo protocol (ascii(1) / binary(0))")
 }
