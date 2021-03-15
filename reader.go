@@ -12,4 +12,5 @@ package smartcard
 //IReader Interface to Reader device
 type IReader interface {
 	ConnectCard() (ICard, error)
+	ConnectSamCard() (ICard, error)
 }
