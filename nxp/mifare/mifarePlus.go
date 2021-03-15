@@ -27,6 +27,7 @@ type MifarePlus interface {
 	ReadEncMacMac(bNr, ext int) ([]byte, error)
 	WriteEncMacMac(bNr int, data []byte) error
 	IncTransfEncMacMac(bNr int, data []byte) error
+	DecTransfEncMacMac(bNr int, data []byte) error
 	TransfMacMac(bNr int) error
 	KeyEnc(key []byte)
 	KeyMac(key []byte)
@@ -58,7 +59,7 @@ func ConnectMplus(r smartcard.IReader) (MifarePlus, error) {
 }
 
 //Mplus Create Mifare Plus Interface
-func Mplus(c smartcard.ICard) (MifarePlus, error) {
+func Mplus(c smartcard.ICard) MifarePlus {
 
 	// c, err := r.ConnectCard()
 	// if err != nil {
@@ -67,7 +68,7 @@ func Mplus(c smartcard.ICard) (MifarePlus, error) {
 	mplus := &mifarePlus{
 		ICard: c,
 	}
-	return mplus, nil
+	return mplus
 }
 
 /**/
@@ -144,7 +145,7 @@ func (mplus *mifarePlus) FirstAuthf1(keyBNr int) ([]byte, error) {
 	if err := verifyResponse(response); err != nil {
 		return nil, err
 	}
-	//fmt.Printf("response: [% X]", response)
+	fmt.Printf("response: [% X]\n", response)
 	return response[1:], nil
 }
 
@@ -153,6 +154,7 @@ func (mplus *mifarePlus) FirstAuthf2(data []byte) ([]byte, error) {
 	aid := make([]byte, 0)
 	aid = append(aid, byte(0x72))
 	aid = append(aid, data...)
+	fmt.Printf("f2 aid: [% X]\n", aid)
 	response, err := mplus.Apdu(aid)
 	if err != nil {
 		return nil, err
@@ -162,6 +164,7 @@ func (mplus *mifarePlus) FirstAuthf2(data []byte) ([]byte, error) {
 	}
 	/**/
 	/**/
+	fmt.Printf("response: [% X]\n", response)
 	return response[1:], nil
 }
 
@@ -201,9 +204,9 @@ func (mplus *mifarePlus) FirstAuth(keyBNr int, key []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	//fmt.Printf("resp: [% X]\n", response)
+	fmt.Printf("resp: [% X]\n", response)
 	rndBc := response
-	//fmt.Printf("rndBc: [% X]\n", rndBc)
+	fmt.Printf("rndBc: [% X]\n", rndBc)
 
 	iv := make([]byte, 16)
 	block, err := aes.NewCipher(key)
@@ -215,23 +218,23 @@ func (mplus *mifarePlus) FirstAuth(keyBNr int, key []byte) ([]byte, error) {
 
 	rndB := make([]byte, 16)
 	modeD.CryptBlocks(rndB, rndBc)
-	//fmt.Printf("rndB: [% X]\n", rndB)
+	fmt.Printf("rndB: [% X]\n", rndB)
 
 	//rotate rndB
 	rndBr := make([]byte, 16)
 	copy(rndBr, rndB)
 	rndBr = append(rndBr, rndBr[0])
-	rndBr = rndB[1:]
-	//fmt.Printf("rndBrot: [% X]\n", rndB)
+	rndBr = rndBr[1:]
+	fmt.Printf("rndBrot: [% X]\n", rndBr)
 
 	rndA := make([]byte, 16)
 	rand.Read(rndA)
-	//fmt.Printf("rndA: [% X]\n", rndA)
+	fmt.Printf("rndA: [% X]\n", rndA)
 
 	rndD := make([]byte, 0)
 	rndD = append(rndD, rndA...)
 	rndD = append(rndD, rndBr...)
-	//fmt.Printf("rndD: [% X]\n", rndD)
+	fmt.Printf("rndD: [% X]\n", rndD)
 
 	rndDc := make([]byte, len(rndD))
 	modeE.CryptBlocks(rndDc, rndD)
@@ -242,10 +245,61 @@ func (mplus *mifarePlus) FirstAuth(keyBNr int, key []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	keySessionBase := make([]byte, 0)
-	keySessionBase = append(keySessionBase, rndA[11:]...)
-	keySessionBase = append(keySessionBase, rndB[11:]...)
-	keySessionBase = append(keySessionBase, rndA[11:]...)
+	keySessionBaseMAC := make([]byte, 0)
+
+	keySessionBaseMAC = append(keySessionBaseMAC, funcExtract(rndA, 9, 4)...)
+	keySessionBaseMAC = append(keySessionBaseMAC, funcExtract(rndB, 9, 4)...)
+
+	// xor := make([]byte, 0)
+
+	svI := funcExtract(rndB, 16, 11)
+
+	for k, v := range funcExtract(rndA, 16, 11) {
+		keySessionBaseMAC = append(keySessionBaseMAC, svI[k]^v)
+	}
+
+	// for i := range []int{7, 8, 9, 10, 11} {
+	// 	keySessionBaseMAC = append(keySessionBaseMAC, rndA[i])
+	// }
+	// for i := range []int{7, 8, 9, 10, 11} {
+	// 	keySessionBaseMAC = append(keySessionBaseMAC, rndB[i])
+	// }
+
+	// keySessionBaseMAC = append(keySessionBaseMAC, rndA[7:12]...)
+	// keySessionBaseMAC = append(keySessionBaseMAC, rndB[7:12]...)
+
+	// jbytes := make([]byte, 0)
+	// for _, i := range []int{0, 1, 2, 3, 4} {
+	// 	fmt.Printf("i: %d\n", i)
+	// 	jbytes = append(jbytes, rndA[i]^rndB[i])
+	// }
+
+	// for i := range []int{0, 1, 2, 3, 4} {
+	// 	keySessionBaseMAC = append(keySessionBaseMAC, rndA[i]^rndB[i])
+	// }
+
+	// keySessionBaseMAC = append(keySessionBaseMAC, jbytes...)
+	keySessionBaseMAC = append(keySessionBaseMAC, 0x22)
+
+	fmt.Printf("key session base: [% X]\n", keySessionBaseMAC)
+
+	keyMac := make([]byte, 16)
+	modeE.CryptBlocks(keyMac, keySessionBaseMAC)
+
+	fmt.Printf("key mac: [% X]\n", keyMac)
+
+	// iv = make([]byte, 16)
+	// block, err = aes.NewCipher(key)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// modeE = cipher.NewCBCEncrypter(block, iv)
+	// modeE.CryptBlocks(keyMac, keySessionBaseMAC)
+
+	// fmt.Printf("key mac: [% X]\n", keyMac)
+
+	mplus.keyMac = keyMac
+	mplus.Ti([]byte{0, 0, 0, 0})
 
 	return response, nil
 }
@@ -261,6 +315,8 @@ func (mplus *mifarePlus) ReadPlainMacMac(bNr, ext int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("cmac: [% X]\n", cmac1)
 
 	aid := []byte{cmd, bNB2, bNB1, byte(ext)}
 	aid = append(aid, cmac1...)
@@ -383,6 +439,79 @@ func (mplus *mifarePlus) WriteEncMacMac(bNr int, data []byte) error {
 
 	cmac1, err := mplus.macWriteCommand(cmd, bNr, -1, dataE)
 	aid := []byte{cmd, bNB2, bNB1}
+	aid = append(aid, dataE...)
+	aid = append(aid, cmac1...)
+	response, err := mplus.Apdu(aid)
+	if err != nil {
+		return err
+	}
+	if err := verifyResponse(response); err != nil {
+		return err
+	}
+
+	macResp := response[len(response)-8:]
+
+	cmac2, err := mplus.macWriteResponse(response[0])
+	if err != nil {
+		return err
+	}
+
+	if !bytes.Equal(macResp, cmac2) {
+		return fmt.Errorf("Mac Fail in response, response: [% X]; macCalc: [% X]\n", response, cmac2)
+	}
+
+	mplus.writeCounter++
+
+	return nil
+}
+
+//Decrement encrypted, MAC on response, MAC on command
+func (mplus *mifarePlus) DecTransfEncMacMac(bNr int, data []byte) error {
+
+	cmd := byte(0xB7)
+	if len(data) > 4 {
+		return fmt.Errorf("length Data Value is incorrect (must 4)")
+	}
+
+	bNB1 := byte((bNr >> 8) & 0xFF)
+	bNB2 := byte(bNr & 0xFF)
+
+	rCountB1 := byte((mplus.readCounter >> 8) & 0xFF)
+	rCountB2 := byte(mplus.readCounter & 0xFF)
+	wCountB1 := byte((mplus.writeCounter >> 8) & 0xFF)
+	wCountB2 := byte(mplus.writeCounter & 0xFF)
+
+	ivEnc := make([]byte, 0)
+	ivEnc = append(ivEnc, mplus.ti...)
+	for i := 0; i < 3; i++ {
+		ivEnc = append(ivEnc, rCountB2)
+		ivEnc = append(ivEnc, rCountB1)
+		ivEnc = append(ivEnc, wCountB2)
+		ivEnc = append(ivEnc, wCountB1)
+	}
+
+	/**/
+	block, err := aes.NewCipher(mplus.keyEnc)
+	if err != nil {
+		return err
+	}
+	modeE := cipher.NewCBCEncrypter(block, ivEnc)
+	/**/
+	if len(data)%16 != 0 {
+		data = append(data, byte(0x80))
+	}
+	for len(data)%16 != 0 {
+		data = append(data, byte(0x00))
+	}
+	dataE := make([]byte, len(data))
+	modeE.CryptBlocks(dataE, data)
+
+	cmac1, err := mplus.macWriteCommand(cmd, bNr, bNr, dataE)
+	if err != nil {
+		return err
+	}
+
+	aid := []byte{cmd, bNB2, bNB1, bNB2, bNB1}
 	aid = append(aid, dataE...)
 	aid = append(aid, cmac1...)
 	response, err := mplus.Apdu(aid)
@@ -604,14 +733,31 @@ func (mplus *mifarePlus) macReadCommand(cmd byte, bNr, ext int) ([]byte, error) 
 	var1 = append(var1, bNB2)
 	var1 = append(var1, bNB1)
 	var1 = append(var1, byte(ext))
-	/**
+
+	/**/
 	if len(var1)%8 != 0 {
-		var1 = append(var1, byte(0x80))
+		i := 0
+		for i = 0; i < 8; i++ {
+			if ((var1[len(var1)-1] >> i) & 0x01) == 0x01 {
+				break
+			}
+		}
+		if i == 0 {
+			var1 = append(var1, 0x80)
+		} else {
+			mask := byte(0x00)
+			for j := 0; j < i; j++ {
+				mask = mask << 1
+			}
+			var1[len(var1)-1] |= mask
+		}
 	}
+
 	for len(var1)%8 != 0 {
 		var1 = append(var1, byte(0x00))
 	}
 	/**/
+	fmt.Printf("var1 cmac: [% X]\n", var1)
 	cmacS, err := cmac.Sum(var1, blockMac, 16)
 	if err != nil {
 		return nil, err
@@ -666,4 +812,8 @@ func (mplus *mifarePlus) macReadResponse(sc byte, bNr, ext int, data []byte) ([]
 	}
 
 	return cmac2, err
+}
+
+func funcExtract(data []byte, i, j int) []byte {
+	return data[16-i : 16-j]
 }

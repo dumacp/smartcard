@@ -6,9 +6,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/dumacp/smartcard/nxp/mifare"
-
 	"github.com/dumacp/smartcard/multiiso"
+	"github.com/dumacp/smartcard/nxp/mifare/samav2"
 )
 
 var port string
@@ -50,7 +49,7 @@ func main() {
 	}
 	log.Printf("RESP: [ %X ], [ %s ]\n", resp1, resp1)
 
-	samAv2, err := mifare.ConnectSamAv2(reader)
+	samAv2, err := samav2.ConnectSamAv2(reader)
 	if err != nil {
 		log.Fatalln(err)
 	}

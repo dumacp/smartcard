@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dumacp/smartcard/nxp/mifare/samav2"
 	"github.com/dumacp/smartcard/pcsc"
 )
 
@@ -83,7 +84,7 @@ func TestGetData(t *testing.T) {
 
 	for _, piccReader := range piccReaders {
 		t.Logf("picc reader: %s\n", piccReader)
-		picc, err := piccReader.ConnectCard()
+		picc, err := piccReader.ConnectCardPCSC()
 		if err != nil {
 			t.Errorf("%s\n", err)
 		}
@@ -178,7 +179,7 @@ func TestNonAuthMFP(t *testing.T) {
 		t.Logf("reader %v: %s\n", i, el)
 	}
 
-	var sam SamAv2
+	var sam samav2.SamAv2
 	var mplus MifarePlus
 	samReaders := make([]pcsc.Reader, 0)
 	for _, el := range readers {
@@ -190,10 +191,12 @@ func TestNonAuthMFP(t *testing.T) {
 	for _, samReader := range samReaders {
 		t.Logf("sam reader: %s\n", samReader)
 		//sam, err := samReader.ConnectSamAv2()
-		sam, err = ConnectSamAv2(samReader)
+		card, _ := samReader.ConnectCardPCSC()
 		if err != nil {
 			t.Errorf("%s\n", err)
 		}
+		sam = samav2.SamAV2(card)
+
 		version, err := sam.GetVersion()
 		if err != nil {
 			t.Errorf("Not GetVersion: %s", err)
@@ -225,10 +228,12 @@ func TestNonAuthMFP(t *testing.T) {
 		// rCounter := 0
 		// wCounter := 0
 		t.Logf("mplus reader: %s\n", mplusReader)
-		mplus, err = ConnectMplus(mplusReader)
+		card, err := mplusReader.ConnectCardPCSC()
 		if err != nil {
 			t.Errorf("%s\n", err)
 		}
+		mplus = Mplus(card)
+
 		resp, err := mplus.UID()
 		t.Logf("mplus uuid: % X\n", resp)
 		if err != nil {

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"log"
 
-	"github.com/dumacp/smartcard/nxp/mifare"
+	"github.com/dumacp/smartcard/nxp/mifare/samav2"
 	"github.com/dumacp/smartcard/pcsc"
 )
 
@@ -32,7 +32,7 @@ func main() {
 
 	reader := pcsc.NewReader(ctx, string(rext))
 
-	samAv2, err := mifare.ConnectSamAv2(reader)
+	samAv2, err := samav2.ConnectSamAv2(reader)
 	if err != nil {
 		log.Fatalln(err)
 	}

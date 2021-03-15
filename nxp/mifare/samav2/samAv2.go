@@ -1,4 +1,4 @@
-package mifare
+package samav2
 
 import (
 	"crypto/aes"
@@ -12,6 +12,7 @@ import (
 
 	"github.com/aead/cmac"
 	"github.com/dumacp/smartcard"
+	"github.com/dumacp/smartcard/nxp/mifare"
 	"github.com/dumacp/smartcard/nxp/mifare/tools"
 )
 
@@ -50,17 +51,21 @@ type SamAv2 interface {
 	ActivateOfflineKey(keyNo, keyVer int,
 		divInput []byte,
 	) ([]byte, error)
+	SAMCombinedWriteMFP(typeMFPdata TypeMFPdata, data []byte,
+	) ([]byte, error)
+	SAMCombinedReadMFP(typeMFPdata TypeMFPdata, isLastFrame bool, data []byte,
+	) ([]byte, error)
 }
 
 type samAv2 struct {
 	smartcard.ICard
-	uid      []byte
-	kex      []byte
-	kx       []byte
-	ke       []byte
-	km       []byte
-	hostMode int
-	cmdCtr   int
+	UUID     []byte
+	Kex      []byte
+	Kx       []byte
+	Ke       []byte
+	Km       []byte
+	HostMode int
+	CmdCtr   int
 }
 
 //ConnectSamAv2 Create SamAv2 interface
@@ -76,6 +81,26 @@ func ConnectSamAv2(r smartcard.IReader) (SamAv2, error) {
 	return sam, nil
 }
 
+//ConnectSam Create SamAv2 interface
+func ConnectSam(r smartcard.IReader) (SamAv2, error) {
+
+	c, err := r.ConnectCard()
+	if err != nil {
+		return nil, err
+	}
+	sam := &samAv2{
+		ICard: c,
+	}
+	return sam, nil
+}
+
+//SamAV2 Create SAM from Card
+func SamAV2(c smartcard.ICard) SamAv2 {
+	sam := new(samAv2)
+	sam.ICard = c
+	return sam
+}
+
 //ApduGetVersion SAM_GetVersion
 func ApduGetVersion() []byte {
 	return []byte{0x80, 0x60, 0x00, 0x00, 0x00}
@@ -85,8 +110,8 @@ func (sam *samAv2) GetVersion() ([]byte, error) {
 }
 
 func (sam *samAv2) UID() ([]byte, error) {
-	if sam.uid != nil {
-		return sam.uid, nil
+	if sam.UUID != nil {
+		return sam.UUID, nil
 	}
 	ver, err := sam.GetVersion()
 	if err != nil {
@@ -154,7 +179,7 @@ func (sam *samAv2) AuthHostAV1(block cipher.Block, keyNo, keyVer, authMode int) 
 	}
 	log.Printf("aid2 response: [ %X ], apdu: [ %X ]", response, aid2)
 
-	if err := VerifyResponseIso7816(response); err != nil {
+	if err := mifare.VerifyResponseIso7816(response); err != nil {
 		log.Printf("fail response: [ %X ], apdu: [ %X ]", response, aid2)
 		return nil, err
 	}
@@ -165,9 +190,9 @@ func (sam *samAv2) AuthHostAV1(block cipher.Block, keyNo, keyVer, authMode int) 
 	// kex = append(kex, rndA[4:8]...)
 	// kex = append(kex, rndB[4:8]...)
 
-	sam.kex = kex
+	sam.Kex = kex
 
-	sam.cmdCtr = 1
+	sam.CmdCtr = 1
 	return response, nil
 }
 
@@ -293,7 +318,7 @@ func (sam *samAv2) LockUnlock(key, maxchainBlocks []byte, keyNr, keyVr, unlockKe
 	kex := make([]byte, 16)
 	modeE.CryptBlocks(kex, divKey)
 
-	sam.kex = kex
+	sam.Kex = kex
 
 	rndB := make([]byte, len(rndBc))
 	block, err = aes.NewCipher(kex)
@@ -342,7 +367,7 @@ func (sam *samAv2) LockUnlock(key, maxchainBlocks []byte, keyNr, keyVr, unlockKe
 		return nil, err
 	}
 
-	if err := VerifyResponseIso7816(response); err != nil {
+	if err := mifare.VerifyResponseIso7816(response); err != nil {
 		return nil, err
 	}
 
@@ -364,8 +389,8 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 	if hostMode > 3 {
 		return nil, fmt.Errorf("hostMode incorrect: %d", hostMode)
 	}
-	sam.hostMode = hostMode
-	sam.kx = key
+	sam.HostMode = hostMode
+	sam.Kx = key
 	modeE := cipher.NewCBCEncrypter(block, iv)
 	modeD := cipher.NewCBCDecrypter(block, iv)
 
@@ -434,7 +459,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 	kex := make([]byte, 16)
 	modeE.CryptBlocks(kex, divKey)
 
-	sam.kex = kex
+	sam.Kex = kex
 
 	rndB := make([]byte, len(rndBc))
 	block, err = aes.NewCipher(kex)
@@ -483,7 +508,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 		return nil, err
 	}
 
-	if err := VerifyResponseIso7816(response); err != nil {
+	if err := mifare.VerifyResponseIso7816(response); err != nil {
 		return nil, err
 	}
 
@@ -528,7 +553,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 		modeE.CryptBlocks(km, sv2)
 		log.Printf("km: [ %X ]", km)
 
-		sam.km = km
+		sam.Km = km
 	}
 
 	if hostMode > 1 {
@@ -563,10 +588,10 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 		modeE.CryptBlocks(ke, sv1)
 		log.Printf("ke: [ %X ]", ke)
 
-		sam.ke = ke
+		sam.Ke = ke
 	}
 
-	sam.cmdCtr = 0
+	sam.CmdCtr = 0
 	return response, nil
 }
 
@@ -597,6 +622,7 @@ func ApduNonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte) 
 	}
 
 	aid1 = append(aid1, byte(0x00))
+	fmt.Printf("aid: [% X]\n", aid1)
 	return aid1
 }
 
@@ -612,6 +638,7 @@ func ApduNonXauthMFPf2(data []byte) []byte {
 	aid1 = append(aid1, data...)
 	aid1 = append(aid1, byte(0x00))
 
+	fmt.Printf("aid: [% X]\n", aid1)
 	return aid1
 }
 
@@ -631,7 +658,7 @@ func (sam *samAv2) DumpSessionKey() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := VerifyResponseIso7816(response); err != nil {
+	if err := mifare.VerifyResponseIso7816(response); err != nil {
 		return nil, err
 	}
 	return response, nil
@@ -772,10 +799,10 @@ func (sam *samAv2) ChangeKeyEntryAv1(keyNbr, proMax int,
 	dfAid, set []byte,
 ) ([]byte, error) {
 
-	apdu, err := apduChangeKeyEntryAv1(sam.hostMode, keyNbr, proMax, sam.cmdCtr, keyVA, keyVB, keyVC,
+	apdu, err := apduChangeKeyEntryAv1(sam.HostMode, keyNbr, proMax, sam.CmdCtr, keyVA, keyVB, keyVC,
 		dfKeyNr, ceKNo, ceKV, kuc,
 		verA, verB, verC, dfAid, set,
-		sam.kex)
+		sam.Kex)
 	if err != nil {
 		return nil, err
 	}
@@ -784,7 +811,7 @@ func (sam *samAv2) ChangeKeyEntryAv1(keyNbr, proMax int,
 	if err != nil {
 		return nil, err
 	}
-	if err := VerifyResponseIso7816(response); err != nil {
+	if err := mifare.VerifyResponseIso7816(response); err != nil {
 		return nil, err
 	}
 	return response, nil
@@ -965,20 +992,21 @@ func (sam *samAv2) ChangeKeyEntry(keyNbr, proMax int,
 	dfAid, set []byte,
 ) ([]byte, error) {
 
-	apdu, err := apduChangeKeyEntry(sam.hostMode, keyNbr, proMax, sam.cmdCtr, keyVA, keyVB, keyVC,
+	apdu, err := apduChangeKeyEntry(sam.HostMode, keyNbr, proMax, sam.CmdCtr, keyVA, keyVB, keyVC,
 		dfKeyNr, ceKNo, ceKV, kuc,
 		verA, verB, verC, extSet, dfAid, set,
-		sam.ke, sam.km)
+		sam.Ke, sam.Km)
 	if err != nil {
 		return nil, err
 	}
+	sam.CmdCtr++
 	log.Printf("apud: [ %X ]", apdu)
 
 	response, err := sam.Apdu(apdu)
 	if err != nil {
 		return nil, err
 	}
-	if err := VerifyResponseIso7816(response); err != nil {
+	if err := mifare.VerifyResponseIso7816(response); err != nil {
 		return nil, err
 	}
 	return response, nil
@@ -1005,7 +1033,7 @@ func (sam *samAv2) ChangeKeyEntryOffline(keyNbr, proMax, changeCtr int,
 	if err != nil {
 		return nil, err
 	}
-	if err := VerifyResponseIso7816(response); err != nil {
+	if err := mifare.VerifyResponseIso7816(response); err != nil {
 		return nil, err
 	}
 	return response, nil
@@ -1058,7 +1086,104 @@ func (sam *samAv2) ActivateOfflineKey(keyNo, keyVer int,
 	if err != nil {
 		return nil, err
 	}
-	if err := VerifyResponseIso7816(response); err != nil {
+	if err := mifare.VerifyResponseIso7816(response); err != nil {
+		log.Printf("apdu: [ % X ] ", apdu)
+		return nil, err
+	}
+
+	return response, nil
+}
+
+type TypeMFPdata int
+
+const (
+	MFP_Command         TypeMFPdata = 0x00
+	MFP_Response        TypeMFPdata = 0x01
+	MFP_CommandResponse TypeMFPdata = 0x02
+)
+
+func ApduSAMCombinedReadMFP(typeMFPdata TypeMFPdata, isLastFrame bool, data []byte,
+) []byte {
+
+	cmd := smartcard.ISO7816cmd{
+		CLA: 0x80,
+		INS: 0x33,
+		P1:  byte(0x00) | byte(typeMFPdata),
+		P2:  byte(0x00),
+		Le:  true,
+	}
+
+	if !isLastFrame {
+		cmd.P2 |= byte(0xAF)
+	}
+
+	apdu := make([]byte, 0)
+	apdu = append(apdu, cmd.CLA)
+	apdu = append(apdu, cmd.INS)
+	apdu = append(apdu, cmd.P1)
+	apdu = append(apdu, cmd.P2)
+
+	apdu = append(apdu, byte(len(data)))
+	apdu = append(apdu, data...)
+	apdu = append(apdu, 0x00)
+
+	return apdu
+}
+
+//SAMCombinedReadMFP SAM_CombinedReadMFP command
+func (sam *samAv2) SAMCombinedReadMFP(typeMFPdata TypeMFPdata, isLastFrame bool, data []byte,
+) ([]byte, error) {
+	apdu := ApduSAMCombinedReadMFP(typeMFPdata, isLastFrame, data)
+	log.Printf("apdu: [ % X ] ", apdu)
+	response, err := sam.Apdu(apdu)
+	if err != nil {
+		return nil, err
+	}
+	if err := mifare.VerifyResponseIso7816(response); err != nil {
+
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func ApduSAMCombinedWriteMFP(typeMFPdata TypeMFPdata, data []byte,
+) []byte {
+	if data == nil {
+		return nil
+	}
+	cmd := smartcard.ISO7816cmd{
+		CLA: 0x80,
+		INS: 0x34,
+		P1:  byte(0x00) | byte(typeMFPdata),
+		P2:  byte(0x00),
+		Le:  true,
+	}
+
+	apdu := make([]byte, 0)
+	apdu = append(apdu, cmd.CLA)
+	apdu = append(apdu, cmd.INS)
+	apdu = append(apdu, cmd.P1)
+	apdu = append(apdu, cmd.P2)
+	apdu = append(apdu, byte(len(data)))
+	apdu = append(apdu, data...)
+	apdu = append(apdu, 0x00)
+
+	return apdu
+}
+
+//SAMCombinedWriteMFP SAM_CombinedWriteMFP command
+func (sam *samAv2) SAMCombinedWriteMFP(typeMFPdata TypeMFPdata, data []byte,
+) ([]byte, error) {
+	apdu := ApduSAMCombinedWriteMFP(typeMFPdata, data)
+	if apdu == nil {
+		return nil, fmt.Errorf("bad frame: [% X]", data)
+	}
+	response, err := sam.Apdu(apdu)
+	if err != nil {
+		return nil, err
+	}
+	if err := mifare.VerifyResponseIso7816(response); err != nil {
 		log.Printf("apdu: [ % X ] ", apdu)
 		return nil, err
 	}

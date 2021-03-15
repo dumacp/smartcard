@@ -30,11 +30,19 @@ const (
 	DISCONNECTED
 )
 
+type SendMode int
+
+const (
+	APDU1443_4      SendMode = 0
+	T1TransactionV2 SendMode = 1
+)
+
 type card struct {
 	uuid []byte
 	ats  []byte
 	State
-	reader Reader
+	reader   Reader
+	modeSend SendMode
 }
 
 func (c *card) DisconnectCard() error {
@@ -47,7 +55,14 @@ func (c *card) Apdu(apdu []byte) ([]byte, error) {
 	if c.State != CONNECTED {
 		return nil, fmt.Errorf("Don't Connect to Card")
 	}
+	switch c.modeSend {
+	case APDU1443_4:
+		return c.reader.SendAPDU1443_4(apdu)
+	case T1TransactionV2:
+		return c.reader.T1TransactionV2(apdu)
+	}
 	return c.reader.TransmitBinary([]byte{}, apdu)
+
 }
 
 //Get ATR of Card
@@ -72,6 +87,7 @@ func (c *card) ATS() ([]byte, error) {
 
 func (c *card) Switch1444_4() ([]byte, error) {
 	//apdu := []byte{0xff, 0xc2, 0x00, 0x02, 0x04, 0x8F, 0x02, 0x00, 0x04}
+
 	return nil, nil
 }
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/dumacp/smartcard/nxp/mifare"
+	"github.com/dumacp/smartcard/nxp/mifare/samav2"
 	"github.com/dumacp/smartcard/pcsc"
 )
 
@@ -32,7 +33,7 @@ func main() {
 		log.Printf("reader %v: %s\n", i, el)
 	}
 
-	var sam mifare.SamAv2
+	var sam samav2.SamAv2
 	var mplus mifare.MifarePlus
 	samReaders := make([]pcsc.Reader, 0)
 	for _, el := range readers {
@@ -44,7 +45,7 @@ func main() {
 	for _, samReader := range samReaders {
 		log.Printf("sam reader: %s\n", samReader)
 		//sam, err := samReader.ConnectSamAv2()
-		sam, err = mifare.ConnectSamAv2(samReader)
+		sam, err = samav2.ConnectSamAv2(samReader)
 		if err != nil {
 			log.Println("%s\n", err)
 		}
@@ -59,7 +60,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		resp, err := sam.AuthHostAV2(key, 100)
+		resp, err := sam.AuthHostAV2(key, 100, 0, 0)
 		if err != nil {
 			log.Println("Not Auth: ", err)
 		}

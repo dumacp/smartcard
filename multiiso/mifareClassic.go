@@ -49,14 +49,14 @@ func MifareClassic(c smartcard.ICard) (mifare.Classic, error) {
 //NewMClassic Create Mifare Plus Interface
 func (r *reader) ConnectMifareClassic() (mifare.Classic, error) {
 
-	c, err := r.ConnectCard()
-	if err != nil {
-		return nil, err
-	}
-	mc := &mifareClassic{
-		ICard: c,
-	}
-	return mc, nil
+	// c, err := r.ConnectCard()
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// mc := &mifareClassic{
+	// 	ICard: c,
+	// }
+	return nil, nil
 }
 
 /**/

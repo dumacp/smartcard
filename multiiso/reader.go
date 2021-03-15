@@ -13,16 +13,15 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
-
-	"github.com/dumacp/smartcard/nxp/mifare"
-
-	"github.com/dumacp/smartcard"
+	"time"
 )
 
 //Reader implement IReader interface
 type Reader interface {
-	smartcard.IReader
-	mifare.IReaderClassic
+	// smartcard.IReader
+	// mifare.IReaderClassic
+	ConnectCard() (Card, error)
+
 	Transmit([]byte, []byte) ([]byte, error)
 	TransmitAscii([]byte, []byte) ([]byte, error)
 	TransmitBinary([]byte, []byte) ([]byte, error)
@@ -30,6 +29,11 @@ type Reader interface {
 	SetRegister(register byte, data []byte) error
 	GetRegister(register byte) ([]byte, error)
 	SetModeProtocol(mode int)
+	SendAPDU1443_4(data []byte) ([]byte, error)
+	SendSAMDataFrameTransfer(data []byte) ([]byte, error)
+	T1TransactionV2(data []byte) ([]byte, error)
+	ConnectSamCard() (Card, error)
+	SetChainning(chainning bool)
 }
 
 const (
@@ -85,6 +89,7 @@ type reader struct {
 	idx          int
 	ModeProtocol int
 	transmit     transmitfunc
+	chainning    bool
 }
 
 //NewReader Create New Reader interface
@@ -195,6 +200,78 @@ func (r *reader) SendDataFrameTransfer(data []byte) ([]byte, error) {
 	return resp1, nil
 }
 
+//SendAPDU1443_4 send in format Data Frame Transfer
+func (r *reader) SendAPDU1443_4(data []byte) ([]byte, error) {
+	cmd := make([]byte, 0)
+	cmd = append(cmd, byte(len(data)+1))
+	cmd = append(cmd, 0x0F)
+	cmd = append(cmd, r.blockNumber())
+	cmd = append(cmd, data...)
+
+	response, err := r.SendDataFrameTransfer(cmd)
+	if err != nil {
+		return nil, err
+	}
+	// if (response == nil || len(response) < 3) {
+	// 	return fmt.Errof("Respuesta con error: [% X] " response);
+	// }
+
+	if (response[1] & 0x10) == 0x10 {
+		listResponse := make([]byte, 0)
+		listResponse = append(listResponse, response[2:]...)
+		for (response[1] & 0x10) == 0x10 {
+			frame := []byte{0x01, 0x0F, byte(0xA0 + r.blockNumber())}
+			response, err = r.SendDataFrameTransfer(frame)
+			if err != nil {
+				return nil, err
+			}
+			listResponse = append(listResponse, response[2:]...)
+		}
+		return listResponse, nil
+	}
+
+	return response[2:], nil
+}
+
+func (r *reader) SendSAMDataFrameTransfer(data []byte) ([]byte, error) {
+	innerData := make([]byte, 0)
+
+	innerData = append(innerData, 0x65)
+	innerData = append(innerData, data...)
+
+	response, err := r.TransmitBinary([]byte{}, innerData)
+	if err != nil {
+		time.Sleep(600 * time.Millisecond) // restore time
+		return nil, fmt.Errorf("Respuesta con error (e): null+")
+	}
+
+	if len(response) < 3 {
+		if len(response) == 3 && response[0] == 0 {
+			return nil, fmt.Errorf("Respuesta con error (e): null++++")
+		}
+		time.Sleep(600 * time.Millisecond) // restore time
+		return nil, fmt.Errorf("Respuesta con error: [% X]", response)
+	}
+
+	return response[3:], nil
+}
+
+func (r *reader) T1TransactionV2(data []byte) ([]byte, error) {
+	trama := make([]byte, 0)
+
+	trama = append(data, byte(len(data)))
+	trama = append(trama, 0xDF) // APDU T=1 Transaction. OptionByte V2
+	trama = append(trama, 0x00) // Downlink length MSB (1 byte)
+	trama = append(trama, 0x13) // Timeout
+	trama = append(trama, 0x86) // Transmission factor byte (1 byte)
+	trama = append(trama, 0x00) // Return length
+
+	trama = append(trama, data...)
+
+	return r.SendSAMDataFrameTransfer(trama)
+
+}
+
 //GetRegister send in format Data Frame Transfer
 func (r *reader) GetRegister(register byte) ([]byte, error) {
 	cmd := []byte(readEEPROMregister)
@@ -219,7 +296,7 @@ func (r *reader) SetRegister(register byte, data []byte) error {
 }
 
 //Create New Card interface
-func (r *reader) ConnectCard() (smartcard.ICard, error) {
+func (r *reader) ConnectCard() (Card, error) {
 	if !r.device.Ok {
 		return nil, fmt.Errorf("serial device is not ready")
 	}
@@ -227,13 +304,13 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	// 	return nil, fmt.Errorf("protocol mode is not binary, ascii mode is not support")
 	// }
 
-	_, err := r.GetRegister(OpMode)
+	resp1, err := r.GetRegister(OpMode)
 	if err != nil {
 		return nil, err
 	}
-	// if resp1[0] != 0x01 {
-	// 	return nil, fmt.Errorf("OpMode in reader is not ISO 14443A")
-	// }
+	if resp1[0] != 0x01 {
+		return nil, fmt.Errorf("OpMode in reader is not ISO 14443A")
+	}
 
 	cmd := []byte(highspeedselect)
 	apdu := make([]byte, 0)
@@ -255,8 +332,44 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	copy(uid, resp2[1:5])
 	card := &card{
 		uuid:   uid,
+		ats:    resp2,
 		reader: r,
 	}
 
 	return card, nil
+}
+
+//Create New Card interface
+func (r *reader) ConnectSamCard() (Card, error) {
+	if !r.device.Ok {
+		return nil, fmt.Errorf("serial device is not ready")
+	}
+	// if r.ModeProtocol != BinaryMode {
+	// 	return nil, fmt.Errorf("protocol mode is not binary, ascii mode is not support")
+	// }
+
+	_, err := r.GetRegister(OpMode)
+	if err != nil {
+		return nil, err
+	}
+	card := &card{
+		reader:   r,
+		modeSend: T1TransactionV2,
+	}
+
+	return card, nil
+}
+
+func (r *reader) SetChainning(chainning bool) {
+	r.chainning = chainning
+}
+
+func (r *reader) blockNumber() byte {
+	ret := byte(0x02)
+	if r.chainning {
+		ret = 0x03
+	}
+	r.chainning = !r.chainning
+
+	return ret
 }
