@@ -152,7 +152,11 @@ func (dev *Device) SendRecv(data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("dont write in SendRecv command")
 	}
 	select {
-	case recv = <-dev.chRecv:
+	case v, ok = <-dev.chRecv:
+		if !ok {
+			return nil, fmt.Errorf("close channel in dev")
+		}
+		recv = v
 	case <-time.After(dev.timeout):
 	}
 
