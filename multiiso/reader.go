@@ -138,6 +138,7 @@ func (r *reader) TransmitAscii(cmd, data []byte) ([]byte, error) {
 	if data != nil {
 		apdu = append(apdu, strings.ToUpper(hex.EncodeToString(data))...)
 	}
+	fmt.Printf("reqs TransmitAscii: [% X]\n", apdu)
 	resp1, err := r.device.SendRecv(apdu)
 	fmt.Printf("resp TransmitAscii: [% X]\n", resp1)
 	fmt.Printf("resp TransmitAscii: %q\n", resp1)
@@ -246,8 +247,8 @@ func (r *reader) SendSAMDataFrameTransfer(data []byte) ([]byte, error) {
 	}
 
 	if len(response) < 3 {
-		if len(response) == 3 && response[0] == 0 {
-			return nil, fmt.Errorf("Respuesta con error (e): null++++")
+		if len(response) == 1 && response[0] == 0 {
+			return response, nil
 		}
 		time.Sleep(600 * time.Millisecond) // restore time
 		return nil, fmt.Errorf("Respuesta con error: [% X]", response)
@@ -259,11 +260,11 @@ func (r *reader) SendSAMDataFrameTransfer(data []byte) ([]byte, error) {
 func (r *reader) T1TransactionV2(data []byte) ([]byte, error) {
 	trama := make([]byte, 0)
 
-	trama = append(data, byte(len(data)))
-	trama = append(trama, 0xDF) // APDU T=1 Transaction. OptionByte V2
+	trama = append(trama, byte(len(data)))
+	trama = append(trama, 0x9F) // APDU T=1 Transaction. OptionByte V2
 	trama = append(trama, 0x00) // Downlink length MSB (1 byte)
-	trama = append(trama, 0x13) // Timeout
-	trama = append(trama, 0x86) // Transmission factor byte (1 byte)
+	trama = append(trama, 0x43) // Timeout
+	trama = append(trama, 0x01) // Transmission factor byte (1 byte)
 	trama = append(trama, 0x00) // Return length
 
 	trama = append(trama, data...)
@@ -304,13 +305,13 @@ func (r *reader) ConnectCard() (Card, error) {
 	// 	return nil, fmt.Errorf("protocol mode is not binary, ascii mode is not support")
 	// }
 
-	resp1, err := r.GetRegister(OpMode)
-	if err != nil {
-		return nil, err
-	}
-	if resp1[0] != 0x01 {
-		return nil, fmt.Errorf("OpMode in reader is not ISO 14443A")
-	}
+	// resp1, err := r.GetRegister(OpMode)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// if resp1[0] != 0x01 {
+	// 	return nil, fmt.Errorf("OpMode in reader is not ISO 14443A")
+	// }
 
 	cmd := []byte(highspeedselect)
 	apdu := make([]byte, 0)
@@ -348,10 +349,10 @@ func (r *reader) ConnectSamCard() (Card, error) {
 	// 	return nil, fmt.Errorf("protocol mode is not binary, ascii mode is not support")
 	// }
 
-	_, err := r.GetRegister(OpMode)
-	if err != nil {
-		return nil, err
-	}
+	// _, err := r.GetRegister(OpMode)
+	// if err != nil {
+	// 	return nil, err
+	// }
 	card := &card{
 		reader:   r,
 		modeSend: T1TransactionV2,
