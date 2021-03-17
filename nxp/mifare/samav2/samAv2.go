@@ -401,7 +401,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 		return nil, err
 	}
 	// response, _ = hex.DecodeString("994E8B254E1B48AFBCE38A8190AF")
-	log.Printf("aid response1: [ %X ], apdu: [ %X ]", response1, aid1)
+	// log.Printf("aid response1: [ %X ], apdu: [ %X ]", response1, aid1)
 	if response1[len(response1)-1] != byte(0xAF) {
 		return nil, fmt.Errorf("bad formed response1: [% X]", response1)
 	}
@@ -426,7 +426,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 	rand.Read(rnd1)
 	// rnd1, _ = hex.DecodeString("A408BEB67688B37328DDBF82")
 
-	/**/
+	/**
 	fmt.Printf("cmacS: [% X]\n", cmacS)
 	fmt.Printf("cmac2: [% X]\n", cmac2)
 	fmt.Printf("rnd1: [% X]\n", rnd1)
@@ -443,7 +443,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 		return nil, err
 	}
 	// response, _ = hex.DecodeString("17A9822892E3EFAF51C9541C72B16092BA76A46F2594154990AF")
-	log.Printf("aid response: [ %X ], apdu: [ %X ]", response2, aid2)
+	// log.Printf("aid response: [ %X ], apdu: [ %X ]", response2, aid2)
 
 	if response2[len(response2)-1] != byte(0xAF) {
 		return nil, fmt.Errorf("bad formed response: [% X]", response2)
@@ -478,7 +478,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 	rndA := make([]byte, len(rndB))
 	rand.Read(rndA)
 	// rndA, _ = hex.DecodeString("861799E95701CC49A1A3C18FCDC95D64")
-	/**/
+	/**
 	fmt.Printf("rndBc: [% X]\n", rndBc)
 	fmt.Printf("rndA: [% X]\n", rndA)
 	fmt.Printf("rndB: [% X]\n", rndB)
@@ -495,13 +495,13 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 	//}
 	rndBr := rotate(rndB, 2)
 
-	fmt.Printf("rndB2: [% X]\n", rndBr)
+	// fmt.Printf("rndB2: [% X]\n", rndBr)
 
 	rndD := make([]byte, 0)
 	rndD = append(rndD, rndA...)
 	rndD = append(rndD, rndBr...)
 
-	fmt.Printf("rndD: [% X]\n", rndD)
+	// fmt.Printf("rndD: [% X]\n", rndD)
 
 	ecipher := make([]byte, len(rndD))
 	modeE = cipher.NewCBCEncrypter(block, iv)
@@ -511,7 +511,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 	aid3 = append(aid3, ecipher...)
 	aid3 = append(aid3, byte(0x00))
 
-	fmt.Printf("aid3: [% X]\n", aid3)
+	// fmt.Printf("aid3: [% X]\n", aid3)
 	response3, err := sam.Apdu(aid3)
 	if err != nil {
 		return nil, err
@@ -538,7 +538,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 			sv2 = append(sv2, fragb[k]^v)
 		}
 		sv2 = append(sv2, 0x82)
-		log.Printf("SV2: [ %X ]", sv2)
+		// log.Printf("SV2: [ %X ]", sv2)
 		//km, err := cmac.Sum(sv2, block, 16)
 		//if err != nil {
 		//	return nil, err
@@ -560,7 +560,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 		modeE := cipher.NewCBCEncrypter(block, iv)
 		km := make([]byte, 16)
 		modeE.CryptBlocks(km, sv2)
-		log.Printf("km: [ %X ]", km)
+		// log.Printf("km: [ %X ]", km)
 
 		sam.Km = km
 	}
@@ -595,7 +595,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 		modeE := cipher.NewCBCEncrypter(block, iv)
 		ke := make([]byte, 16)
 		modeE.CryptBlocks(ke, sv1)
-		log.Printf("ke: [ %X ]", ke)
+		// log.Printf("ke: [ %X ]", ke)
 
 		sam.Ke = ke
 	}
@@ -631,7 +631,7 @@ func ApduNonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte) 
 	}
 
 	aid1 = append(aid1, byte(0x00))
-	fmt.Printf("aid: [% X]\n", aid1)
+	// fmt.Printf("aid: [% X]\n", aid1)
 	return aid1
 }
 
@@ -647,7 +647,7 @@ func ApduNonXauthMFPf2(data []byte) []byte {
 	aid1 = append(aid1, data...)
 	aid1 = append(aid1, byte(0x00))
 
-	fmt.Printf("aid: [% X]\n", aid1)
+	// fmt.Printf("aid: [% X]\n", aid1)
 	return aid1
 }
 
@@ -1143,7 +1143,7 @@ func ApduSAMCombinedReadMFP(typeMFPdata TypeMFPdata, isLastFrame bool, data []by
 func (sam *samAv2) SAMCombinedReadMFP(typeMFPdata TypeMFPdata, isLastFrame bool, data []byte,
 ) ([]byte, error) {
 	apdu := ApduSAMCombinedReadMFP(typeMFPdata, isLastFrame, data)
-	log.Printf("apdu: [ % X ] ", apdu)
+	// log.Printf("apdu: [ % X ] ", apdu)
 	response, err := sam.Apdu(apdu)
 	if err != nil {
 		return nil, err
@@ -1193,7 +1193,7 @@ func (sam *samAv2) SAMCombinedWriteMFP(typeMFPdata TypeMFPdata, data []byte,
 		return nil, err
 	}
 	if err := mifare.VerifyResponseIso7816(response); err != nil {
-		log.Printf("apdu: [ % X ] ", apdu)
+		// log.Printf("apdu: [ % X ] ", apdu)
 		return nil, err
 	}
 

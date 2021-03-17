@@ -4,74 +4,95 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
-	"strings"
+	"time"
 
 	"github.com/dumacp/go-appliance-contactless/business/card/mifareplus"
+	"github.com/dumacp/smartcard/multiiso"
 	"github.com/dumacp/smartcard/nxp/mifare"
 	"github.com/dumacp/smartcard/nxp/mifare/samav3"
-	"github.com/dumacp/smartcard/pcsc"
 )
 
 func main() {
 
-	ctx, err := pcsc.NewContext()
+	//ctx, err := pcsc.NewContext()
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+
+	//readers, err := ctx.ListReaders()
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+
+	//var reader pcsc.Reader
+	//for i, r := range readers {
+	//	log.Printf("reader %q: %s", i, r)
+	//	if strings.Contains(r, "PICC") {
+	//		reader = pcsc.NewReader(ctx, r)
+	//	}
+	//}
+
+	//var readerSAM pcsc.Reader
+	//for i, r := range readers {
+	//	log.Printf("reader %q: %s", i, r)
+	//	if strings.Contains(r, "SAM") {
+	//		readerSAM = pcsc.NewReader(ctx, r)
+	//	}
+	//}
+
+	//direct, err := reader.ConnectDirect()
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//resp1, err := direct.ControlApdu(0x42000000+2079, []byte{0x23, 0x00})
+	//if err != nil {
+	//	log.Fatal(err)
+	//} else {
+	//	log.Printf("resp1: [% X]", resp1)
+	//}
+	//resp2, err := direct.ControlApdu(0x42000000+2079, []byte{0x23, 0x01, 0x8F})
+	//if err != nil {
+	//	log.Fatal(err)
+	//} else {
+	//	log.Printf("resp2: [% X]", resp2)
+	//}
+
+	//direct.DisconnectCard()
+
+	//cardo, err := mifare.ConnectMplus(reader)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+
+	//sam, err := samav3.ConnectSam(readerSAM)
+
+	dev, err := multiiso.NewDevice("/dev/ttyUSB0", 115200, 300*time.Millisecond)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
-	readers, err := ctx.ListReaders()
+	reader := multiiso.NewReader(dev, "multiiso", 1)
+
+	cardi, err := reader.ConnectSamCard()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
-	var reader pcsc.Reader
-	for i, r := range readers {
-		log.Printf("reader %q: %s", i, r)
-		if strings.Contains(r, "PICC") {
-			reader = pcsc.NewReader(ctx, r)
-		}
-	}
+	sam := samav3.SamAV3(cardi)
 
-	var readerSAM pcsc.Reader
-	for i, r := range readers {
-		log.Printf("reader %q: %s", i, r)
-		if strings.Contains(r, "SAM") {
-			readerSAM = pcsc.NewReader(ctx, r)
-		}
-	}
-
-	direct, err := reader.ConnectDirect()
-	if err != nil {
-		log.Fatal(err)
-	}
-	resp1, err := direct.ControlApdu(0x42000000+2079, []byte{0x23, 0x00})
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		log.Printf("resp1: [% X]", resp1)
-	}
-	resp2, err := direct.ControlApdu(0x42000000+2079, []byte{0x23, 0x01, 0x8F})
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		log.Printf("resp2: [% X]", resp2)
-	}
-
-	direct.DisconnectCard()
-
-	cardo, err := mifare.ConnectMplus(reader)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	sam, err := samav3.ConnectSam(readerSAM)
-
-	if resp, err := sam.AuthHost(make([]byte, 16), 0, 0, 0); err != nil {
+	keyMaster := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16}
+	if resp, err := sam.AuthHost(keyMaster, 0, 0, 0); err != nil {
 		log.Fatal(err)
 	} else {
 		log.Printf("Auth SAM resp: [% X]", resp)
 	}
 
+	cardp, err := reader.ConnectCard()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	cardo := mifare.Mplus(cardp)
 	cardm := mifareplus.NewCard(cardo, sam)
 
 	atr, err := cardm.ATR()
@@ -80,7 +101,7 @@ func main() {
 	}
 	log.Printf("ATR: [% X], %s", atr, atr)
 
-	if err := cardm.Auth(0x4040, 2); err != nil {
+	if err := cardm.Auth(0x4040, 11); err != nil {
 		log.Fatal(err)
 	} else {
 		log.Printf("SUCESS AUTH")
@@ -110,16 +131,22 @@ func main() {
 		}
 
 		for k, v := range mapdata {
-			log.Printf("block: %d, len: %d, data: %X", k, len(v)/16, v)
+			//log.Printf("block: %d, len: %d, data: %X", k, len(v)/16, v)
 			if resp0, err := cardm.Blocks(k, len(v)/16); err == nil {
 				log.Printf("blocks: len = %d, [% X]", len(resp0), resp0)
-				if err := cardm.WriteBlock(k, v); err != nil {
-					log.Fatal(err)
-				}
+				//if err := cardm.WriteBlock(k, v); err != nil {
+				//	log.Fatal(err)
+				//}
 			} else {
 				log.Fatal(err)
 			}
 			fmt.Printf("\n\n\n\n\n")
+		}
+		if err := cardm.Inc(131, 2000000); err != nil {
+			log.Fatal(err)
+		}
+		if err := cardm.Inc(132, 2000000); err != nil {
+			log.Fatal(err)
 		}
 	}
 }
