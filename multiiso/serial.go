@@ -2,8 +2,11 @@ package multiiso
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
+	"io"
 	"log"
+	"os"
 	"sync"
 	"time"
 
@@ -47,7 +50,7 @@ func NewDevice(portName string, baudRate int, timeout time.Duration) (*Device, e
 func (dev *Device) Close() bool {
 	dev.Ok = false
 	if err := dev.port.Close(); err != nil {
-		log.Println(err)
+		log.Printf("close err: %s", err)
 		return false
 	}
 	return true
@@ -72,14 +75,24 @@ func (dev *Device) read() {
 			}
 		}()
 		countError := 0
-		funcerr := func(err error) {
-			log.Println(err)
+		funcerr := func(err error) error {
+			log.Printf("funcread err: %s", err)
+			if errors.Is(err, os.ErrClosed) {
+				dev.Ok = false
+				return err
+			}
+			if errors.Is(err, io.ErrClosedPipe) {
+				dev.Ok = false
+				return err
+			}
+
 			if countError > 3 {
 				dev.Ok = false
-				return
+				return err
 			}
 			time.Sleep(1 * time.Second)
 			countError++
+			return nil
 		}
 		bf := bufio.NewReader(dev.port)
 		tempb := make([]byte, 1024)
@@ -88,9 +101,12 @@ func (dev *Device) read() {
 			if dev.mode != 0 {
 				line, _, err := bf.ReadLine()
 				if err != nil {
-					funcerr(err)
+					if err := funcerr(err); err != nil {
+						break
+					}
 					continue
 				}
+				countError = 0
 				select {
 				case dev.chRecv <- line:
 				case <-time.After(1 * time.Second):
@@ -99,7 +115,9 @@ func (dev *Device) read() {
 			}
 			b, err := bf.ReadByte()
 			if err != nil {
-				funcerr(err)
+				if err := funcerr(err); err != nil {
+					break
+				}
 				continue
 			}
 			// fmt.Printf("byte: %X\n", b)
@@ -145,7 +163,7 @@ func (dev *Device) Send(data []byte) (int, error) {
 func (dev *Device) SendRecv(data []byte) ([]byte, error) {
 	dev.mux.Lock()
 	defer dev.mux.Unlock()
-	var recv []byte
+	recv := make([]byte, 0)
 	if n, err := dev.port.Write(data); err != nil {
 		return nil, err
 	} else if n <= 0 {
@@ -156,14 +174,16 @@ func (dev *Device) SendRecv(data []byte) ([]byte, error) {
 		if !ok {
 			return nil, fmt.Errorf("close channel in dev")
 		}
-		recv = v
+		if v != nil && len(v) > 0 {
+			recv = append(recv, v...)
+		}
 	case <-time.After(dev.timeout):
 	}
 
 	if recv == nil || len(recv) <= 0 {
 		return nil, fmt.Errorf("timeout error in SendRecv command")
 	}
-	return recv[:], nil
+	return recv, nil
 }
 
 //Recv read data bytes in serial device

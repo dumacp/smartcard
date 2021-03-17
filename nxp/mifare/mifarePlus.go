@@ -145,7 +145,7 @@ func (mplus *mifarePlus) FirstAuthf1(keyBNr int) ([]byte, error) {
 	if err := verifyResponse(response); err != nil {
 		return nil, err
 	}
-	fmt.Printf("response: [% X]\n", response)
+	// fmt.Printf("response: [% X]\n", response)
 	return response[1:], nil
 }
 
@@ -154,7 +154,7 @@ func (mplus *mifarePlus) FirstAuthf2(data []byte) ([]byte, error) {
 	aid := make([]byte, 0)
 	aid = append(aid, byte(0x72))
 	aid = append(aid, data...)
-	fmt.Printf("f2 aid: [% X]\n", aid)
+	// fmt.Printf("f2 aid: [% X]\n", aid)
 	response, err := mplus.Apdu(aid)
 	if err != nil {
 		return nil, err
@@ -164,7 +164,7 @@ func (mplus *mifarePlus) FirstAuthf2(data []byte) ([]byte, error) {
 	}
 	/**/
 	/**/
-	fmt.Printf("response: [% X]\n", response)
+	// fmt.Printf("response: [% X]\n", response)
 	return response[1:], nil
 }
 

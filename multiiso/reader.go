@@ -138,10 +138,10 @@ func (r *reader) TransmitAscii(cmd, data []byte) ([]byte, error) {
 	if data != nil {
 		apdu = append(apdu, strings.ToUpper(hex.EncodeToString(data))...)
 	}
-	fmt.Printf("reqs TransmitAscii: [% X]\n", apdu)
+	// fmt.Printf("reqs TransmitAscii: [% X]\n", apdu)
 	resp1, err := r.device.SendRecv(apdu)
-	fmt.Printf("resp TransmitAscii: [% X]\n", resp1)
-	fmt.Printf("resp TransmitAscii: %q\n", resp1)
+	// fmt.Printf("resp TransmitAscii: [% X]\n", resp1)
+	// fmt.Printf("resp TransmitAscii: %q\n", resp1)
 	if err != nil {
 		return nil, err
 	}
@@ -160,9 +160,9 @@ func (r *reader) TransmitBinary(cmd, data []byte) ([]byte, error) {
 	}
 	apdu = append(apdu, checksum(apdu[1:]))
 	apdu = append(apdu, 0x03)
-	fmt.Printf("apdu TransmitBinary: [% X]\n", apdu)
+	// fmt.Printf("apdu TransmitBinary: [% X]\n", apdu)
 	resp1, err := r.device.SendRecv(apdu)
-	fmt.Printf("resp TransmitBinary: [% X]\n", resp1)
+	// fmt.Printf("resp TransmitBinary: [% X]\n", resp1)
 	if err != nil {
 		return nil, err
 	}
@@ -261,10 +261,10 @@ func (r *reader) T1TransactionV2(data []byte) ([]byte, error) {
 	trama := make([]byte, 0)
 
 	trama = append(trama, byte(len(data)))
-	trama = append(trama, 0x9F) // APDU T=1 Transaction. OptionByte V2
+	trama = append(trama, 0xDF) // APDU T=1 Transaction. OptionByte V2
 	trama = append(trama, 0x00) // Downlink length MSB (1 byte)
-	trama = append(trama, 0x43) // Timeout
-	trama = append(trama, 0x01) // Transmission factor byte (1 byte)
+	trama = append(trama, 0x13) // Timeout
+	trama = append(trama, 0x86) // Transmission factor byte (1 byte)
 	trama = append(trama, 0x00) // Return length
 
 	trama = append(trama, data...)
