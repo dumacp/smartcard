@@ -396,15 +396,18 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 
 	aid1 := []byte{0x80, 0xa4, 0x00, 0x00, 0x03, byte(keyNo), byte(keyVer), byte(hostMode), 0x00}
 
-	response, err := sam.Apdu(aid1)
+	response1, err := sam.Apdu(aid1)
 	if err != nil {
 		return nil, err
 	}
-	// log.Printf("fail aid response: [ %X ], apdu: [ %X ]", response, aid1)
-	if response[len(response)-1] != byte(0xAF) {
-		return nil, fmt.Errorf("bad formed response: [% X]", response)
+	// response, _ = hex.DecodeString("994E8B254E1B48AFBCE38A8190AF")
+	log.Printf("aid response1: [ %X ], apdu: [ %X ]", response1, aid1)
+	if response1[len(response1)-1] != byte(0xAF) {
+		return nil, fmt.Errorf("bad formed response1: [% X]", response1)
 	}
-	rnd2 := response[0 : len(response)-2]
+	rnd2 := make([]byte, 12)
+	copy(rnd2, response1[0:len(response1)-2])
+	// rnd2 := response1[0 : len(response1)-2]
 	var1 := make([]byte, 0)
 	var1 = append(var1, rnd2...)
 	var1 = append(var1, byte(hostMode))
@@ -421,8 +424,9 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 	}
 	rnd1 := make([]byte, 12)
 	rand.Read(rnd1)
+	// rnd1, _ = hex.DecodeString("A408BEB67688B37328DDBF82")
 
-	/**
+	/**/
 	fmt.Printf("cmacS: [% X]\n", cmacS)
 	fmt.Printf("cmac2: [% X]\n", cmac2)
 	fmt.Printf("rnd1: [% X]\n", rnd1)
@@ -433,18 +437,20 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 	aid2 = append(aid2, cmac2...)
 	aid2 = append(aid2, rnd1...)
 	aid2 = append(aid2, byte(0x00))
-	//fmt.Printf("aid2: [% X]\n", aid2)
-	response, err = sam.Apdu(aid2)
+	fmt.Printf("aid2: [% X]\n", aid2)
+	response2, err := sam.Apdu(aid2)
 	if err != nil {
 		return nil, err
 	}
-	// log.Printf("fail aid response: [ %X ], apdu: [ %X ]", response, aid2)
+	// response, _ = hex.DecodeString("17A9822892E3EFAF51C9541C72B16092BA76A46F2594154990AF")
+	log.Printf("aid response: [ %X ], apdu: [ %X ]", response2, aid2)
 
-	if response[len(response)-1] != byte(0xAF) {
-		return nil, fmt.Errorf("bad formed response: [% X]", response)
+	if response2[len(response2)-1] != byte(0xAF) {
+		return nil, fmt.Errorf("bad formed response: [% X]", response2)
 	}
 
-	rndBc := response[8 : len(response)-2]
+	rndBc := make([]byte, 16)
+	copy(rndBc, response2[8:len(response2)-2])
 
 	aXor := make([]byte, 5)
 	for i, _ := range aXor {
@@ -471,7 +477,9 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 
 	rndA := make([]byte, len(rndB))
 	rand.Read(rndA)
-	/**
+	// rndA, _ = hex.DecodeString("861799E95701CC49A1A3C18FCDC95D64")
+	/**/
+	fmt.Printf("rndBc: [% X]\n", rndBc)
 	fmt.Printf("rndA: [% X]\n", rndA)
 	fmt.Printf("rndB: [% X]\n", rndB)
 	/**/
@@ -487,13 +495,13 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 	//}
 	rndBr := rotate(rndB, 2)
 
-	//fmt.Printf("rndB2: [% X]\n", rndB)
+	fmt.Printf("rndB2: [% X]\n", rndBr)
 
 	rndD := make([]byte, 0)
 	rndD = append(rndD, rndA...)
 	rndD = append(rndD, rndBr...)
 
-	//fmt.Printf("rndD: [% X]\n", rndD)
+	fmt.Printf("rndD: [% X]\n", rndD)
 
 	ecipher := make([]byte, len(rndD))
 	modeE = cipher.NewCBCEncrypter(block, iv)
@@ -503,12 +511,13 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 	aid3 = append(aid3, ecipher...)
 	aid3 = append(aid3, byte(0x00))
 
-	response, err = sam.Apdu(aid3)
+	fmt.Printf("aid3: [% X]\n", aid3)
+	response3, err := sam.Apdu(aid3)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := mifare.VerifyResponseIso7816(response); err != nil {
+	if err := mifare.VerifyResponseIso7816(response3); err != nil {
 		return nil, err
 	}
 
@@ -592,7 +601,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 	}
 
 	sam.CmdCtr = 0
-	return response, nil
+	return response3, nil
 }
 
 //ApduNonXauthMFPf1 SAM_AuthenticationMFP (non-X-mode) first part

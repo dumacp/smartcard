@@ -42,10 +42,14 @@ func main() {
 
 	// reader := multiiso.NewReader(dev, "multiiso", 1)
 
-	samAv2, err := samav3.ConnectSam(reader)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	// samAv2, err := samav3.ConnectSam(reader)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+	card, _ := reader.ConnectCardPCSC()
+
+	samAv2 := samav3.SamAV3(card)
 
 	samAtr, err := samAv2.ATR()
 	if err != nil {
@@ -82,11 +86,11 @@ func main() {
 	// log.Printf("changeKeyAv1 response: [% X]", res1)
 
 	var res1 []byte
-	// res1, err = samAv2.LockUnlock(keyMaster, make([]byte, 3), 0, 0, 0, 0, 0x03)
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
-	// log.Printf("Active response: [% X]", res1)
+	res1, err = samAv2.LockUnlock(keyMaster, make([]byte, 3), 0, 0, 0, 0, 0x03)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.Printf("Active response: [% X]", res1)
 
 	res1, err = samAv2.AuthHost(keyMaster, 0, 0, 0)
 	if err != nil {
