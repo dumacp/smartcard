@@ -1185,6 +1185,7 @@ func ApduSAMCombinedWriteMFP(typeMFPdata TypeMFPdata, data []byte,
 func (sam *samAv2) SAMCombinedWriteMFP(typeMFPdata TypeMFPdata, data []byte,
 ) ([]byte, error) {
 	apdu := ApduSAMCombinedWriteMFP(typeMFPdata, data)
+	log.Printf("debuggg drop, ApduSAMCombinedWriteMFP: [% X]", apdu)
 	if apdu == nil {
 		return nil, fmt.Errorf("bad frame: [% X]", data)
 	}

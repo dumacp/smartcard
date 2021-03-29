@@ -213,9 +213,9 @@ func (r *reader) SendAPDU1443_4(data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// if (response == nil || len(response) < 3) {
-	// 	return fmt.Errof("Respuesta con error: [% X] " response);
-	// }
+	if response == nil || len(response) < 2 {
+		return nil, fmt.Errorf("Respuesta con error: [% X] ", response)
+	}
 
 	if (response[1] & 0x10) == 0x10 {
 		listResponse := make([]byte, 0)
