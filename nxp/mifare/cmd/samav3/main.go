@@ -1,16 +1,17 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
 	"log"
-	"time"
 
-	"github.com/dumacp/smartcard/multiiso"
 	"github.com/dumacp/smartcard/nxp/mifare/samav3"
+	"github.com/dumacp/smartcard/pcsc"
 )
 
 func main() {
 
-	/**
+	/**/
 	ctx, err := pcsc.NewContext()
 	if err != nil {
 		log.Fatalln(err)
@@ -34,16 +35,18 @@ func main() {
 	}
 
 	reader := pcsc.NewReader(ctx, string(rext))
-	**/
+	/**/
 
+	/**
 	dev, err := multiiso.NewDevice("/dev/ttyUSB0", 115200, 300*time.Millisecond)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	reader := multiiso.NewReader(dev, "multiiso", 1)
+	/**/
 
-	cardi, err := reader.ConnectSamCard()
+	cardi, err := reader.ConnectCardPCSC()
 	if err != nil {
 		log.Fatalln(err)
 	}

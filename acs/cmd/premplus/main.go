@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/dumacp/go-appliance-contactless/business/card/mifareplus"
 	"github.com/dumacp/smartcard/nxp/mifare"
@@ -111,43 +112,83 @@ func main() {
 		for len(name)%32 != 0 {
 			name = append(name, 0x00)
 		}
+		docID := []byte("9876543210")
+		for len(docID)%16 != 0 {
+			docID = append(docID, 0x00)
+		}
+		log.Printf("SUCESS AUTH")
 		cardid := uint32(423155168)
 		cardidbytes := make([]byte, 16)
-		binary.LittleEndian.PutUint32(cardidbytes, cardid)
+		binary.LittleEndian.PutUint32(cardidbytes[0:4], cardid)
+
+		b132bytes := make([]byte, 16)
+		//perfil
+		b132bytes[0] = byte(0)
+		//version
+		b132bytes[1] = byte(1)
+		//prm
+		b132bytes[2] = byte(0)
+		//ac
+		b132bytes[3] = byte(0)
+
+		b133bytes := make([]byte, 16)
+		//bloqueo
+		b133bytes[0] = byte(0)
+		//fecha bloqueo
+		binary.LittleEndian.PutUint32(b133bytes[1:5], 0)
+
+		b138bytes := make([]byte, 16)
+		//fecha recarga
+		binary.LittleEndian.PutUint32(b138bytes[0:4], uint32(time.Now().Unix()))
+		//CONSECUTIVO recarga
+		binary.LittleEndian.PutUint32(b138bytes[4:8], uint32(12345))
+		//valor recargA
+		binary.LittleEndian.PutUint32(b138bytes[8:12], uint32(100000))
+		//id dev recarga
+		iddev := make([]byte, 4)
+		binary.LittleEndian.PutUint32(iddev, uint32(12345))
+		b138bytes[12] = iddev[0]
+		b138bytes[13] = iddev[1]
+		b138bytes[14] = iddev[2]
+		b138bytes[15] = byte(3)
+
+		b139bytes := make([]byte, 16)
+		//fecha recarga
+		binary.LittleEndian.PutUint32(b139bytes[0:4], uint32(time.Now().Add(24*365*time.Hour).Unix()))
+
 		mapdata := map[int][]byte{
 			128: name,
-			130: cardidbytes,
-			131: {0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00},
-			132: {0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00},
-			133: {0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00},
-			134: make([]byte, 16),
-			135: make([]byte, 16),
-			136: make([]byte, 16),
-			137: make([]byte, 16),
-			138: make([]byte, 16),
-			139: make([]byte, 16),
+			130: docID,
+			131: cardidbytes,
+			132: b132bytes,
+			133: b133bytes,
+			134: {0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00},
+			135: {0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00},
+			136: {0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00},
+			138: b138bytes,
+			139: b139bytes,
 			140: make([]byte, 16),
 			141: make([]byte, 16),
 			142: make([]byte, 16),
 		}
 
 		for k, v := range mapdata {
-			// log.Printf("block: %d, len: %d, data: %X", k, len(v)/16, v)
+			//log.Printf("block: %d, len: %d, data: %X", k, len(v)/16, v)
 			if resp0, err := cardm.Blocks(k, len(v)/16); err == nil {
-				log.Printf("blocks: len = %d, [% X]", len(resp0), resp0)
-				// if err := cardm.WriteBlock(k, v); err != nil {
-				// 	log.Fatal(err)
-				// }
+				log.Printf("blocks %d: len = %d, [% X]", k, len(resp0), resp0)
+				if err := cardm.WriteBlock(k, v); err != nil {
+					log.Fatal(err)
+				}
 			} else {
 				log.Fatal(err)
 			}
-			fmt.Printf("\n\n\n\n\n")
+			fmt.Printf("\n\n")
 		}
-		// if err := cardm.Inc(131, 200000); err != nil {
-		// 	log.Fatal(err)
-		// }
-		// if err := cardm.Inc(132, 200000); err != nil {
-		// 	log.Fatal(err)
-		// }
+		if err := cardm.Inc(134, 2000000); err != nil {
+			log.Fatal(err)
+		}
+		if err := cardm.Inc(135, 2000000); err != nil {
+			log.Fatal(err)
+		}
 	}
 }

@@ -15,7 +15,7 @@ var keyS string
 // var keyNbr int
 
 func init() {
-	flag.StringVar(&keyS, "key", "00000000000000000000000000000000", "key aes128")
+	flag.StringVar(&keyS, "key", "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", "key aes128")
 	// flag.IntVar(&keyNbr, "keyNbr", 0x4000, "key Number")
 }
 
@@ -98,36 +98,37 @@ func main() {
 		}
 		log.Printf("card ATR: % X\n", atr)
 
+		/**
+		resp, err := mplus.WritePerso(keyNbr, key)
+		if err != nil {
+			log.Fatalf("Error: %s\n", err)
+		}
+		log.Printf("WritePerso resp: % X\n", resp)
 		/**/
-		// resp, err := mplus.WritePerso(keyNbr, key)
-		// if err != nil {
-		// 	log.Fatalf("Error: %s\n", err)
-		// }
-		// log.Printf("WritePerso resp: % X\n", resp)
+		/**
+		resp, err = mplus.WritePerso(0x9001, key)
+		if err != nil {
+			log.Fatalf("Error: %s\n", err)
+		}
+		log.Printf("WritePerso resp: % X\n", resp)
 
-		// resp, err = mplus.WritePerso(0x9001, key)
-		// if err != nil {
-		// 	log.Fatalf("Error: %s\n", err)
-		// }
-		// log.Printf("WritePerso resp: % X\n", resp)
+		resp, err = mplus.WritePerso(0x9000, key)
+		if err != nil {
+			log.Fatalf("Error: %s\n", err)
+		}
+		log.Printf("WritePerso resp: % X\n", resp)
 
-		// resp, err = mplus.WritePerso(0x9000, key)
-		// if err != nil {
-		// 	log.Fatalf("Error: %s\n", err)
-		// }
-		// log.Printf("WritePerso resp: % X\n", resp)
+		resp, err = mplus.WritePerso(0x9002, key)
+		if err != nil {
+			log.Fatalf("Error: %s\n", err)
+		}
+		log.Printf("WritePerso resp: % X\n", resp)
 
-		// resp, err = mplus.WritePerso(0x9002, key)
-		// if err != nil {
-		// 	log.Fatalf("Error: %s\n", err)
-		// }
-		// log.Printf("WritePerso resp: % X\n", resp)
-
-		// resp, err = mplus.WritePerso(0x9003, key)
-		// if err != nil {
-		// 	log.Fatalf("Error: %s\n", err)
-		// }
-		// log.Printf("WritePerso resp: % X\n", resp)
+		resp, err = mplus.WritePerso(0x9003, key)
+		if err != nil {
+			log.Fatalf("Error: %s\n", err)
+		}
+		log.Printf("WritePerso resp: % X\n", resp)
 
 		// for i := 0; i < 32; i++ {
 		// 	keyN := 0x4000 + i
@@ -138,11 +139,11 @@ func main() {
 		// 	log.Printf("WritePerso resp: % X\n", resp)
 		// }
 
-		// resp, err = mplus.CommitPerso()
-		// if err != nil {
-		// 	log.Fatalf("Error: %s\n", err)
-		// }
-		// log.Printf("Commit Perso resp: % X\n", resp)
+		resp, err = mplus.CommitPerso()
+		if err != nil {
+			log.Fatalf("Error: %s\n", err)
+		}
+		log.Printf("Commit Perso resp: % X\n", resp)
 		/**/
 
 		/**/
