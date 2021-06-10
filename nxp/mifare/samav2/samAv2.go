@@ -16,6 +16,11 @@ import (
 	"github.com/dumacp/smartcard/nxp/mifare/tools"
 )
 
+const (
+	AES_ALG = iota
+	DES_ALG
+)
+
 //SamAv2 Interface
 type SamAv2 interface {
 	smartcard.ICard
@@ -55,6 +60,10 @@ type SamAv2 interface {
 	) ([]byte, error)
 	SAMCombinedReadMFP(typeMFPdata TypeMFPdata, isLastFrame bool, data []byte,
 	) ([]byte, error)
+	SAMEncipherData(alg int, data []byte) ([]byte, error)
+	SAMEncipherOfflineData(alg int, data []byte) ([]byte, error)
+	SAMDecipherData(alg int, data []byte) ([]byte, error)
+	SAMDecipherOfflineData(alg int, data []byte) ([]byte, error)
 }
 
 type samAv2 struct {
@@ -1199,4 +1208,152 @@ func (sam *samAv2) SAMCombinedWriteMFP(typeMFPdata TypeMFPdata, data []byte,
 	}
 
 	return response, nil
+}
+
+//SAMEncipherData SAM_Encipher_Data
+func (sam *samAv2) SAMEncipherData(alg int, data []byte) ([]byte, error) {
+
+	dataCopy := make([]byte, len(data))
+	copy(dataCopy, data)
+
+	switch {
+	case alg == DES_ALG && len(data)%8 != 0:
+		return nil, fmt.Errorf("data len is invalid, len = %d", len(data))
+	case alg == AES_ALG && len(data)%8 != 0:
+		return nil, fmt.Errorf("data len is invalid, len = %d", len(data))
+	case alg != AES_ALG && alg != DES_ALG:
+		return nil, fmt.Errorf("ALGORITM is not valid")
+	}
+
+	divisor := 1
+	switch alg {
+	case AES_ALG:
+		divisor = 0xF0
+	default:
+		divisor = 0xF8
+	}
+
+	fragments := make([][]byte, 0)
+
+	for len(dataCopy) > divisor {
+		fragments = append(fragments, dataCopy[:divisor])
+		dataCopy = dataCopy[divisor:]
+	}
+	fragments = append(fragments, dataCopy[:])
+
+	result := make([]byte, 0)
+
+	for i, v := range fragments {
+		lastBlock := true
+		if len(fragments)-1 != i {
+			lastBlock = false
+		}
+		response := ApduEncipher_Data(lastBlock, 0x00, v)
+		if err := mifare.VerifyResponseIso7816(response); err != nil {
+			return nil, err
+		}
+		result = append(result, response[:len(response)-2]...)
+	}
+
+	return result, nil
+}
+
+//SAMEncipherOfflineData SAM_EncipherOffline_Data
+func (sam *samAv2) SAMEncipherOfflineData(alg int, data []byte) ([]byte, error) {
+	dataCopy := make([]byte, len(data))
+	copy(dataCopy, data)
+
+	switch {
+	case alg == DES_ALG && len(data)%8 != 0:
+		return nil, fmt.Errorf("data len is invalid, len = %d", len(data))
+	case alg == AES_ALG && len(data)%16 != 0:
+		return nil, fmt.Errorf("data len is invalid, len = %d", len(data))
+	case alg != DES_ALG && alg != AES_ALG:
+		return nil, fmt.Errorf("ALGORITM is not valid")
+	}
+
+	divisor := 1
+	switch alg {
+	case AES_ALG:
+		divisor = 0xF0
+	default:
+		divisor = 0xF8
+	}
+
+	fragments := make([][]byte, 0)
+
+	for len(dataCopy) > divisor {
+		fragments = append(fragments, dataCopy[:divisor])
+		dataCopy = dataCopy[divisor:]
+	}
+	fragments = append(fragments, dataCopy[:])
+
+	result := make([]byte, 0)
+
+	for i, v := range fragments {
+		lastBlock := true
+		if len(fragments)-1 != i {
+			lastBlock = false
+		}
+		response := ApduEncipherOffline_Data(lastBlock, v)
+		if err := mifare.VerifyResponseIso7816(response); err != nil {
+			return nil, err
+		}
+		result = append(result, response[:len(response)-2]...)
+	}
+
+	return result, nil
+}
+
+//SAMDecipherData SAM_Decipher_Data
+func (sam *samAv2) SAMDecipherData(alg int, data []byte) ([]byte, error) {
+
+	return nil, fmt.Errorf("not support")
+}
+
+//SAMDecipherOfflineData SAM_DecipherOffline_Data
+func (sam *samAv2) SAMDecipherOfflineData(alg int, data []byte) ([]byte, error) {
+	dataCopy := make([]byte, len(data))
+	copy(dataCopy, data)
+
+	switch {
+	case alg == DES_ALG && len(data)%8 != 0:
+		return nil, fmt.Errorf("data len is invalid, len = %d", len(data))
+	case alg == AES_ALG && len(data)%16 != 0:
+		return nil, fmt.Errorf("data len is invalid, len = %d", len(data))
+	case alg != DES_ALG && alg != AES_ALG:
+		return nil, fmt.Errorf("ALGORITM is not valid")
+	}
+
+	divisor := 1
+	switch alg {
+	case AES_ALG:
+		divisor = 0xF0
+	default:
+		divisor = 0xF8
+	}
+
+	fragments := make([][]byte, 0)
+
+	for len(dataCopy) > divisor {
+		fragments = append(fragments, dataCopy[:divisor])
+		dataCopy = dataCopy[divisor:]
+	}
+	fragments = append(fragments, dataCopy[:])
+
+	result := make([]byte, 0)
+
+	for i, v := range fragments {
+		lastBlock := true
+		if len(fragments)-1 != i {
+			lastBlock = false
+		}
+		response := ApduDecipherOffline_Data(lastBlock, v)
+		if err := mifare.VerifyResponseIso7816(response); err != nil {
+			return nil, err
+		}
+		result = append(result, response[:len(response)-2]...)
+	}
+
+	return result, nil
 }
