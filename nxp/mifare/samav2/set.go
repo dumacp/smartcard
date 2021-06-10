@@ -3,13 +3,13 @@ package samav2
 import "encoding/binary"
 
 type KeyType int
-type KeyClas int
+type KeyClass int
 
 const (
-	HOST_KEY          KeyType = 0
-	PICC_KEY          KeyType = 1
-	OfflineChange_KEY KeyType = 2
-	OfflineCrypto_KEY KeyType = 4
+	HOST_KEY          KeyClass = 0
+	PICC_KEY          KeyClass = 1
+	OfflineChange_KEY KeyClass = 2
+	OfflineCrypto_KEY KeyClass = 4
 )
 
 const (
@@ -68,7 +68,7 @@ func SETConfigurationSettings(allowDumpSessionKey bool,
 
 //ExtSETConfigurationSettings
 //keyClass: KeyClass Type, multiple types support (example: OfflineChange_KEY | PICC_KEY)
-func ExtSETConfigurationSettings(keyClass KeyClas,
+func ExtSETConfigurationSettings(keyClass KeyClass,
 	allowDumpSecretKey bool, restrictToDiversifiedUse bool) byte {
 
 	setdata := uint64(0x0000)
