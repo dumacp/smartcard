@@ -33,6 +33,7 @@ type SamAv2 interface {
 	NonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte) ([]byte, error)
 	NonXauthMFPf2(data []byte) ([]byte, error)
 	DumpSessionKey() ([]byte, error)
+	DumpSecretKey(keyNo, keyVer int, divInput []byte) ([]byte, error)
 	LockUnlock(key, maxchainBlocks []byte, keyNr, keyVr, unlockKeyNo, unlockKeyVer, p1 int) ([]byte, error)
 	SwitchToAV2(key []byte, keyNr, keyVr int) ([]byte, error)
 	AuthHostAV1(block cipher.Block, keyNo, keyVer, authMode int) ([]byte, error)
@@ -670,9 +671,46 @@ func ApduDumpSessionKey() []byte {
 	return []byte{0x80, 0xD5, 0x00, 0x00, 0x00}
 }
 
+//ApduDumpSecretKey SAM_DumpSecretKey (allows dumping any of PICC keys or OfflineCrypto keys)
+func ApduDumpSecretKey(keyNo, keyVer int, divInput []byte) []byte {
+	p1 := byte(0x00)
+	if len(divInput) > 0 {
+		p1 = 0x02
+	}
+	apdu := []byte{0x80, 0xD6, p1, 0x00}
+
+	if len(divInput) <= 0 {
+		apdu = append(apdu, 0x02)
+	} else {
+		apdu = append(apdu, 0x02+byte(len(divInput)))
+	}
+
+	apdu = append(apdu, byte(keyNo))
+	apdu = append(apdu, byte(keyVer))
+
+	if len(divInput) > 0 {
+		apdu = append(apdu, divInput...)
+	}
+
+	apdu = append(apdu, 0x00)
+	return apdu
+}
+
 //DumpSessionKey SAM_DumpSessionKey (session key of an established authentication with a DESFire or MIFARE Plus PICC)
 func (sam *samAv2) DumpSessionKey() ([]byte, error) {
 	response, err := sam.Apdu(ApduDumpSessionKey())
+	if err != nil {
+		return nil, err
+	}
+	if err := mifare.VerifyResponseIso7816(response); err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
+//DumpSecretKey SAM_DumpSecretKey (allows dumping any of PICC keys or OfflineCrypto keys)
+func (sam *samAv2) DumpSecretKey(keyNo, keyVer int, divInput []byte) ([]byte, error) {
+	response, err := sam.Apdu(ApduDumpSecretKey(keyNo, keyVer, divInput))
 	if err != nil {
 		return nil, err
 	}
