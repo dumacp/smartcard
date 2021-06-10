@@ -68,7 +68,7 @@ func SETConfigurationSettings(allowDumpSessionKey bool,
 
 //ExtSETConfigurationSettings
 //keyClass: KeyClass Type, multiple types support (example: OfflineChange_KEY | PICC_KEY)
-func ExtSETConfigurationSettings(keyClass int,
+func ExtSETConfigurationSettings(keyClass KeyClas,
 	allowDumpSecretKey bool, restrictToDiversifiedUse bool) byte {
 
 	setdata := uint64(0x0000)
