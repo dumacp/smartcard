@@ -67,7 +67,8 @@ type SamAv2 interface {
 		data []byte) ([]byte, error)
 	SAMDecipherOfflineData(alg CrytoAlgorithm, data []byte) ([]byte, error)
 	PKIGenerateKeyPair(pkiE []byte, pkiSET []byte,
-		pkiKeyNo, pkiKeyNoCEK, pkikeVCEK, pkiRefNoKUC byte, pkiNLen int) ([]byte, error)
+		pkiKeyNo, pkiKeyNoCEK, pkikeVCEK, pkiRefNoKUC, pkiNLen int) ([]byte, error)
+	PKIExportPublicKey(pkiKeyNo int) ([]byte, error)
 }
 
 type samAv2 struct {
