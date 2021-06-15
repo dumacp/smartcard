@@ -53,6 +53,7 @@ type SamAv2 interface {
 		dfAid, set []byte,
 		kc, samUID []byte,
 	) ([]byte, error)
+	SAMGetKeyEntry(keyNo int) ([]byte, error)
 	ActivateOfflineKey(keyNo, keyVer int,
 		divInput []byte,
 	) ([]byte, error)
@@ -65,6 +66,8 @@ type SamAv2 interface {
 	SAMDecipherData(alg CrytoAlgorithm,
 		data []byte) ([]byte, error)
 	SAMDecipherOfflineData(alg CrytoAlgorithm, data []byte) ([]byte, error)
+	PKIGenerateKeyPair(pkiE []byte, pkiSET []byte,
+		pkiKeyNo, pkiKeyNoCEK, pkikeVCEK, pkiRefNoKUC byte, pkiNLen int) ([]byte, error)
 }
 
 type samAv2 struct {
@@ -128,7 +131,7 @@ func (sam *samAv2) UID() ([]byte, error) {
 		return nil, err
 	}
 
-	if ver != nil && len(ver) > 20 {
+	if len(ver) > 20 {
 		return ver[14:21], nil
 	}
 	return nil, fmt.Errorf("bad formed response, [ %X ]", ver)
@@ -248,7 +251,7 @@ func (sam *samAv2) LockUnlock(key, maxchainBlocks []byte, keyNr, keyVr, unlockKe
 	}
 
 	modeE := cipher.NewCBCEncrypter(block, iv)
-	modeD := cipher.NewCBCDecrypter(block, iv)
+	// modeD := cipher.NewCBCDecrypter(block, iv)
 
 	// aid1 := []byte{0x80, 0x10, 0x03, 0x00, 0x05}
 	// //keyNr
@@ -316,7 +319,7 @@ func (sam *samAv2) LockUnlock(key, maxchainBlocks []byte, keyNr, keyVr, unlockKe
 	rndBc := response[8 : len(response)-2]
 
 	aXor := make([]byte, 5)
-	for i, _ := range aXor {
+	for i := range aXor {
 		aXor[i] = rnd1[i] ^ rnd2[i]
 	}
 	divKey := make([]byte, 0)
@@ -335,7 +338,7 @@ func (sam *samAv2) LockUnlock(key, maxchainBlocks []byte, keyNr, keyVr, unlockKe
 	if err != nil {
 		return nil, err
 	}
-	modeD = cipher.NewCBCDecrypter(block, iv)
+	modeD := cipher.NewCBCDecrypter(block, iv)
 	modeD.CryptBlocks(rndB, rndBc)
 
 	rndA := make([]byte, len(rndB))
@@ -402,7 +405,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 	sam.HostMode = hostMode
 	sam.Kx = key
 	modeE := cipher.NewCBCEncrypter(block, iv)
-	modeD := cipher.NewCBCDecrypter(block, iv)
+	// modeD := cipher.NewCBCDecrypter(block, iv)
 
 	aid1 := []byte{0x80, 0xa4, 0x00, 0x00, 0x03, byte(keyNo), byte(keyVer), byte(hostMode), 0x00}
 
@@ -463,7 +466,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 	copy(rndBc, response2[8:len(response2)-2])
 
 	aXor := make([]byte, 5)
-	for i, _ := range aXor {
+	for i := range aXor {
 		aXor[i] = rnd1[i] ^ rnd2[i]
 	}
 	divKey := make([]byte, 0)
@@ -482,7 +485,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 	if err != nil {
 		return nil, err
 	}
-	modeD = cipher.NewCBCDecrypter(block, iv)
+	modeD := cipher.NewCBCDecrypter(block, iv)
 	modeD.CryptBlocks(rndB, rndBc)
 
 	rndA := make([]byte, len(rndB))

@@ -378,3 +378,42 @@ func (sam *samAv2) ActivateOfflineKey(keyNo, keyVer int,
 
 	return response, nil
 }
+
+//GetKeyEntry SAM_GetKeyEntry command allows reading the contents of the key entry
+func (sam *samAv2) SAMGetKeyEntry(keyNo int) ([]byte, error) {
+
+	response, err := sam.Apdu(sam.ApduSAMGetKeyEntry(keyNo))
+	if err != nil {
+		return nil, err
+	}
+	if err := mifare.VerifyResponseIso7816(response); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+
+}
+
+//ApduSAMGetKeyEntry ApduSAMGetKeyEntry command allows reading the contents of the key entry
+func (sam *samAv2) ApduSAMGetKeyEntry(keyNo int) []byte {
+	cmd := smartcard.ISO7816cmd{
+		CLA: 0x80,
+		INS: 0x64,
+		P1:  byte(keyNo),
+		P2:  byte(0x00),
+		Le:  false,
+	}
+
+	apdu := make([]byte, 0)
+	apdu = append(apdu, cmd.CLA)
+	apdu = append(apdu, cmd.INS)
+	apdu = append(apdu, cmd.P1)
+	apdu = append(apdu, cmd.P2)
+
+	if cmd.Le {
+		apdu = append(apdu, 0x00)
+	}
+
+	return apdu
+
+}
