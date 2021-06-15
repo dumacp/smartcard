@@ -66,6 +66,29 @@ func SETConfigurationSettings(allowDumpSessionKey bool,
 	return result
 }
 
+func SETConfigurationSettingsPKI(privKeyInclude bool,
+	allowPrivKeyExport bool, disableKeyEntry bool,
+	disableEncryptionHandl bool, disableSignatureHandl bool,
+	enablePKIUpdateKeyentry bool, privKeyRepresentation int,
+) []byte {
+
+	setdata := uint64(0x0000)
+
+	setdata = push(setdata, 9, 0)                       //7 8 9 10 11 12 13 14 15
+	setdata = push(setdata, 1, privKeyRepresentation)   //6
+	setdata = push(setdata, 1, enablePKIUpdateKeyentry) //5
+	setdata = push(setdata, 1, disableSignatureHandl)   //4
+	setdata = push(setdata, 1, disableEncryptionHandl)  //3
+	setdata = push(setdata, 1, disableKeyEntry)         //2
+	setdata = push(setdata, 1, allowPrivKeyExport)      //1
+	setdata = push(setdata, 1, privKeyInclude)          //0
+
+	result := make([]byte, 2)
+	binary.LittleEndian.PutUint16(result, uint16(setdata))
+
+	return result
+}
+
 //ExtSETConfigurationSettings
 //keyClass: KeyClass Type, multiple types support (example: OfflineChange_KEY | PICC_KEY)
 func ExtSETConfigurationSettings(keyClass KeyClass,
