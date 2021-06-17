@@ -14,13 +14,15 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/dumacp/smartcard"
 )
 
 //Reader implement IReader interface
 type Reader interface {
 	// smartcard.IReader
 	// mifare.IReaderClassic
-	ConnectCard() (Card, error)
+	ConnectCard() (smartcard.ICard, error)
 
 	Transmit([]byte, []byte) ([]byte, error)
 	TransmitAscii([]byte, []byte) ([]byte, error)
@@ -32,7 +34,7 @@ type Reader interface {
 	SendAPDU1443_4(data []byte) ([]byte, error)
 	SendSAMDataFrameTransfer(data []byte) ([]byte, error)
 	T1TransactionV2(data []byte) ([]byte, error)
-	ConnectSamCard() (Card, error)
+	ConnectSamCard() (smartcard.ICard, error)
 	SetChainning(chainning bool)
 }
 
@@ -297,7 +299,7 @@ func (r *reader) SetRegister(register byte, data []byte) error {
 }
 
 //Create New Card interface
-func (r *reader) ConnectCard() (Card, error) {
+func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	if !r.device.Ok {
 		return nil, fmt.Errorf("serial device is not ready")
 	}
@@ -341,7 +343,7 @@ func (r *reader) ConnectCard() (Card, error) {
 }
 
 //Create New Card interface
-func (r *reader) ConnectSamCard() (Card, error) {
+func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
 	if !r.device.Ok {
 		return nil, fmt.Errorf("serial device is not ready")
 	}
