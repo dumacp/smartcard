@@ -3,6 +3,7 @@ package samav2
 import (
 	"fmt"
 
+	"github.com/dumacp/smartcard"
 	"github.com/dumacp/smartcard/nxp/mifare"
 )
 
@@ -212,4 +213,54 @@ func (sam *samAv2) SAMDecipherOfflineData(alg CrytoAlgorithm, data []byte) ([]by
 	}
 
 	return result, nil
+}
+
+//ApduSAMLoadInitVector SAM_LoadInitVector
+func (sam *samAv2) ApduSAMLoadInitVector(alg CrytoAlgorithm, data []byte) []byte {
+
+	cmd := smartcard.ISO7816cmd{
+		CLA: 0x80,
+		INS: 0x71,
+		P1:  0x00,
+		P2:  0x00,
+		Le:  false,
+	}
+
+	apdu := cmd.PrefixApdu()
+
+	switch alg {
+	case AES_ALG:
+		apdu = append(apdu, 0x10)
+		if len(data) < 16 {
+			data = append(data, make([]byte, len(data)%16)...)
+			apdu = append(apdu, data[:]...)
+		} else {
+			apdu = append(apdu, data[0:16]...)
+		}
+	default:
+		apdu = append(apdu, 0x08)
+		if len(data) < 8 {
+			data = append(data, make([]byte, len(data)%8)...)
+			apdu = append(apdu, data[:]...)
+		} else {
+			apdu = append(apdu, data[0:8]...)
+		}
+	}
+
+	if cmd.Le {
+		apdu = append(apdu, 0x00)
+	}
+
+	return apdu
+}
+
+//SAMLoadInitVector SAM_LoadInitVector
+func (sam *samAv2) SAMLoadInitVector(alg CrytoAlgorithm, data []byte) ([]byte, error) {
+	switch alg {
+	case AES_ALG:
+	case DES_ALG:
+	default:
+		return nil, &smartcard.Error{Data: "ALG not support"}
+	}
+	return sam.Apdu(sam.ApduSAMLoadInitVector(alg, data))
 }

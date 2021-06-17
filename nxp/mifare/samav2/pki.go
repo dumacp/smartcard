@@ -122,3 +122,35 @@ func ApduPKIGenerateKeyPair(pkiE []byte, pkiSET []byte,
 
 	return apdus
 }
+
+type HashingAlgorithm int
+
+const (
+	SHA1 HashingAlgorithm = iota
+	SHA224
+	RFU
+	SHA256
+)
+
+func ApduPKIUpdateKeyEntries(hashing HashingAlgorithm, keyEntrysNo int,
+	pkiKeyNoEnc, pkiKeyNoSign int, pkiEncKeyFrame, pkiSignature []byte) [][]byte {
+
+	// cmd := &smartcard.ISO7816cmd{
+	// 	CLA: 0x80,
+	// 	INS: 0x18,
+	// 	P1:  byte(hashing) | byte(keyEntrysNo<<2),
+	// 	P2:  0x00,
+	// 	Le:  true,
+	// }
+
+	// if len()
+
+	// apdu := make([]byte, 0)
+	// apdu = append(apdu, cmd.PrefixApdu()...)
+
+	// if cmd.Le {
+	// 	apdu = append(apdu, 0x00)
+	// }
+
+	return nil
+}

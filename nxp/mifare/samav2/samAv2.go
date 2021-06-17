@@ -69,6 +69,7 @@ type SamAv2 interface {
 	PKIGenerateKeyPair(pkiE []byte, pkiSET []byte,
 		pkiKeyNo, pkiKeyNoCEK, pkikeVCEK, pkiRefNoKUC, pkiNLen int) ([]byte, error)
 	PKIExportPublicKey(pkiKeyNo int) ([]byte, error)
+	SAMLoadInitVector(alg CrytoAlgorithm, data []byte) ([]byte, error)
 }
 
 type samAv2 struct {

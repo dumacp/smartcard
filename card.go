@@ -17,3 +17,11 @@ type ICard interface {
 	ATS() ([]byte, error)
 	DisconnectCard() error
 }
+
+type Error struct {
+	Data string
+}
+
+func (e *Error) Error() string {
+	return e.Data
+}
