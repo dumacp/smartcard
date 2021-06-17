@@ -10,6 +10,7 @@ projects on which it is based:
 package pcsc
 
 import (
+	"github.com/dumacp/smartcard"
 	"github.com/ebfe/scard"
 )
 
@@ -20,8 +21,8 @@ type Context struct {
 //Interface to Reader device
 type Reader interface {
 	// smartcard.IReader
-	ConnectSamCard() (Card, error)
-	ConnectCard() (Card, error)
+	ConnectSamCard() (smartcard.ICard, error)
+	ConnectCard() (smartcard.ICard, error)
 	ConnectDirect() (Card, error)
 	ConnectCardPCSC() (Card, error)
 }
@@ -81,7 +82,7 @@ func (r *reader) ConnectCardPCSC() (Card, error) {
 }
 
 //Create New Card interface
-func (r *reader) ConnectCard() (Card, error) {
+func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	if ok, err := r.Context.IsValid(); err != nil && !ok {
 		return nil, err
 	}
@@ -98,7 +99,7 @@ func (r *reader) ConnectCard() (Card, error) {
 }
 
 //Create New Card interface
-func (r *reader) ConnectSamCard() (Card, error) {
+func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
 	return r.ConnectCardPCSC()
 }
 
