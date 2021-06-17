@@ -10,9 +10,6 @@ projects on which it is based:
 package multiiso
 
 import (
-	"errors"
-	"fmt"
-
 	"github.com/dumacp/smartcard"
 )
 
@@ -53,7 +50,7 @@ func (c *card) DisconnectCard() error {
 //Primitive channel to send command
 func (c *card) Apdu(apdu []byte) ([]byte, error) {
 	if c.State != CONNECTED {
-		return nil, fmt.Errorf("Don't Connect to Card")
+		return nil, ErrDisconnectCard
 	}
 	switch c.modeSend {
 	case APDU1443_4:
@@ -68,7 +65,7 @@ func (c *card) Apdu(apdu []byte) ([]byte, error) {
 //Get ATR of Card
 func (c *card) ATR() ([]byte, error) {
 	if c.State != CONNECTED {
-		return nil, errors.New("Don't Connect to Card")
+		return nil, &smartcard.Error{Data: "Don't Connect to Card"}
 	}
 	return nil, nil
 }
