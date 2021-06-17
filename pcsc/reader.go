@@ -10,6 +10,7 @@ projects on which it is based:
 package pcsc
 
 import (
+	"github.com/dumacp/smartcard"
 	"github.com/ebfe/scard"
 )
 
@@ -95,10 +96,10 @@ func (r *reader) ConnectCard() (Card, error) {
 	return cardS, nil
 }
 
-// //Create New Card interface
-// func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
-// 	return r.connectCard()
-// }
+//Create New Card interface
+func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
+	return r.ConnectCardPCSC()
+}
 
 func (r *reader) connectCard() (*card, error) {
 	if ok, err := r.Context.IsValid(); err != nil && !ok {
