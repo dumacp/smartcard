@@ -32,6 +32,10 @@ func push(data uint64, bitwise int, input interface{}) uint64 {
 		}
 	case int:
 		inputdata = v
+	default:
+		if parse, ok := v.(int); ok {
+			inputdata = parse
+		}
 	}
 
 	data = (data << bitwise) | uint64(inputdata)
