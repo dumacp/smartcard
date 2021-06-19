@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/dumacp/smartcard/nxp/mifare/samav3"
+	"github.com/dumacp/smartcard/nxp/mifare/samav2"
 	"github.com/dumacp/smartcard/pcsc"
 )
 
@@ -51,7 +51,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	samAv2 := samav3.SamAV3(cardi)
+	samAv2 := samav2.SamAV2(cardi)
 
 	samAtr, err := samAv2.ATR()
 	if err != nil {
@@ -78,8 +78,8 @@ func main() {
 	// }
 	// log.Printf("Auth hosts response: [% X]", res1)
 
-	//keyMaster := make([]byte, 16)
-	keyMaster := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16}
+	keyMaster := make([]byte, 16)
+	// keyMaster := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16}
 	// res1, err = samAv2.ChangeKeyEntryAv1(0, 0xFF, keyMaster,
 	// 	keyMaster, keyMaster, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x01, 0x02,
 	// 	[]byte{0, 0, 0}, []byte{0x20, 0x00})
@@ -89,51 +89,51 @@ func main() {
 	// log.Printf("changeKeyAv1 response: [% X]", res1)
 
 	var res1 []byte
-	//res1, err = samAv2.LockUnlock(keyMaster, make([]byte, 3), 0, 0, 0, 0, 0x03)
-	//if err != nil {
-	//	log.Fatalln(err)
-	//}
-	//log.Printf("Active response: [% X]", res1)
+	// res1, err = samAv2.LockUnlock(keyMaster, make([]byte, 3), 0, 0, 0, 0, 0x03)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+	// log.Printf("Active response: [% X]", res1)
 
-	res1, err = samAv2.AuthHost(keyMaster, 0, 0, 0)
+	res1, err = samAv2.AuthHostAV2(keyMaster, 0, 0, 0)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	log.Printf("Auth hosts response: [% X]", res1)
 
-	key1 := 0x0A
+	key1 := 101
 	for i := range keyMaster {
 		keyMaster[i] = 0x00
 	}
 
-	res1, err = samAv2.ChangeKeyEntry(key1, 0xFF, keyMaster, keyMaster, keyMaster,
-		0x00, 0x00, 0x00, 0xFF, 0x00, 0x01, 0x02, 0x01,
-		[]byte{0, 0, 0}, []byte{0x21, 0x00})
+	res1, err = samAv2.ChangeKeyEntry(key1, 0x00, keyMaster, keyMaster, keyMaster,
+		0x00, 0x00, 0x00, 0xFF, 0x00, 0x01, 0x02, 0x0B,
+		[]byte{0, 0, 0}, []byte{0x20, 0x00})
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	log.Printf("change key [ %v ] response: [% X]", key1, res1)
 
-	key2 := 0x0B
+	key2 := 102
 
 	for i := range keyMaster {
 		keyMaster[i] = 0xFF
 	}
-	res1, err = samAv2.ChangeKeyEntry(key2, 0xFF, keyMaster, keyMaster, keyMaster,
-		0x00, 0x00, 0x00, 0xFF, 0x00, 0x01, 0x02, 0x01,
-		[]byte{0, 0, 0}, []byte{0x21, 0x00})
+	res1, err = samAv2.ChangeKeyEntry(key2, 0x00, keyMaster, keyMaster, keyMaster,
+		0x00, 0x00, 0x00, 0xFF, 0x00, 0x01, 0x02, 0x0B,
+		[]byte{0, 0, 0}, []byte{0x20, 0x00})
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	log.Printf("change key [ %v ] response: [% X]", key2, res1)
 
-	// res1, err = samAv2.ActivateOfflineKey(0x01, 0x00, nil)
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
-	// log.Printf("ActivateOfflineKey response: [% X]", res1)
+	res1, err = samAv2.ActivateOfflineKey(101, 0x00, nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.Printf("ActivateOfflineKey response: [% X]", res1)
 
 	// key3 := 0x03
 	// res1, err = samAv2.ChangeKeyEntryOffline(key3, 0xFF, 00, keyMaster, keyMaster, keyMaster,

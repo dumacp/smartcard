@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"crypto/aes"
 	"log"
 
 	"github.com/dumacp/smartcard/nxp/mifare/samav2"
@@ -52,41 +51,41 @@ func main() {
 	}
 	log.Printf("sam UID: [% X]", samUID)
 
-	keyAuth := make([]byte, 16)
-	block, err := aes.NewCipher(keyAuth)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	// keyAuth := make([]byte, 16)
+	// block, err := aes.NewCipher(keyAuth)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
 
-	res1, err := samAv2.LockUnlock(keyAuth, make([]byte, 3), 0, 0, 0, 0, 0x03)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	log.Printf("Active response: [% X]", res1)
+	// res1, err := samAv2.LockUnlock(keyAuth, make([]byte, 3), 0, 0, 0, 0, 0x03)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+	// log.Printf("Active response: [% X]", res1)
 
-	res1, err = samAv2.AuthHostAV1(block, 0, 0, 0)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	log.Printf("Auth hosts response: [% X]", res1)
+	// res1, err = samAv2.AuthHostAV1(block, 0, 0, 0)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+	// log.Printf("Auth hosts response: [% X]", res1)
 
 	keyMaster := make([]byte, 16)
-	res1, err = samAv2.ChangeKeyEntryAv1(0, 0xFF, keyMaster,
-		keyMaster, keyMaster, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x01, 0x02,
-		[]byte{0, 0, 0}, []byte{0x20, 0x00})
-	if err != nil {
-		log.Fatalln(err)
-	}
-	log.Printf("changeKeyAv1 response: [% X]", res1)
+	// res1, err = samAv2.ChangeKeyEntryAv1(0, 0xFF, keyMaster,
+	// 	keyMaster, keyMaster, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x01, 0x02,
+	// 	[]byte{0, 0, 0}, []byte{0x20, 0x00})
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+	// log.Printf("changeKeyAv1 response: [% X]", res1)
 
-	res1, err = samAv2.SwitchToAV2(keyMaster, 0, 0)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	log.Printf("switch response: [% X]", res1)
+	// res1, err = samAv2.SwitchToAV2(keyMaster, 0, 0)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+	// log.Printf("switch response: [% X]", res1)
 
 	// var res1 []byte
-	res1, err = samAv2.AuthHostAV2(keyMaster, 0, 0, 2)
+	res1, err := samAv2.AuthHostAV2(keyMaster, 0, 0, 2)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -113,7 +112,7 @@ func main() {
 	}
 	res1, err = samAv2.ChangeKeyEntry(key2, 0xFF, keyMaster, keyMaster, keyMaster,
 		0x00, 0x00, 0x00, 0xFF, 0x00, 0x01, 0x02, 0x01,
-		[]byte{0, 0, 0}, []byte{0x21, 0x00})
+		[]byte{0, 0, 0}, []byte{0x20, 0x00})
 	if err != nil {
 		log.Fatalln(err)
 	}
