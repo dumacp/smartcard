@@ -36,7 +36,7 @@ func push(data uint64, bitwise int, input interface{}) uint64 {
 	case int:
 		inputdata = uint64(v)
 	default:
-		inputdata = reflect.ValueOf(v).Uint()
+		inputdata = uint64(reflect.ValueOf(v).Int())
 	}
 
 	data = (data << bitwise) | inputdata
