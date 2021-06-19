@@ -1,6 +1,9 @@
 package samav2
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+	"reflect"
+)
 
 type KeyType int
 type KeyClass int
@@ -24,21 +27,19 @@ const (
 
 func push(data uint64, bitwise int, input interface{}) uint64 {
 
-	inputdata := 0
+	inputdata := uint64(0)
 	switch v := input.(type) {
 	case bool:
 		if v {
 			inputdata = 1
 		}
 	case int:
-		inputdata = v
+		inputdata = uint64(v)
 	default:
-		if parse, ok := v.(int); ok {
-			inputdata = parse
-		}
+		inputdata = reflect.ValueOf(v).Uint()
 	}
 
-	data = (data << bitwise) | uint64(inputdata)
+	data = (data << bitwise) | inputdata
 
 	return data
 }
