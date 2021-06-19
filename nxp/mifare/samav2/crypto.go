@@ -105,7 +105,11 @@ func (sam *samAv2) SAMEncipherData(alg CrytoAlgorithm, data []byte) ([]byte, err
 		if len(fragments)-1 != i {
 			lastBlock = false
 		}
-		response := ApduEncipher_Data(lastBlock, 0x00, v)
+		apdu := ApduEncipher_Data(lastBlock, 0x00, v)
+		response, err := sam.Apdu(apdu)
+		if err != nil {
+			return nil, err
+		}
 		if err := mifare.VerifyResponseIso7816(response); err != nil {
 			return nil, err
 		}
@@ -152,7 +156,11 @@ func (sam *samAv2) SAMEncipherOfflineData(alg CrytoAlgorithm, data []byte) ([]by
 		if len(fragments)-1 != i {
 			lastBlock = false
 		}
-		response := ApduEncipherOffline_Data(lastBlock, v)
+		apdu := ApduEncipherOffline_Data(lastBlock, v)
+		response, err := sam.Apdu(apdu)
+		if err != nil {
+			return nil, err
+		}
 		if err := mifare.VerifyResponseIso7816(response); err != nil {
 			return nil, err
 		}
@@ -180,6 +188,8 @@ func (sam *samAv2) SAMDecipherOfflineData(alg CrytoAlgorithm, data []byte) ([]by
 		return nil, fmt.Errorf("data len is invalid, len = %d", len(data))
 	case alg != DES_ALG && alg != AES_ALG:
 		return nil, fmt.Errorf("ALGORITM is not valid")
+	case len(data) < 8:
+		return nil, fmt.Errorf("data len is invalid")
 	}
 
 	divisor := 1
@@ -205,7 +215,11 @@ func (sam *samAv2) SAMDecipherOfflineData(alg CrytoAlgorithm, data []byte) ([]by
 		if len(fragments)-1 != i {
 			lastBlock = false
 		}
-		response := ApduDecipherOffline_Data(lastBlock, v)
+		apdu := ApduDecipherOffline_Data(lastBlock, v)
+		response, err := sam.Apdu(apdu)
+		if err != nil {
+			return nil, err
+		}
 		if err := mifare.VerifyResponseIso7816(response); err != nil {
 			return nil, err
 		}

@@ -96,7 +96,7 @@ func main() {
 		keyMaster[i] = 0x00
 	}
 
-	res1, err = samAv2.ChangeKeyEntry(key1, 0xFF, keyMaster, keyMaster, keyMaster,
+	res1, err = samAv2.ChangeKeyEntry(key1, 0x00, keyMaster, keyMaster, keyMaster,
 		0x00, 0x00, 0x00, 0xFF, 0x00, 0x01, 0x02, 0x01,
 		[]byte{0, 0, 0}, []byte{0x21, 0x00})
 	if err != nil {
