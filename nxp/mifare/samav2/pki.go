@@ -132,6 +132,11 @@ const (
 	SHA256
 )
 
+func (sam *samAv2) PKIUpdateKeyEntries(hashing HashingAlgorithm, keyEntrysNo int,
+	pkiKeyNoEnc, pkiKeyNoSign int, pkiEncKeyFrame, pkiSignature []byte) ([]byte, error) {
+	return nil, nil
+}
+
 func ApduPKIUpdateKeyEntries(hashing HashingAlgorithm, keyEntrysNo int,
 	pkiKeyNoEnc, pkiKeyNoSign int, pkiEncKeyFrame, pkiSignature []byte) [][]byte {
 
