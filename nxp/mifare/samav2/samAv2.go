@@ -72,6 +72,8 @@ type SamAv2 interface {
 	PKIUpdateKeyEntries(hashing HashingAlgorithm, keyEntrysNo int,
 		pkiKeyNoEnc, pkiKeyNoSign int, pkiEncKeyFrame, pkiSignature []byte) ([]byte, error)
 	SAMLoadInitVector(alg CrytoAlgorithm, data []byte) ([]byte, error)
+	PKIImportKey(pkiKeyNo, pkiKeyNoCEK, pkiKeyVCEK, pkiRefNoKUC int,
+		pkiSET, pkie, pkiN, pkip, pkiq, pkidP, pkidQ, pkiipq []byte) ([]byte, error)
 }
 
 type samAv2 struct {
