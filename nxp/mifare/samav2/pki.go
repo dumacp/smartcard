@@ -2,6 +2,7 @@ package samav2
 
 import (
 	"encoding/binary"
+	"log"
 
 	"github.com/dumacp/smartcard"
 	"github.com/dumacp/smartcard/nxp/mifare"
@@ -284,6 +285,7 @@ func ApduPKIImportKey(pkiKeyNo, pkiKeyNoCEK, pkiKeyVCEK, pkiRefNoKUC int,
 		} else {
 			cmd.P2 = 0x00
 		}
+		log.Printf("cmd: [% X]", cmd.PrefixApdu())
 		apdu := cmd.PrefixApdu()
 		apdu = append(apdu, v...)
 		apdus = append(apdus, apdu)
