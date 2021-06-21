@@ -64,62 +64,58 @@ func ApduPKIGenerateKeyPair(pkiE []byte, pkiSET []byte,
 	pkiKeyNo, pkiKeyNoCEK, pkikeVCEK, pkiRefNoKUC, pkiNLen int) [][]byte {
 
 	apdus := make([][]byte, 0)
-	apdu := make([]byte, 0)
-	apducmd := []byte{0x80, 0x15}
+	data := make([]byte, 0)
+	cmd := smartcard.ISO7816cmd{
+		CLA: 0x80,
+		INS: 0x15,
+		P1:  0x00,
+		P2:  0x00,
+		Le:  false,
+	}
 	p1 := byte(0)
 	if len(pkiE) > 0 {
 		p1 = 0x01
 	}
+	cmd.P1 = p1
 
-	p2 := byte(0)
-	if 10+len(pkiE) > 255 {
-		p2 = 0xAF
-	}
+	data = append(data, byte(len(pkiE)+10))
 
-	apducmd = append(apducmd, p1)
-	apdu = append(apdu, apducmd...)
-	apdu = append(apducmd, p2)
-	apdu = append(apdu, byte(len(pkiE)+10))
-
-	apdu = append(apdu, byte(pkiKeyNo))
-	apdu = append(apdu, pkiSET...)
-	apdu = append(apdu, byte(pkiKeyNoCEK))
-	apdu = append(apdu, byte(pkikeVCEK))
-	apdu = append(apdu, byte(pkiRefNoKUC))
+	data = append(data, byte(pkiKeyNo))
+	data = append(data, pkiSET...)
+	data = append(data, byte(pkiKeyNoCEK))
+	data = append(data, byte(pkikeVCEK))
+	data = append(data, byte(pkiRefNoKUC))
 	lenRSA := make([]byte, 2)
 	binary.LittleEndian.PutUint16(lenRSA, 256)
-	apdu = append(apdu, lenRSA...)
-
-	if 10+len(pkiE) <= 255 {
-		apdu = append(apdu, pkiE...)
-		apdus = append(apdus, apdu)
-	} else {
-		pkiECopy := make([]byte, len(pkiE))
-		copy(pkiECopy, pkiE)
-
-		apdu = append(apdu, pkiECopy[0:255-10]...)
-		pkiECopy = pkiECopy[255-10:]
-		apdus = append(apdus, apdu)
-		for {
-
-			nextapdu := make([]byte, 0)
-			nextapdu = append(nextapdu, apducmd...)
-			nextapdu = append(nextapdu, 0x00) // P2 = 0x00
-
-			if len(pkiECopy) > 255 {
-				nextapdu = append(nextapdu, byte(255))
-				nextapdu = append(nextapdu, pkiECopy[0:255]...)
-				pkiECopy = pkiECopy[255:]
-				apdus = append(apdus, nextapdu)
-			} else {
-				nextapdu = append(nextapdu, byte(len(pkiECopy)))
-				nextapdu = append(nextapdu, pkiECopy...)
-				apdus = append(apdus, nextapdu)
-				break
-			}
-		}
+	data = append(data, lenRSA...)
+	if cmd.Le {
+		data = append(data, 0x00)
 	}
 
+	chunks := make([][]byte, 0)
+	chunkSize := 255
+	for i := 0; i < len(data); i += chunkSize {
+		end := i + chunkSize
+
+		// necessary check to avoid slicing beyond
+		// slice capacity
+		if end > len(data) {
+			end = len(data)
+		}
+
+		chunks = append(chunks, data[i:end])
+	}
+
+	for i, v := range chunks {
+		if i < len(chunks)-1 {
+			cmd.P2 = 0xAF
+		} else {
+			cmd.P2 = 0x00
+		}
+		apdu := cmd.PrefixApdu()
+		apdu = append(apdu, v...)
+		apdus = append(apdus, apdu)
+	}
 	return apdus
 }
 
@@ -134,28 +130,184 @@ const (
 
 func (sam *samAv2) PKIUpdateKeyEntries(hashing HashingAlgorithm, keyEntrysNo int,
 	pkiKeyNoEnc, pkiKeyNoSign int, pkiEncKeyFrame, pkiSignature []byte) ([]byte, error) {
-	return nil, nil
+
+	apdus := ApduPKIUpdateKeyEntries(hashing, keyEntrysNo, pkiKeyNoEnc, pkiKeyNoSign, pkiEncKeyFrame, pkiSignature)
+	var resp []byte
+	for _, v := range apdus {
+		var err error
+		resp, err = sam.Apdu(v)
+		if err != nil {
+			return nil, err
+		}
+		if err := mifare.VerifyResponseIso7816(resp); err != nil {
+			return nil, err
+		}
+	}
+
+	return resp, nil
 }
 
 func ApduPKIUpdateKeyEntries(hashing HashingAlgorithm, keyEntrysNo int,
 	pkiKeyNoEnc, pkiKeyNoSign int, pkiEncKeyFrame, pkiSignature []byte) [][]byte {
 
-	// cmd := &smartcard.ISO7816cmd{
-	// 	CLA: 0x80,
-	// 	INS: 0x18,
-	// 	P1:  byte(hashing) | byte(keyEntrysNo<<2),
-	// 	P2:  0x00,
-	// 	Le:  true,
-	// }
+	apdus := make([][]byte, 0)
 
-	// if len()
+	cmd := smartcard.ISO7816cmd{
+		CLA: 0x80,
+		INS: 0x1D,
+		P1:  0x00,
+		P2:  0x00,
+		Le:  false,
+	}
+	p1 := byte(0)
+	switch hashing {
+	case SHA1:
+		p1 = 0x00
+	case SHA224:
+		p1 = 0x02
+	case SHA256:
+		p1 = 0x03
+	}
 
-	// apdu := make([]byte, 0)
-	// apdu = append(apdu, cmd.PrefixApdu()...)
+	p1 |= (byte(keyEntrysNo) << 2)
 
-	// if cmd.Le {
-	// 	apdu = append(apdu, 0x00)
-	// }
+	cmd.P1 = p1
 
-	return nil
+	data := make([]byte, 0)
+	data = append(data, byte(len(pkiEncKeyFrame)+len(pkiSignature)+2))
+
+	data = append(data, byte(pkiKeyNoEnc))
+	data = append(data, byte(pkiKeyNoSign))
+
+	data = append(data, pkiEncKeyFrame...)
+	data = append(data, pkiSignature...)
+	if cmd.Le {
+		data = append(data, 0x00)
+	}
+
+	chunks := make([][]byte, 0)
+	chunkSize := 255
+	for i := 0; i < len(data); i += chunkSize {
+		end := i + chunkSize
+
+		// necessary check to avoid slicing beyond
+		// slice capacity
+		if end > len(data) {
+			end = len(data)
+		}
+
+		chunks = append(chunks, data[i:end])
+	}
+
+	for i, v := range chunks {
+		if i < len(chunks)-1 {
+			cmd.P2 = 0xAF
+		} else {
+			cmd.P2 = 0x00
+		}
+		apdu := cmd.PrefixApdu()
+		apdu = append(apdu, v...)
+		apdus = append(apdus, apdu)
+	}
+
+	return apdus
+}
+
+func ApduPKIImportKey(pkiKeyNo, pkiKeyNoCEK, pkiKeyVCEK, pkiRefNoKUC int,
+	pkiSET, pkie, pkiN, pkip, pkiq, pkidP, pkidQ, pkiipq []byte,
+) [][]byte {
+
+	apdus := make([][]byte, 0)
+
+	cmd := smartcard.ISO7816cmd{
+		CLA: 0x80,
+		INS: 0x19,
+		P1:  0x00,
+		P2:  0x00,
+		Le:  false,
+	}
+	p1 := byte(0)
+	if len(pkiN)+len(pkie)+len(pkip)+len(pkiq)+len(pkidP)+len(pkidQ)+len(pkiipq) <= 0 {
+		p1 = 0x01
+	}
+
+	cmd.P1 = p1
+
+	data := make([]byte, 0)
+	data = append(data, byte(pkiKeyNo))
+	data = append(data, pkiSET...)
+	data = append(data, byte(pkiKeyNoCEK))
+	data = append(data, byte(pkiKeyVCEK))
+	pkiNLen := make([]byte, 2)
+	binary.LittleEndian.PutUint16(pkiNLen, uint16(len(pkiN)))
+	data = append(data, pkiNLen...)
+	pkieLen := make([]byte, 2)
+	binary.LittleEndian.PutUint16(pkieLen, uint16(len(pkie)))
+	data = append(data, pkieLen...)
+	pkipLen := make([]byte, 2)
+	binary.LittleEndian.PutUint16(pkipLen, uint16(len(pkip)))
+	data = append(data, pkipLen...)
+	pkiqLen := make([]byte, 2)
+	binary.LittleEndian.PutUint16(pkiqLen, uint16(len(pkiq)))
+	data = append(data, pkiqLen...)
+
+	data = append(data, pkiN...)
+	data = append(data, pkie...)
+	data = append(data, pkip...)
+	data = append(data, pkiq...)
+
+	data = append(data, pkidP...)
+	data = append(data, pkidQ...)
+	data = append(data, pkiipq...)
+
+	if cmd.Le {
+		data = append(data, 0x00)
+	}
+
+	chunks := make([][]byte, 0)
+	chunkSize := 255
+	for i := 0; i < len(data); i += chunkSize {
+		end := i + chunkSize
+
+		// necessary check to avoid slicing beyond
+		// slice capacity
+		if end > len(data) {
+			end = len(data)
+		}
+
+		chunks = append(chunks, data[i:end])
+	}
+
+	for i, v := range chunks {
+		if i < len(chunks)-1 {
+			cmd.P2 = 0xAF
+		} else {
+			cmd.P2 = 0x00
+		}
+		apdu := cmd.PrefixApdu()
+		apdu = append(apdu, v...)
+		apdus = append(apdus, apdu)
+	}
+
+	return apdus
+}
+
+func (sam *samAv2) PKIImportKey(pkiKeyNo, pkiKeyNoCEK, pkiKeyVCEK, pkiRefNoKUC int,
+	pkiSET, pkie, pkiN, pkip, pkiq, pkidP, pkidQ, pkiipq []byte) ([]byte, error) {
+
+	apdus := ApduPKIImportKey(pkiKeyNo, pkiKeyNoCEK, pkiKeyVCEK, pkiRefNoKUC,
+		pkiSET, pkie, pkiN, pkip, pkiq, pkidP, pkidQ, pkiipq)
+	var resp []byte
+	for _, v := range apdus {
+		var err error
+		resp, err = sam.Apdu(v)
+		if err != nil {
+			return nil, err
+		}
+		if err := mifare.VerifyResponseIso7816(resp); err != nil {
+			return nil, err
+		}
+	}
+
+	return resp, nil
 }
