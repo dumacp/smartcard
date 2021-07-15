@@ -82,7 +82,7 @@ func (e BadChecsum) Error() string {
 	return fmt.Sprintf("bad checksum: [% X], %X", eb, eb[len(eb)-3])
 }
 func (e NilResponse) Error() string {
-	return fmt.Sprintf("nil response")
+	return "nil response"
 }
 
 type reader struct {
@@ -145,7 +145,7 @@ func (r *reader) TransmitAscii(cmd, data []byte) ([]byte, error) {
 	// fmt.Printf("resp TransmitAscii: [% X]\n", resp1)
 	// fmt.Printf("resp TransmitAscii: %q\n", resp1)
 	if err != nil {
-		return nil, err
+		return nil, smartcard.Error(err)
 	}
 	return resp1, nil
 }
@@ -166,17 +166,17 @@ func (r *reader) TransmitBinary(cmd, data []byte) ([]byte, error) {
 	resp1, err := r.device.SendRecv(apdu)
 	// fmt.Printf("resp TransmitBinary: [% X]\n", resp1)
 	if err != nil {
-		return nil, err
+		return nil, smartcard.Error(err)
 	}
 	if err := verifyresponse(resp1); err != nil {
-		return nil, err
+		return nil, smartcard.Error(err)
 	}
 	return resp1[3 : len(resp1)-2], nil
 }
 
 func verifyresponse(data []byte) error {
 	if data == nil || len(data) <= 0 {
-		return NilResponse(-1)
+		return smartcard.ErrComm
 	}
 	if data[0] != 0x02 || data[len(data)-1] != 0x03 {
 		return BadResponse(data)
@@ -216,7 +216,7 @@ func (r *reader) SendAPDU1443_4(data []byte) ([]byte, error) {
 		return nil, err
 	}
 	if response == nil || len(response) < 2 {
-		return nil, fmt.Errorf("Respuesta con error: [% X] ", response)
+		return nil, smartcard.Error(fmt.Errorf("respuesta con error: [% X] ", response))
 	}
 
 	if (response[1] & 0x10) == 0x10 {
@@ -245,7 +245,7 @@ func (r *reader) SendSAMDataFrameTransfer(data []byte) ([]byte, error) {
 	response, err := r.TransmitBinary([]byte{}, innerData)
 	if err != nil {
 		time.Sleep(600 * time.Millisecond) // restore time
-		return nil, fmt.Errorf("Respuesta con error (e): null+")
+		return nil, err
 	}
 
 	if len(response) < 3 {
@@ -253,7 +253,7 @@ func (r *reader) SendSAMDataFrameTransfer(data []byte) ([]byte, error) {
 			return response, nil
 		}
 		time.Sleep(600 * time.Millisecond) // restore time
-		return nil, fmt.Errorf("Respuesta con error: [% X]", response)
+		return nil, smartcard.Error(fmt.Errorf("respuesta con error: [% X] ", response))
 	}
 
 	return response[3:], nil
@@ -301,7 +301,7 @@ func (r *reader) SetRegister(register byte, data []byte) error {
 //Create New Card interface
 func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	if !r.device.Ok {
-		return nil, fmt.Errorf("serial device is not ready")
+		return nil, fmt.Errorf("serial device is not ready, %w", smartcard.ErrComm)
 	}
 	// if r.ModeProtocol != BinaryMode {
 	// 	return nil, fmt.Errorf("protocol mode is not binary, ascii mode is not support")
@@ -324,11 +324,11 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	}
 	if len(resp2) <= 1 {
 		code := resp2[0]
-		return nil, ErrorCode(code)
+		return nil, smartcard.Error(ErrorCode(code))
 	}
 	if len(resp2) < 5 {
 		bad := resp2[:]
-		return nil, BadResponse(bad)
+		return nil, smartcard.Error(BadResponse(bad))
 	}
 
 	uid := make([]byte, 4)
@@ -345,7 +345,7 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 //Create New Card interface
 func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
 	if !r.device.Ok {
-		return nil, fmt.Errorf("serial device is not ready")
+		return nil, fmt.Errorf("serial device is not ready, %w", smartcard.ErrComm)
 	}
 	// if r.ModeProtocol != BinaryMode {
 	// 	return nil, fmt.Errorf("protocol mode is not binary, ascii mode is not support")
@@ -355,6 +355,25 @@ func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
 	// if err != nil {
 	// 	return nil, err
 	// }
+
+	trama1 := []byte{00, 0xD1, 0x00, 0x13, 0x11, 00}
+	if _, err := r.SendSAMDataFrameTransfer(trama1); err != nil {
+		time.Sleep(100 * time.Millisecond)
+		trama3 := []byte{00, 0x02, 0x10, 0x11, 00}
+		_, err := r.SendSAMDataFrameTransfer(trama3)
+		return nil, err
+	}
+	// fmt.Printf("resp1: [%s]\n", resp1)
+
+	/**
+	 * PPS
+	 */
+	// trama2 := []byte{0x04, 0xE0, 0x00, 0x43, 0x18, 0x04, 0xFF, 0x11, 0x01, 0xEF}
+	trama2 := []byte{0x04, 0xE0, 0x00, 0x13, 0x11, 0x04, 0xFF, 0x11, 0x86, 0x68}
+	if _, err := r.SendSAMDataFrameTransfer(trama2); err != nil {
+		return nil, err
+	}
+
 	card := &card{
 		reader:   r,
 		modeSend: T1TransactionV2,

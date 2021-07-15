@@ -292,7 +292,7 @@ func (sam *samAv2) ChangeKeyEntry(keyNbr, proMax int,
 		return nil, err
 	}
 	if err := mifare.VerifyResponseIso7816(response); err != nil {
-		return nil, err
+		return response, err
 	}
 	return response, nil
 }
@@ -319,7 +319,7 @@ func (sam *samAv2) ChangeKeyEntryOffline(keyNbr, proMax, changeCtr int,
 		return nil, err
 	}
 	if err := mifare.VerifyResponseIso7816(response); err != nil {
-		return nil, err
+		return response, err
 	}
 	return response, nil
 }
@@ -373,7 +373,7 @@ func (sam *samAv2) ActivateOfflineKey(keyNo, keyVer int,
 	}
 	if err := mifare.VerifyResponseIso7816(response); err != nil {
 		log.Printf("apdu: [ % X ] ", apdu)
-		return nil, err
+		return response, err
 	}
 
 	return response, nil
@@ -387,7 +387,7 @@ func (sam *samAv2) SAMGetKeyEntry(keyNo int) ([]byte, error) {
 		return nil, err
 	}
 	if err := mifare.VerifyResponseIso7816(response); err != nil {
-		return nil, err
+		return response, err
 	}
 
 	return response, nil
@@ -401,7 +401,7 @@ func (sam *samAv2) ApduSAMGetKeyEntry(keyNo int) []byte {
 		INS: 0x64,
 		P1:  byte(keyNo),
 		P2:  byte(0x00),
-		Le:  false,
+		Le:  true,
 	}
 
 	apdu := make([]byte, 0)

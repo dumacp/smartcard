@@ -50,7 +50,7 @@ func (c *card) DisconnectCard() error {
 //Primitive channel to send command
 func (c *card) Apdu(apdu []byte) ([]byte, error) {
 	if c.State != CONNECTED {
-		return nil, ErrDisconnectCard
+		return nil, smartcard.Error(smartcard.ErrComm)
 	}
 	switch c.modeSend {
 	case APDU1443_4:
@@ -65,7 +65,7 @@ func (c *card) Apdu(apdu []byte) ([]byte, error) {
 //Get ATR of Card
 func (c *card) ATR() ([]byte, error) {
 	if c.State != CONNECTED {
-		return nil, &smartcard.Error{Data: "Don't Connect to Card"}
+		return nil, smartcard.Error(smartcard.ErrComm)
 	}
 	return nil, nil
 }

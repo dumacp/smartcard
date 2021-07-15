@@ -15,7 +15,7 @@ var keyNbr int
 
 func init() {
 	flag.StringVar(&keyS, "key", "00000000000000000000000000000000", "key aes128")
-	flag.IntVar(&keyNbr, "keyNbr", 0x4002, "key Number")
+	flag.IntVar(&keyNbr, "keyNbr", 0x4001, "key Number")
 }
 
 func main() {

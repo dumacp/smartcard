@@ -2,7 +2,7 @@ package samav2
 
 import (
 	"encoding/binary"
-	"errors"
+	"fmt"
 	"math/big"
 )
 
@@ -14,21 +14,21 @@ type PKIPubKey struct {
 	PKINLen     int
 	PKIeLen     int
 	PKIN        *big.Int
-	PKIe        *big.Int
+	PKIe        int
 }
 
 func ParseResponseToPKIPubKey(data []byte) (*PKIPubKey, error) {
 
 	prefixDataLen := 2 + 1 + 1 + 1 + 2 + 2
 	if len(data) < prefixDataLen {
-		return nil, errors.New("lendata ins invalid")
+		return nil, fmt.Errorf("len data is invalid, len: %d", len(data))
 	}
 
-	pkiNLen := binary.LittleEndian.Uint16(data[5:7])
-	pkieLen := binary.LittleEndian.Uint16(data[7:9])
+	pkiNLen := binary.BigEndian.Uint16(data[5:7])
+	pkieLen := binary.BigEndian.Uint16(data[7:9])
 
 	if len(data) < prefixDataLen+int(pkiNLen)+int(pkieLen) {
-		return nil, errors.New("lendata ins invalid")
+		return nil, fmt.Errorf("lendata is invalid, len: %d", len(data))
 	}
 
 	setBytes := make([]byte, 2)
@@ -40,8 +40,8 @@ func ParseResponseToPKIPubKey(data []byte) (*PKIPubKey, error) {
 	pkiN := new(big.Int)
 	pkie := new(big.Int)
 
-	pkiNbytes := reverseBytes(data[9 : 9+pkiNLen])
-	pkkiebytes := reverseBytes(data[9+pkiNLen : 9+pkiNLen+pkieLen])
+	pkiNbytes := data[9 : 9+pkiNLen]
+	pkkiebytes := data[9+pkiNLen : 9+pkiNLen+pkieLen]
 
 	pkiN.SetBytes(pkiNbytes)
 	pkie.SetBytes(pkkiebytes)
@@ -55,7 +55,7 @@ func ParseResponseToPKIPubKey(data []byte) (*PKIPubKey, error) {
 	pubKey.PKINLen = int(pkiNLen)
 	pubKey.PKIeLen = int(pkieLen)
 	pubKey.PKIN = pkiN
-	pubKey.PKIe = pkie
+	pubKey.PKIe = int(pkie.Uint64())
 
 	return pubKey, nil
 }

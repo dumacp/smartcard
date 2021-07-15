@@ -103,7 +103,7 @@ func ConnectSamAv2(r smartcard.IReader) (SamAv2, error) {
 //ConnectSam Create SamAv2 interface
 func ConnectSam(r smartcard.IReader) (SamAv2, error) {
 
-	c, err := r.ConnectCard()
+	c, err := r.ConnectSamCard()
 	if err != nil {
 		return nil, err
 	}
