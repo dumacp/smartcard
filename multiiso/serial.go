@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dumacp/smartcard"
 	"github.com/tarm/serial"
 )
 
@@ -167,21 +168,21 @@ func (dev *Device) SendRecv(data []byte) ([]byte, error) {
 	if n, err := dev.port.Write(data); err != nil {
 		return nil, err
 	} else if n <= 0 {
-		return nil, fmt.Errorf("dont write in SendRecv command")
+		return nil, fmt.Errorf("dont write in SendRecv command, %w", smartcard.ErrComm)
 	}
 	select {
 	case v, ok := <-dev.chRecv:
 		if !ok {
 			return nil, fmt.Errorf("close channel in dev")
 		}
-		if v != nil && len(v) > 0 {
+		if len(v) > 0 {
 			recv = append(recv, v...)
 		}
 	case <-time.After(dev.timeout):
 	}
 
 	if recv == nil || len(recv) <= 0 {
-		return nil, fmt.Errorf("timeout error in SendRecv command")
+		return nil, fmt.Errorf("timeout error in SendRecv command, %w", smartcard.ErrComm)
 	}
 	return recv, nil
 }
@@ -194,7 +195,7 @@ func (dev *Device) Recv() ([]byte, error) {
 	case <-time.After(dev.timeout):
 	}
 	if recv == nil || len(recv) <= 0 {
-		return nil, fmt.Errorf("timeout error in Recv command")
+		return nil, fmt.Errorf("timeout error in Recv command, %w", smartcard.ErrComm)
 	}
 	return recv[:], nil
 }

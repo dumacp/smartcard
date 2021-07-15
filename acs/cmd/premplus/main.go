@@ -82,7 +82,8 @@ func main() {
 
 	sam := samav3.SamAV3(cardi)
 
-	keyMaster := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16}
+	// keyMaster := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16}
+	keyMaster := make([]byte, 16)
 	if resp, err := sam.AuthHost(keyMaster, 0, 0, 0); err != nil {
 		log.Fatal(err)
 	} else {

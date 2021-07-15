@@ -1,6 +1,7 @@
 package samav2
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/dumacp/smartcard"
@@ -218,10 +219,10 @@ func (sam *samAv2) SAMDecipherOfflineData(alg CrytoAlgorithm, data []byte) ([]by
 		apdu := ApduDecipherOffline_Data(lastBlock, v)
 		response, err := sam.Apdu(apdu)
 		if err != nil {
-			return nil, err
+			return response, err
 		}
 		if err := mifare.VerifyResponseIso7816(response); err != nil {
-			return nil, err
+			return response, err
 		}
 		result = append(result, response[:len(response)-2]...)
 	}
@@ -274,7 +275,7 @@ func (sam *samAv2) SAMLoadInitVector(alg CrytoAlgorithm, data []byte) ([]byte, e
 	case AES_ALG:
 	case DES_ALG:
 	default:
-		return nil, &smartcard.Error{Data: "ALG not support"}
+		return nil, errors.New("ALG not support")
 	}
 	return sam.Apdu(sam.ApduSAMLoadInitVector(alg, data))
 }

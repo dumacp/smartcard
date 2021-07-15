@@ -9,6 +9,10 @@ projects on which it is based:
 /**/
 package smartcard
 
+import (
+	"errors"
+)
+
 //ICard Interface
 type ICard interface {
 	Apdu(apdu []byte) ([]byte, error)
@@ -18,10 +22,20 @@ type ICard interface {
 	DisconnectCard() error
 }
 
-type Error struct {
-	Data string
+var ErrComm = Error(errors.New("error communication"))
+
+type SmartcardError struct {
+	Err error
 }
 
-func (e *Error) Error() string {
-	return e.Data
+func Error(e error) error {
+	return &SmartcardError{Err: e}
+}
+
+func (e *SmartcardError) Error() string {
+	return e.Err.Error()
+}
+
+func (e *SmartcardError) Unwrap() error {
+	return e.Err
 }

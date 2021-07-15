@@ -15,6 +15,20 @@ const (
 	OfflineCrypto_KEY KeyClass = 4
 )
 
+func KeyClassByName(v string) KeyClass {
+	switch v {
+	case "HOST_KEY":
+		return HOST_KEY
+	case "PICC_KEY":
+		return PICC_KEY
+	case "OfflineChange_KEY":
+		return OfflineChange_KEY
+	case "OfflineCrypto_KEY":
+		return OfflineCrypto_KEY
+	}
+	return -1
+}
+
 const (
 	TDEA_DESFire_4                 KeyType = 0
 	TDEA_ISO_10116                 KeyType = 1

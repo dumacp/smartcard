@@ -32,39 +32,61 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	log.Printf("RESP: [ %X ]\n", resp)
+	log.Printf("RESP: [ %s ]\n", resp)
 
-	data0 := []byte{00, 0xD2, 0x00, 0x13, 0x11, 00}
-
-	resp0, err := reader.Transmit([]byte{0x65}, data0)
-	if err != nil {
-		log.Fatalln(err)
+	trama3 := []byte{00, 0xD2, 0x00, 0x13, 0x11, 00}
+	if _, err := reader.SendSAMDataFrameTransfer(trama3); err != nil {
+		log.Println(err)
 	}
-	log.Printf("RESP: [ %X ], [ %s ]\n", resp0, resp0)
 
-	data1 := []byte{0x65, 00, 0xD1, 0x00, 0x13, 0x11, 00}
-	resp1, err := reader.Transmit(data1, nil)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	log.Printf("RESP: [ %X ], [ %s ]\n", resp1, resp1)
+	defer func() {
+		data1 := []byte{00, 0x02, 0x10, 0x11, 00}
+		resp1, err := reader.SendSAMDataFrameTransfer(data1)
+		if err != nil {
+			log.Println(err)
+		}
+		log.Printf("RESP DEFER: [ %X ], [ %s ]\n", resp1, resp1)
+	}()
 
-	samAv2, err := samav2.ConnectSamAv2(reader)
+	data0 := []byte{00, 0xD1, 0x00, 0x13, 0x11, 00}
+
+	resp0, err := reader.SendSAMDataFrameTransfer(data0)
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
+		return
 	}
+	log.Printf("RESP: [ %X ],\nascii: %s\n", resp0, resp0)
+	time.Sleep(2 * time.Second)
+
+	data2 := []byte{0x04, 0xE0, 0x00, 0x13, 0x11, 0x04, 0xFF, 0x11, 0x86, 0x68}
+	resp2, err := reader.SendSAMDataFrameTransfer(data2)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	log.Printf("RESP: [ %X ], [ %s ]\n", resp2, resp2)
+
+	card, err := reader.ConnectSamCard()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	samAv2 := samav2.SamAV2(card)
 
 	samAtr, err := samAv2.ATR()
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
+		return
 	}
 	log.Printf("ATR: [ %X ]\n", samAtr)
 
 	samUID, err := samAv2.UID()
 	if err != nil {
-		log.Panicln(err)
+		log.Println(err)
+		return
 	}
-	log.Printf("sam UID: [% X]", samUID)
+	fmt.Printf("sam UID: [% X]\n", samUID)
 
 	// reader := multiiso.NewMifareClassicReader(dev, "lectora iso", 1)
 	// if mode > 0 {
