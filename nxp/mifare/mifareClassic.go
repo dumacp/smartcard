@@ -85,3 +85,4 @@ func (mc *mifareClassic) WriteBlock(bNr int, data []byte) ([]byte, error) {
 	return response, nil
 }
 /**/
+// ConnectSamCard() (smartcard.ICard, error)

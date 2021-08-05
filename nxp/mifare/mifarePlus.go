@@ -74,7 +74,7 @@ func Mplus(c smartcard.ICard) MifarePlus {
 /**/
 //Valid response: response[0] == 0x90
 func verifyResponse(data []byte) error {
-	if data == nil {
+	if len(data) <= 0 {
 		return fmt.Errorf("null response")
 	}
 	if data[0] != 0x90 {

@@ -163,19 +163,19 @@ func (sam *samAv2) AuthHostAV1(block cipher.Block, keyNo, keyVer, authMode int) 
 
 	response, err := sam.Apdu(aid1)
 	if err != nil {
-		log.Printf("fail response: [ %X ], apdu: [ %X ]", response, aid1)
+		// log.Printf("fail response: [ %X ], apdu: [ %X ]", response, aid1)
 		return nil, err
 	}
 	if response[len(response)-1] != byte(0xAF) {
 		return nil, fmt.Errorf("bad formed response: [% X]", response)
 	}
-	log.Printf("aid1 response: [ %X ], apdu: [ %X ]", response, aid1)
+	// log.Printf("aid1 response: [ %X ], apdu: [ %X ]", response, aid1)
 	rndBC := response[0 : len(response)-2]
 
 	rndB := make([]byte, len(rndBC))
 	modeD.CryptBlocks(rndB, rndBC)
 	rndBr := rotate(rndB, 1)
-	log.Printf("rotate rndB: [ %X ], [ %X ]", rndB, rndBr)
+	// log.Printf("rotate rndB: [ %X ], [ %X ]", rndB, rndBr)
 	rndA := make([]byte, len(rndB))
 	rand.Read(rndA)
 
@@ -273,10 +273,10 @@ func (sam *samAv2) LockUnlock(key, maxchainBlocks []byte, keyNr, keyVr, unlockKe
 
 	response, err := sam.Apdu(aid1)
 	if err != nil {
-		log.Printf("fail response: [ %X ]", response)
+		// log.Printf("fail response: [ %X ]", response)
 		return nil, err
 	}
-	log.Printf("fail response: [ %X ], apdu: [ %X ]", response, aid1)
+	// log.Printf("fail response: [ %X ], apdu: [ %X ]", response, aid1)
 
 	if response[len(response)-1] != byte(0xAF) {
 		return nil, fmt.Errorf("bad formed response: [% X]", response)
@@ -317,7 +317,7 @@ func (sam *samAv2) LockUnlock(key, maxchainBlocks []byte, keyNr, keyVr, unlockKe
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("fail aid response: [ %X ], apdu: [ %X ]", response, aid2)
+	// log.Printf("fail aid response: [ %X ], apdu: [ %X ]", response, aid2)
 	if response[len(response)-1] != byte(0xAF) {
 		return nil, fmt.Errorf("bad formed response: [% X]", response)
 	}
@@ -456,7 +456,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 	aid2 = append(aid2, cmac2...)
 	aid2 = append(aid2, rnd1...)
 	aid2 = append(aid2, byte(0x00))
-	fmt.Printf("aid2: [% X]\n", aid2)
+	// fmt.Printf("aid2: [% X]\n", aid2)
 	response2, err := sam.Apdu(aid2)
 	if err != nil {
 		return nil, err
