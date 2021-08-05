@@ -16,13 +16,15 @@ import (
 	"time"
 
 	"github.com/dumacp/smartcard"
+	"github.com/dumacp/smartcard/nxp/mifare"
 )
 
 //Reader implement IReader interface
 type Reader interface {
-	// smartcard.IReader
-	// mifare.IReaderClassic
-	ConnectCard() (smartcard.ICard, error)
+	smartcard.IReader
+	mifare.IReaderClassic
+	// ConnectCard() (smartcard.ICard, error)
+	// ConnectSamCard() (smartcard.ICard, error)
 
 	Transmit([]byte, []byte) ([]byte, error)
 	TransmitAscii([]byte, []byte) ([]byte, error)
@@ -34,7 +36,7 @@ type Reader interface {
 	SendAPDU1443_4(data []byte) ([]byte, error)
 	SendSAMDataFrameTransfer(data []byte) ([]byte, error)
 	T1TransactionV2(data []byte) ([]byte, error)
-	ConnectSamCard() (smartcard.ICard, error)
+
 	SetChainning(chainning bool)
 }
 
@@ -262,12 +264,12 @@ func (r *reader) SendSAMDataFrameTransfer(data []byte) ([]byte, error) {
 func (r *reader) T1TransactionV2(data []byte) ([]byte, error) {
 	trama := make([]byte, 0)
 
-	trama = append(trama, byte(len(data)))
-	trama = append(trama, 0xDF) // APDU T=1 Transaction. OptionByte V2
-	trama = append(trama, 0x00) // Downlink length MSB (1 byte)
-	trama = append(trama, 0x13) // Timeout
-	trama = append(trama, 0x86) // Transmission factor byte (1 byte)
-	trama = append(trama, 0x00) // Return length
+	trama = append(trama, byte(len(data)&0xFF))
+	trama = append(trama, 0xDF)                    // APDU T=1 Transaction. OptionByte V2
+	trama = append(trama, byte(len(data)>>8&0xFF)) // Downlink length MSB (1 byte)
+	trama = append(trama, 0x13)                    // Timeout
+	trama = append(trama, 0x86)                    // Transmission factor byte (1 byte)
+	trama = append(trama, 0x00)                    // Return length
 
 	trama = append(trama, data...)
 

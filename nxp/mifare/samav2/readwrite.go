@@ -2,8 +2,6 @@ package samav2
 
 import (
 	"fmt"
-	"log"
-	"time"
 
 	"github.com/dumacp/smartcard"
 	"github.com/dumacp/smartcard/nxp/mifare"
@@ -49,16 +47,16 @@ func ApduSAMCombinedReadMFP(typeMFPdata TypeMFPdata, isLastFrame bool, data []by
 func (sam *samAv2) SAMCombinedReadMFP(typeMFPdata TypeMFPdata, isLastFrame bool, data []byte,
 ) ([]byte, error) {
 	apdu := ApduSAMCombinedReadMFP(typeMFPdata, isLastFrame, data)
-	log.Printf("apdu: [ % X ], time: %f", apdu, float64(time.Now().UnixNano())/1000000000)
+	// log.Printf("apdu: [ % X ], time: %f", apdu, float64(time.Now().UnixNano())/1000000000)
 	response, err := sam.Apdu(apdu)
 	if err != nil {
 		return nil, err
 	}
 	if err := mifare.VerifyResponseIso7816(response); err != nil {
 
-		return nil, err
+		return response, err
 	}
-	log.Printf("resp: [ % X ], time: %f", response, float64(time.Now().UnixNano())/1000000000)
+	// log.Printf("resp: [ % X ], time: %f", response, float64(time.Now().UnixNano())/1000000000)
 
 	return response, nil
 }
@@ -102,7 +100,7 @@ func (sam *samAv2) SAMCombinedWriteMFP(typeMFPdata TypeMFPdata, data []byte,
 	}
 	if err := mifare.VerifyResponseIso7816(response); err != nil {
 		// log.Printf("apdu: [ % X ] ", apdu)
-		return nil, err
+		return response, err
 	}
 
 	return response, nil
