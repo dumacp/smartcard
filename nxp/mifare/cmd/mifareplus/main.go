@@ -54,13 +54,20 @@ func main() {
 
 	cardm := mifare.Mplus(cardi)
 
-	keyb, err := hex.DecodeString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
-	//keyb, err := hex.DecodeString("00000000000000000000000000000000")
+	// keyb, err := hex.DecodeString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+	keyb, err := hex.DecodeString("00000000000000000000000000000000")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	res, err := cardm.FirstAuth(0x4002, keyb)
+	res, err := cardm.FirstAuth(0x4004, keyb)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("res: [% X]", res)
+
+	res, err = cardm.ReadPlainMacMac(9, 1)
 	if err != nil {
 		log.Fatal(err)
 	}
