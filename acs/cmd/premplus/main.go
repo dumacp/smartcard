@@ -105,22 +105,23 @@ func main() {
 	log.Printf("ATR: [% X], %s", atr, atr)
 
 	if err := cardm.Auth(0x4002, 11); err != nil {
+		log.Printf("SUCESS AUTH")
 		log.Fatal(err)
 	} else {
 		log.Printf("SUCESS AUTH")
 
-		name := []byte("Leon Dario Garcia")
+		name := []byte("Sebastian Molano")
 		for len(name)%32 != 0 {
 			name = append(name, 0x00)
 		}
 		docTypebytes := make([]byte, 16)
 		docTypebytes[0] = 0x01
-		docID := []byte("9876543210")
+		docID := []byte("9876543211")
 		for len(docID)%16 != 0 {
 			docID = append(docID, 0x00)
 		}
 		log.Printf("SUCESS AUTH")
-		cardid := uint32(423155168)
+		cardid := uint32(423155169)
 		cardidbytes := make([]byte, 16)
 		binary.LittleEndian.PutUint32(cardidbytes[0:4], cardid)
 
@@ -163,6 +164,7 @@ func main() {
 			4:  name,
 			9:  docTypebytes,
 			10: docID,
+			11: {0x00, 0x00, 0x00, 0x00, 0x00, 0x0F, 0xFF, 0x07, 0x80, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 			12: cardidbytes,
 			13: b13bytes,
 			14: {0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00},
@@ -194,7 +196,7 @@ func main() {
 			}
 			fmt.Printf("\n\n")
 		}
-		/**/
+		/**
 		if err := cardm.Inc(20, 2000000); err != nil {
 			log.Fatal(err)
 		}

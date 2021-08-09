@@ -114,9 +114,10 @@ func main() {
 			log.Fatalf("Error: %s\n", err)
 		}
 		log.Printf("Auth f1: %X\n", resp)
-		dataDiv := make([]byte, 4)
-		dataDiv = append(dataDiv, uid[0:4]...)
-		apdu1 := samav2.ApduNonXauthMFPf1(true, 3, 0x02, 0x00, resp, dataDiv)
+		// dataDiv := make([]byte, 4)
+		// dataDiv = append(dataDiv, uid[0:4]...)
+		var dataDiv []byte
+		apdu1 := samav2.ApduNonXauthMFPf1(true, 3, 11, 0x00, resp, dataDiv)
 		log.Printf("SEND TOPIC: %s\n", fmt.Sprintf("SAMFARM/ASYN/123/%X", uid[0:4]))
 		token := c.Publish(fmt.Sprintf("SAMFARM/ASYN/123/%X", uid[0:4]), 0, false, apdu1)
 		token.Wait()
