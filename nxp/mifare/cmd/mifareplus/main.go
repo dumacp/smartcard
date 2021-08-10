@@ -47,14 +47,13 @@ func main() {
 
 	direct.DisconnectCard()
 
-	cardi, err := reader.ConnectCardPCSC()
+	cardi, err := reader.ConnectCard()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	cardm := mifare.Mplus(cardi)
 
-	// keyb, err := hex.DecodeString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
 	keyb, err := hex.DecodeString("00000000000000000000000000000000")
 	if err != nil {
 		log.Fatal(err)
@@ -67,10 +66,22 @@ func main() {
 
 	log.Printf("res: [% X]", res)
 
-	res, err = cardm.ReadPlainMacMac(9, 1)
+	res, err = cardm.ReadEncMacMac(20, 1)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	log.Printf("res: [% X]", res)
+
+	if err := cardm.IncTransfEncMacMac(20, []byte{1, 0, 0, 0}); err != nil {
+		log.Fatal(err)
+	}
+
+	res, err = cardm.ReadEncMacMac(20, 1)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("res: [% X]", res)
+
 }
