@@ -101,21 +101,21 @@ func main() {
 	}
 	log.Printf("ATR: [% X], %s", atr, atr)
 
-	if err := cardm.Auth(0x9000, 11); err != nil {
+	if err := cardm.Auth(0x4004, 11); err != nil {
 		log.Fatal(err)
 	} else {
 		log.Printf("SUCESS AUTH")
 
-		mfp := []byte{0xFF, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+		// mfp := []byte{0xFF, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 
-		// if resp0, err := cardm.Blocks(0xB000, 1); err == nil {
-		// 	log.Printf("blocks %d: len = %d, [% X]", 0xB000, len(resp0), resp0)
-		if err := cardm.WriteBlock(0xB000, mfp); err != nil {
+		if resp0, err := cardm.Blocks(9, 1); err == nil {
+			log.Printf("blocks %d: len = %d, [% X]", 9, len(resp0), resp0)
+			if err := cardm.WriteBlock(9, resp0); err != nil {
+				log.Fatal(err)
+			}
+		} else {
 			log.Fatal(err)
 		}
-		// } else {
-		// 	log.Fatal(err)
-		// }
 	}
 
 }
