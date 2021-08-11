@@ -101,17 +101,26 @@ func main() {
 	}
 	log.Printf("ATR: [% X], %s", atr, atr)
 
-	if err := cardm.Auth(0x9000, 10); err != nil {
+	if err := cardm.Auth(0x400E, 10); err != nil {
 		log.Fatal(err)
 	}
 
 	log.Println("success Auth!!!")
 
 	key := make([]byte, 16)
-	for i := range key {
-		key[i] = 0xFF
+	// for i := range key {
+	// 	key[i] = 0xFF
+	// }
+	// if err := cardm.WriteBlock(0x9000, key); err != nil {
+	// 	log.Fatal(err)
+	// }
+	// log.Println("write Key!!!")
+
+	if err := cardm.WriteBlock(0x400E, key); err != nil {
+		log.Fatal(err)
 	}
-	if err := cardm.WriteBlock(0x9000, key); err != nil {
+	log.Println("write Key!!!")
+	if err := cardm.WriteBlock(0x400F, key); err != nil {
 		log.Fatal(err)
 	}
 	log.Println("write Key!!!")
