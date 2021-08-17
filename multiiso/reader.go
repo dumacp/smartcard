@@ -164,9 +164,9 @@ func (r *reader) TransmitBinary(cmd, data []byte) ([]byte, error) {
 	}
 	apdu = append(apdu, checksum(apdu[1:]))
 	apdu = append(apdu, 0x03)
-	// fmt.Printf("apdu TransmitBinary: [% X]\n", apdu)
+	fmt.Printf("apdu TransmitBinary: [% X]\n", apdu)
 	resp1, err := r.device.SendRecv(apdu)
-	// fmt.Printf("resp TransmitBinary: [% X]\n", resp1)
+	fmt.Printf("resp TransmitBinary: [% X]\n", resp1)
 	if err != nil {
 		return nil, smartcard.Error(err)
 	}
