@@ -20,9 +20,9 @@ type Context struct {
 
 //Interface to Reader device
 type Reader interface {
-	// smartcard.IReader
-	ConnectSamCard() (smartcard.ICard, error)
-	ConnectCard() (smartcard.ICard, error)
+	smartcard.IReader
+	// ConnectSamCard() (smartcard.ICard, error)
+	// ConnectCard() (smartcard.ICard, error)
 	ConnectDirect() (Card, error)
 	ConnectCardPCSC() (Card, error)
 }
