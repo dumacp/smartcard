@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/hex"
 	"log"
 
 	"github.com/dumacp/smartcard/nxp/mifare/samav2"
@@ -129,21 +128,21 @@ func main() {
 
 	// log.Printf("change key [ %v ] response: [% X]", key1, res1)
 
-	key2 := 33
-	// for i := range keyMaster {
-	// 	keyMaster[i] = 0xFF
-	// }
-
-	keyQR, err := hex.DecodeString("06B30E65723E3C96488ED405F1242E88")
-	if err != nil {
-		log.Fatalln(err)
+	key2 := 10
+	for i := range keyMaster {
+		keyMaster[i] = 0x00
 	}
-	set2 := samav2.SETConfigurationSettings(false, false, samav2.AES_128,
+
+	// keyQR, err := hex.DecodeString("06B30E65723E3C96488ED405F1242E88")
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+	set2 := samav2.SETConfigurationSettings(true, false, samav2.AES_128,
 		false, false, false, false, false, false, false, false)
 	extSet2 := samav2.ExtSETConfigurationSettings(
-		samav2.OfflineCrypto_KEY, false, false)
-	res1, err = samAv2.ChangeKeyEntry(key2, 0xFF, keyQR, keyQR, keyQR,
-		0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00, extSet2,
+		samav2.PICC_KEY, false, false)
+	res1, err = samAv2.ChangeKeyEntry(key2, 0xFF, keyMaster, keyMaster, keyMaster,
+		0x00, 0x00, 0x00, 0xFF, 0x00, 0x01, 0x02, extSet2,
 		[]byte{0, 0, 0}, set2)
 	if err != nil {
 		log.Println(err)

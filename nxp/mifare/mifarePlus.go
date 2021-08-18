@@ -429,7 +429,7 @@ func (mplus *mifarePlus) WriteEncMacMac(bNr int, data []byte) error {
 //Decrement encrypted, MAC on response, MAC on command
 func (mplus *mifarePlus) DecTransfEncMacMac(bNr int, data []byte) error {
 
-	cmd := byte(0xB7)
+	cmd := byte(0xB9)
 	if len(data) > 4 {
 		return fmt.Errorf("length Data Value is incorrect (must 4)")
 	}

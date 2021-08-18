@@ -63,7 +63,7 @@ func (dev *Device) read() {
 		log.Println("Device is closed")
 		return
 	}
-	dev.chRecv = make(chan []byte, 0)
+	dev.chRecv = make(chan []byte)
 	go func() {
 		defer func() {
 			select {
