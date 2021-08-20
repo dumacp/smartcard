@@ -587,7 +587,7 @@ func encCalc(readCounter, writeCounter int, key, ti, data []byte) ([]byte, error
 		ivEnc = append(ivEnc, wCountB1)
 	}
 
-	fmt.Printf("iv enc: [% X]\n", ivEnc)
+	// fmt.Printf("iv enc: [% X]\n", ivEnc)
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
