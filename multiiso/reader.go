@@ -326,7 +326,8 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	}
 	if len(resp2) <= 1 {
 		code := resp2[0]
-		return nil, smartcard.Error(ErrorCode(code))
+		return nil, ErrorCode(code)
+		// return nil, smartcard.Error(ErrorCode(code))
 	}
 	if len(resp2) < 5 {
 		bad := resp2[:]
