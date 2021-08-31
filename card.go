@@ -37,5 +37,5 @@ func (e *SmartcardError) Error() string {
 }
 
 func (e *SmartcardError) Unwrap() error {
-	return e.Err
+	return ErrComm
 }

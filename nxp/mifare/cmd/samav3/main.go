@@ -66,6 +66,12 @@ func main() {
 	}
 	log.Printf("sam UID: [% X]", samUID)
 
+	version, err := samAv2.GetVersion()
+	if err != nil {
+		log.Panicln(err)
+	}
+	log.Printf("sam Version: [% X], ASCII: %s", version, version)
+
 	// keyAuth := make([]byte, 16)
 	// block, err := aes.NewCipher(keyAuth)
 	// if err != nil {
@@ -78,6 +84,7 @@ func main() {
 	// }
 	// log.Printf("Auth hosts response: [% X]", res1)
 
+	/**
 	keyMaster := make([]byte, 16)
 	// keyMaster := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16}
 	// res1, err = samAv2.ChangeKeyEntryAv1(0, 0xFF, keyMaster,
@@ -94,6 +101,7 @@ func main() {
 	// 	log.Fatalln(err)
 	// }
 	// log.Printf("Active response: [% X]", res1)
+
 
 	res1, err = samAv2.AuthHostAV2(keyMaster, 0, 0, 0)
 	if err != nil {
@@ -147,4 +155,5 @@ func main() {
 	// }
 
 	// log.Printf("ChangeOffline hosts response: [% X]", res1)
+	/**/
 }
