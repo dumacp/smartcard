@@ -74,6 +74,7 @@ func (dev *Device) read() {
 			default:
 				close(dev.chRecv)
 			}
+			log.Println("finish read port")
 		}()
 		countError := 0
 		funcerr := func(err error) error {
