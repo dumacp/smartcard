@@ -347,7 +347,7 @@ func ApduActivateOfflineKey(keyNo, keyVer int, divInput []byte,
 
 	//len [Lc]
 	if divInput != nil {
-		apdu = append(apdu, byte(len(apdu))+2)
+		apdu = append(apdu, byte(len(divInput))+2)
 
 	} else {
 		apdu = append(apdu, byte(2))
