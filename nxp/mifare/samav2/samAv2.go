@@ -62,6 +62,7 @@ type SamAv2 interface {
 	SAMCombinedReadMFP(typeMFPdata TypeMFPdata, isLastFrame bool, data []byte,
 	) ([]byte, error)
 	SAMEncipherData(alg CrytoAlgorithm, data []byte) ([]byte, error)
+	SAMGenerateMAC(alg CrytoAlgorithm, data []byte) ([]byte, error)
 	SAMEncipherOfflineData(alg CrytoAlgorithm, data []byte) ([]byte, error)
 	SAMDecipherData(alg CrytoAlgorithm,
 		data []byte) ([]byte, error)

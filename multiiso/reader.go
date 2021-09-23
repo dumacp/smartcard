@@ -164,9 +164,9 @@ func (r *reader) TransmitBinary(cmd, data []byte) ([]byte, error) {
 	}
 	apdu = append(apdu, checksum(apdu[1:]))
 	apdu = append(apdu, 0x03)
-	fmt.Printf("apdu TransmitBinary: [% X]\n", apdu)
+	// fmt.Printf("apdu TransmitBinary: [% X]\n", apdu)
 	resp1, err := r.device.SendRecv(apdu)
-	fmt.Printf("resp TransmitBinary: [% X]\n", resp1)
+	// fmt.Printf("resp TransmitBinary: [% X]\n", resp1)
 	if err != nil {
 		return nil, smartcard.Error(err)
 	}
@@ -334,8 +334,20 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 		return nil, smartcard.Error(BadResponse(bad))
 	}
 
-	uid := make([]byte, 4)
-	copy(uid, resp2[1:5])
+	var uid []byte
+
+	switch {
+	case len(resp2) >= 0x16 && (resp2[8]&0x20 == 0x20):
+		uid = make([]byte, 7)
+		copy(uid, resp2[1:8])
+	case len(resp2) >= 0x13 && (resp2[8]&0x20 == 0x20):
+		uid = make([]byte, 4)
+		copy(uid, resp2[1:5])
+	default:
+		uid = make([]byte, 4)
+		copy(uid, resp2[1:5])
+	}
+
 	card := &card{
 		uuid:   uid,
 		ats:    resp2,
