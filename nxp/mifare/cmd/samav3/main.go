@@ -22,7 +22,7 @@ func main() {
 
 		for _, v := range rs {
 			fmt.Printf("reader: %q\n", v)
-			if bytes.Contains([]byte(v), []byte("SAM")) {
+			if bytes.Contains([]byte(v), []byte("00 00")) {
 				return []byte(v)
 			}
 		}
@@ -46,7 +46,7 @@ func main() {
 	reader := multiiso.NewReader(dev, "multiiso", 1)
 	/**/
 
-	cardi, err := reader.ConnectCardPCSC()
+	cardi, err := reader.ConnectCardPCSC_T0()
 	if err != nil {
 		log.Fatalln(err)
 	}

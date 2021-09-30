@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/hex"
 	"log"
 	"strings"
 
@@ -47,13 +46,34 @@ func main() {
 
 	direct.DisconnectCard()
 
-	cardi, err := reader.ConnectCard()
+	cardi, err := reader.ConnectCardPCSC()
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// cardi.TransparentSessionStart()
+	// cardi.Switch1444_4()
+	// cardi.TransparentSessionEnd()
+
 	cardm := mifare.Mplus(cardi)
 
+	ats, err := cardm.ATS()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.Printf("ats: [% X]", ats)
+	uid, err := cardm.UID()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.Printf("uid: [% X]", uid)
+	atr, err := cardm.ATR()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.Printf("atr: [% X]", atr)
+
+	/**
 	// keyA, err := hex.DecodeString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
 	keyA, err := hex.DecodeString("00000000000000000000000000000000")
 	if err != nil {
@@ -74,7 +94,17 @@ func main() {
 
 	log.Printf("res: [% X]", res)
 
-	if err := cardm.DecTransfEncMacMac(14, []byte{1, 0, 0, 0}); err != nil {
+	block14 := []byte{0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00}
+	block16 := []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+	block17 := []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+
+	if err := cardm.WriteEncMacMac(14, block14); err != nil {
+		log.Fatal(err)
+	}
+	if err := cardm.WriteEncMacMac(16, block16); err != nil {
+		log.Fatal(err)
+	}
+	if err := cardm.WriteEncMacMac(17, block17); err != nil {
 		log.Fatal(err)
 	}
 	// if err := cardm.IncTransfEncMacMac(20, []byte{1, 0, 0, 0}); err != nil {
@@ -87,5 +117,6 @@ func main() {
 	}
 
 	log.Printf("res: [% X]", res)
+	/**/
 
 }

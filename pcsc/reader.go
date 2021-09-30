@@ -25,6 +25,7 @@ type Reader interface {
 	// ConnectCard() (smartcard.ICard, error)
 	ConnectDirect() (Card, error)
 	ConnectCardPCSC() (Card, error)
+	ConnectCardPCSC_T0() (Card, error)
 }
 
 type reader struct {
@@ -75,6 +76,23 @@ func (r *reader) ConnectCardPCSC() (Card, error) {
 	}
 
 	c, err := r.Context.Connect(r.ReaderName, scard.ShareExclusive, scard.ProtocolT1)
+	if err != nil {
+		return nil, smartcard.Error(err)
+	}
+	cardS := &card{
+		CONNECTED,
+		c,
+	}
+	return cardS, nil
+}
+
+//ConnectCardPCSCT0 Create New Card interface
+func (r *reader) ConnectCardPCSC_T0() (Card, error) {
+	if ok, err := r.Context.IsValid(); err != nil && !ok {
+		return nil, smartcard.Error(err)
+	}
+
+	c, err := r.Context.Connect(r.ReaderName, scard.ShareExclusive, scard.ProtocolT0)
 	if err != nil {
 		return nil, smartcard.Error(err)
 	}

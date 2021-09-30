@@ -76,18 +76,20 @@ func main() {
 		}
 		log.Printf("card ATS: % X\n", ats)
 
+		/**/
+		// key = []byte{0xC0, 0xA3, 0xD0, 0x80, 0x87, 0xE1, 0x84, 0xB6, 0x2B, 0xD1, 0xE1, 0x35, 0x5B, 0x68, 0x9C, 0x43}
 		resp, err := mplus.FirstAuth(0x4000+2*sectorInitial+keyDir, key)
 		if err != nil {
 			log.Fatalf("Error: %s\n", err)
 		}
 		log.Printf("Auth: % X\n", resp)
 
-		// //read sector trailer
-		// resp3, err := mplus.ReadEncMacMac(sectorInitial*4+3, 1)
-		// if err != nil {
-		// 	log.Fatalf("%s\n", err)
-		// }
-		// log.Printf("sector trailer, sector %d,  resp: [% X]\n", sectorInitial, resp3)
+		//read sector trailer
+		resp3, err := mplus.ReadEncMacMac(sectorInitial*4+0, 1)
+		if err != nil {
+			log.Fatalf("%s\n", err)
+		}
+		log.Printf("sector trailer, sector %d,  resp: [% X]\n", sectorInitial, resp3)
 
 		sectorTrailer := mifare.NewAccessBitsSectorTrailer().KeyB__WriteA_ReadWriteACL_WriteB___KeyA_readACL().SetPlain()
 		block2 := mifare.NewAccessBits().Whole_AB().SetPlain()
@@ -95,6 +97,7 @@ func main() {
 		block0 := mifare.NewAccessBits().Whole_AB().SetPlain()
 
 		dataBlock3 := mifare.AccessConditions(sectorTrailer, block2, block1, block0, true)
+		log.Printf("sector trailer: [% X]  ==============\n", dataBlock3)
 
 		keyA := make([]byte, 16)
 		for i := range keyA {
@@ -104,15 +107,28 @@ func main() {
 		for i := range keyB {
 			keyB[i] = 0xFF
 		}
+		// keyA := []byte{0xC0, 0xA3, 0xD0, 0x80, 0x87, 0xE1, 0x84, 0xB6, 0x2B, 0xD1, 0xE1, 0x35, 0x5B, 0x68, 0x9C, 0x43}
+		// keyB := []byte{0xC0, 0xA3, 0xD0, 0x80, 0x87, 0xE1, 0x84, 0xB6, 0x2B, 0xD1, 0xE1, 0x35, 0x5B, 0x68, 0x9C, 0x43}
+		/**/
 
 		for i := sectorInitial; i <= sectorFinal; i++ {
 
-			//write sector trailer
-			err = mplus.WriteEncMacMac(i*4+3, dataBlock3)
+			resp, err := mplus.FirstAuth(0x4000+2*i+keyDir, key)
 			if err != nil {
-				log.Fatalf("%s\n", err)
+				log.Fatalf("Error: %s\n", err)
+				continue
 			}
-			log.Printf("sector trailer written")
+			log.Printf("====== Auth: [% X]  ==============\n", resp)
+
+			/**/
+			//read sector trailer
+			for _, j := range []int{3} {
+				resp3, err := mplus.ReadEncMacMac(i*4+j, 1)
+				if err != nil {
+					log.Fatalf("%s\n", err)
+				}
+				log.Printf("sector %d, bloque %d,  resp: [% X]\n", i, i*4+j, resp3)
+			}
 
 			//write keyA
 
@@ -131,6 +147,17 @@ func main() {
 			log.Printf("keyB written")
 
 			log.Printf("sector %d success", i)
+			/**/
+
+			/**/
+			//write sector trailer
+			err = mplus.WriteEncMacMac(i*4+3, dataBlock3)
+			if err != nil {
+				log.Fatalf("%s\n", err)
+			}
+			log.Printf("sector trailer written")
+
+			/**/
 		}
 
 	}
