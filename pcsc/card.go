@@ -78,7 +78,9 @@ func (c *card) Apdu(apdu []byte) ([]byte, error) {
 		return resp, smartcard.Error(err)
 	}
 	log.Printf("Response: [% X], len: %d", resp, len(resp))
-	return resp, nil
+	result := make([]byte, len(resp))
+	copy(result, resp)
+	return result, nil
 }
 
 //Primitive channel to send command
@@ -90,7 +92,9 @@ func (c *card) ControlApdu(ioctl uint32, apdu []byte) ([]byte, error) {
 	if err != nil {
 		return resp, smartcard.Error(err)
 	}
-	return resp, nil
+	result := make([]byte, len(resp))
+	copy(result, resp)
+	return result, nil
 }
 
 //Get ATR of Card

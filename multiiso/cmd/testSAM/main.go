@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/dumacp/smartcard/multiiso"
-	"github.com/dumacp/smartcard/nxp/mifare/samav2"
 )
 
 var port string
@@ -34,13 +33,13 @@ func main() {
 	}
 	log.Printf("RESP: [ %s ]\n", resp)
 
-	trama3 := []byte{00, 0xD2, 0x00, 0x13, 0x11, 00}
+	trama3 := []byte{00, 0x91, 0x00, 0x10, 0x11, 00}
 	if _, err := reader.SendSAMDataFrameTransfer(trama3); err != nil {
 		log.Println(err)
 	}
 
 	defer func() {
-		data1 := []byte{00, 0x02, 0x10, 0x11, 00}
+		data1 := []byte{00, 0x82, 0x10, 0x00, 00}
 		resp1, err := reader.SendSAMDataFrameTransfer(data1)
 		if err != nil {
 			log.Println(err)
@@ -48,7 +47,7 @@ func main() {
 		log.Printf("RESP DEFER: [ %X ], [ %s ]\n", resp1, resp1)
 	}()
 
-	data0 := []byte{00, 0xD1, 0x00, 0x13, 0x11, 00}
+	data0 := []byte{00, 0x81, 0x00, 0x10, 0x11, 00}
 
 	resp0, err := reader.SendSAMDataFrameTransfer(data0)
 	if err != nil {
@@ -66,27 +65,27 @@ func main() {
 	}
 	log.Printf("RESP: [ %X ], [ %s ]\n", resp2, resp2)
 
-	card, err := reader.ConnectSamCard()
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	// card, err := reader.ConnectSamCard()
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
 
-	samAv2 := samav2.SamAV2(card)
+	// samAv2 := samav2.SamAV2(card)
 
-	samAtr, err := samAv2.ATR()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	log.Printf("ATR: [ %X ]\n", samAtr)
+	// samAtr, err := samAv2.ATR()
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
+	// log.Printf("ATR: [ %X ]\n", samAtr)
 
-	samUID, err := samAv2.UID()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	fmt.Printf("sam UID: [% X]\n", samUID)
+	// samUID, err := samAv2.UID()
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
+	// fmt.Printf("sam UID: [% X]\n", samUID)
 
 	// reader := multiiso.NewMifareClassicReader(dev, "lectora iso", 1)
 	// if mode > 0 {

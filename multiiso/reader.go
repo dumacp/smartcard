@@ -33,10 +33,11 @@ type Reader interface {
 	SetRegister(register byte, data []byte) error
 	GetRegister(register byte) ([]byte, error)
 	SetModeProtocol(mode int)
+	// SetTransmitProtocol(transmitProto TransmitProto)
 	SendAPDU1443_4(data []byte) ([]byte, error)
 	SendSAMDataFrameTransfer(data []byte) ([]byte, error)
 	T1TransactionV2(data []byte) ([]byte, error)
-
+	// T0TransactionV2(data []byte) ([]byte, error)
 	SetChainning(chainning bool)
 }
 
@@ -68,6 +69,13 @@ const (
 	datatransfer        string = "t"
 )
 
+type TransmitProto int
+
+const (
+	T0 TransmitProto = iota
+	T1
+)
+
 type ErrorCode byte
 type BadResponse []byte
 type BadChecsum []byte
@@ -88,12 +96,13 @@ func (e NilResponse) Error() string {
 }
 
 type reader struct {
-	device       *Device
-	readerName   string
-	idx          int
-	ModeProtocol int
-	transmit     transmitfunc
-	chainning    bool
+	device        *Device
+	readerName    string
+	idx           int
+	ModeProtocol  int
+	transmitProto TransmitProto
+	transmit      transmitfunc
+	chainning     bool
 }
 
 //NewReader Create New Reader interface
@@ -130,6 +139,10 @@ func (r *reader) SetModeProtocol(mode int) {
 	}
 }
 
+// func (r *reader) SetTransmitProtocol(transmitProto TransmitProto) {
+// 	r.transmitProto = transmitProto
+// }
+
 //Transmit send data byte to reader in actual mode
 func (r *reader) Transmit(cmd, data []byte) ([]byte, error) {
 	return r.transmit(cmd, data)
@@ -164,9 +177,9 @@ func (r *reader) TransmitBinary(cmd, data []byte) ([]byte, error) {
 	}
 	apdu = append(apdu, checksum(apdu[1:]))
 	apdu = append(apdu, 0x03)
-	// fmt.Printf("apdu TransmitBinary: [% X]\n", apdu)
+	fmt.Printf("apdu TransmitBinary: [% X]\n", apdu)
 	resp1, err := r.device.SendRecv(apdu)
-	// fmt.Printf("resp TransmitBinary: [% X]\n", resp1)
+	fmt.Printf("resp TransmitBinary: [% X]\n", resp1)
 	if err != nil {
 		return nil, smartcard.Error(err)
 	}
@@ -277,6 +290,22 @@ func (r *reader) T1TransactionV2(data []byte) ([]byte, error) {
 
 }
 
+// func (r *reader) T0TransactionV2(data []byte) ([]byte, error) {
+// 	trama := make([]byte, 0)
+
+// 	trama = append(trama, byte(len(data)&0xFF))
+// 	trama = append(trama, 0xDF)                    // APDU T=1 Transaction. OptionByte V2
+// 	trama = append(trama, byte(len(data)>>8&0xFF)) // Downlink length MSB (1 byte)
+// 	trama = append(trama, 0x13)                    // Timeout
+// 	trama = append(trama, 0x86)                    // Transmission factor byte (1 byte)
+// 	trama = append(trama, 0x00)                    // Return length
+
+// 	trama = append(trama, data...)
+
+// 	return r.SendSAMDataFrameTransfer(trama)
+
+// }
+
 //GetRegister send in format Data Frame Transfer
 func (r *reader) GetRegister(register byte) ([]byte, error) {
 	cmd := []byte(readEEPROMregister)
@@ -371,10 +400,13 @@ func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
 	// 	return nil, err
 	// }
 
-	trama1 := []byte{00, 0xD1, 0x00, 0x13, 0x11, 00}
+	trama1 := []byte{00, 0x81, 0x00, 0x10, 0x11, 00}
+	// if r.transmitProto == T0 {
+	// 	trama1[1] = 0xC1
+	// }
 	if _, err := r.SendSAMDataFrameTransfer(trama1); err != nil {
 		time.Sleep(100 * time.Millisecond)
-		trama3 := []byte{00, 0x02, 0x10, 0x11, 00}
+		trama3 := []byte{00, 0x82, 0x10, 0x11, 00}
 		_, err := r.SendSAMDataFrameTransfer(trama3)
 		return nil, err
 	}
@@ -393,6 +425,12 @@ func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
 		reader:   r,
 		modeSend: T1TransactionV2,
 	}
+
+	// if r.transmitProto == T0 {
+	// 	card.modeSend = T0TransactionV2
+	// } else {
+	// 	card.modeSend = T1TransactionV2
+	// }
 
 	return card, nil
 }

@@ -52,7 +52,7 @@ func main() {
 		log.Fatalln(err)
 	}
 	fmt.Printf("0x0C: [% X]\n", resp2)
-	err = reader.SetRegister(0x0C, []byte{0x06})
+	err = reader.SetRegister(0x0C, []byte{0x04})
 
 	resp2, err = reader.GetRegister(0x11)
 	if err != nil {

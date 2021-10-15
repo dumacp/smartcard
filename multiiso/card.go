@@ -32,6 +32,7 @@ type SendMode int
 const (
 	APDU1443_4      SendMode = 0
 	T1TransactionV2 SendMode = 1
+	// T0TransactionV2 SendMode = 2
 )
 
 type card struct {
@@ -57,6 +58,8 @@ func (c *card) Apdu(apdu []byte) ([]byte, error) {
 		return c.reader.SendAPDU1443_4(apdu)
 	case T1TransactionV2:
 		return c.reader.T1TransactionV2(apdu)
+		// case T0TransactionV2:
+		// 	return c.reader.T0TransactionV2(apdu)
 	}
 	return c.reader.TransmitBinary([]byte{}, apdu)
 
