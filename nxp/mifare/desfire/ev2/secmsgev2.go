@@ -61,17 +61,56 @@ func calcCommandIVOnFullModeEV2(ksesAuthEnc, ti []byte, cmdCtr uint16) ([]byte, 
 }
 
 func calcMacOnCommandEV2(block cipher.Block, ti []byte,
-	cmd int, cmdCtr uint16, cmdHeader, cmdData []byte) ([]byte, error) {
+	cmd byte, cmdCtr uint16, cmdHeader, data []byte) ([]byte, error) {
 	datamac := make([]byte, 0)
 
-	datamac = append(datamac, byte(cmd))
+	datamac = append(datamac, cmd)
 
 	cmdCtrBytes := make([]byte, 2)
 	binary.LittleEndian.PutUint16(cmdCtrBytes, cmdCtr)
 	datamac = append(datamac, cmdCtrBytes...)
 	datamac = append(datamac, ti...)
 	datamac = append(datamac, cmdHeader...)
-	datamac = append(datamac, cmdData...)
+	datamac = append(datamac, data...)
+
+	// if len(datamac)%block.BlockSize() != 0 {
+	// 	datamac = append(datamac, 0x80)
+	// 	datamac = append(datamac,
+	// 		make([]byte, block.BlockSize()-len(datamac)%block.BlockSize())...)
+	// }
+
+	log.Printf("data in cmac: [% X]", datamac)
+
+	result, err := cmac.Sum(datamac, block, block.BlockSize())
+	if err != nil {
+		return nil, err
+	}
+
+	log.Printf("long cmac: [% X]", result)
+
+	cmacT := make([]byte, 0)
+	for i, v := range result {
+		if i%2 != 0 {
+			cmacT = append(cmacT, v)
+		}
+	}
+
+	log.Printf("truncate cmac: [% X]", cmacT)
+
+	return cmacT, nil
+}
+
+func calcMacOnResponseEV2(block cipher.Block, ti []byte,
+	rc byte, cmdCtr uint16, data []byte) ([]byte, error) {
+	datamac := make([]byte, 0)
+
+	datamac = append(datamac, rc)
+
+	cmdCtrBytes := make([]byte, 2)
+	binary.LittleEndian.PutUint16(cmdCtrBytes, cmdCtr)
+	datamac = append(datamac, cmdCtrBytes...)
+	datamac = append(datamac, ti...)
+	datamac = append(datamac, data...)
 
 	// if len(datamac)%block.BlockSize() != 0 {
 	// 	datamac = append(datamac, 0x80)

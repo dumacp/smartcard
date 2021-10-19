@@ -27,9 +27,9 @@ func Apdu_AuthenticateISO(secondAppIndicator int, keyNumber int) []byte {
 // AuthenticateISO authentication as already support by DESFire EV1. Only for KeyType.2TDEA
 // or KeyType.3TDEA keys. After this authentication EV1 backwards compatible secure
 // messaging is used.
-func (d *desfire) AuthenticateISO(secondAppIndicator int, keyNumber int) ([]byte, error) {
+func (d *desfire) AuthenticateISO(secondAppIndicator SecondAppIndicator, keyNumber int) ([]byte, error) {
 
-	apdu := Apdu_AuthenticateISO(secondAppIndicator, keyNumber)
+	apdu := Apdu_AuthenticateISO(secondAppIndicator.Int(), keyNumber)
 
 	d.lastKey = keyNumber
 
@@ -212,9 +212,9 @@ func Apdu_AuthenticateEV2FirstPart2(data []byte) []byte {
 
 // AuthenticateEV2First authentication for Keytype AES keys. After this authentication EV2 secure
 // messaging is used. This authentication in intended to be the first in a transaction.
-func (d *desfire) AuthenticateEV2First(secondAppIndicator int, keyNumber int, pcdCap2 []byte) ([]byte, error) {
+func (d *desfire) AuthenticateEV2First(secondAppIndicator SecondAppIndicator, keyNumber int, pcdCap2 []byte) ([]byte, error) {
 
-	apdu := Apdu_AuthenticateEV2First(secondAppIndicator, keyNumber, pcdCap2)
+	apdu := Apdu_AuthenticateEV2First(secondAppIndicator.Int(), keyNumber, pcdCap2)
 
 	resp, err := d.Apdu(apdu)
 	if err != nil {
@@ -226,6 +226,7 @@ func (d *desfire) AuthenticateEV2First(secondAppIndicator int, keyNumber int, pc
 	}
 
 	d.pcdCap2 = pcdCap2
+	d.lastKey = keyNumber
 
 	return resp, nil
 }
@@ -289,6 +290,8 @@ func (d *desfire) AuthenticateEV2FirstPart2(key, data []byte) ([]byte, error) {
 	d.ti = make([]byte, 0)
 	d.ti = append(d.ti, lastResp[:4]...)
 
+	log.Printf("TI: [ %X ]", d.ti)
+
 	log.Printf("origin rndA: [ %X ]", rndA)
 	log.Printf("respon rndA: [ %X ]", lastResp[4:len(rndA)+4])
 
@@ -315,16 +318,21 @@ func (d *desfire) AuthenticateEV2FirstPart2(key, data []byte) ([]byte, error) {
 	sv1 = append(sv1, trailing...)
 	sv2 = append(sv2, trailing...)
 
-	blockMack, err := aes.NewCipher(key)
+	blockEnc, err := aes.NewCipher(key)
 	if err != nil {
 		return resp, err
 	}
 
-	ksesAuthEnc, err := cmac.Sum(sv1, blockMack, 16)
+	ksesAuthEnc, err := cmac.Sum(sv1, blockEnc, 16)
 	if err != nil {
 		return resp, err
 	}
 	d.ksesAuthEnc = ksesAuthEnc
+
+	blockMack, err := aes.NewCipher(key)
+	if err != nil {
+		return resp, err
+	}
 
 	ksesAuthMac, err := cmac.Sum(sv2, blockMack, 16)
 	if err != nil {

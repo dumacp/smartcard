@@ -61,7 +61,7 @@ func Test_desfire_AuthenticateEV2First(t *testing.T) {
 		ICard smartcard.ICard
 	}
 	type args struct {
-		targetKey int
+		targetKey SecondAppIndicator
 		keyNumber int
 		pcdCap2   []byte
 	}
@@ -294,7 +294,7 @@ func Test_desfire_AuthenticateISO(t *testing.T) {
 		ICard smartcard.ICard
 	}
 	type args struct {
-		targetKey int
+		targetKey SecondAppIndicator
 		keyNumber int
 	}
 	tests := []struct {

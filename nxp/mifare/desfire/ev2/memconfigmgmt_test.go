@@ -153,7 +153,7 @@ func Test_desfire_GetCardUID(t *testing.T) {
 			d := &desfire{
 				ICard: tt.fields.ICard,
 			}
-			auth1, err := d.AuthenticateISO(0, 0)
+			auth1, err := d.AuthenticateEV2First(0, 0, nil)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("desfire.AuthenticateISO() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -163,7 +163,7 @@ func Test_desfire_GetCardUID(t *testing.T) {
 				t.Errorf("desfire.VerifyResponse() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			auth2, err := d.AuthenticateISOPart2(make([]byte, 16), auth1[:])
+			auth2, err := d.AuthenticateEV2FirstPart2(make([]byte, 16), auth1[:])
 			if (err != nil) != tt.wantErr {
 				t.Errorf("desfire.AuthenticateISO() error = %v, wantErr %v", err, tt.wantErr)
 				return

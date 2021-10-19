@@ -62,18 +62,25 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	auth2, err := d.AuthenticateEV2FirstPart2(make([]byte, 16), auth1)
+
+	keyMaster := make([]byte, 16)
+	// for i := range keyMaster {
+	// 	keyMaster[i] = 0xFF
+	// }
+
+	auth2, err := d.AuthenticateEV2FirstPart2(keyMaster, auth1)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	log.Printf("**** auth sucess: [% X]", auth2)
 
-	// changekey, err := d.ChangeKey(0x00, 0x00, ev2.TDEA2, 0x00, make([]byte, 16), nil)
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
+	keyMaster = make([]byte, 16)
+	changekey, err := d.ChangeKeyEV2(0x00, 0x00, 0x00, ev2.AES, 0x00, keyMaster, nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-	// log.Printf("**** changekey sucess: [% X]", changekey)
+	log.Printf("**** changekey sucess: [% X]", changekey)
 
 }
