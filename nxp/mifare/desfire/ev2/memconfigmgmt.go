@@ -106,13 +106,13 @@ func (d *desfire) GetCardUID() ([]byte, error) {
 	switch d.evMode {
 	case EV2:
 		var err error
-		cmacdata, err = calcMacOnCommandEV2(d.blockMac, d.ti, cmd, d.cmdCtr, nil, nil)
+		cmacdata, err = calcMacOnCommandEV2(d.blockMac, d.ti, byte(cmd), d.cmdCtr, nil, nil)
 		if err != nil {
 			return nil, err
 		}
 	case EV1:
 	default:
-		return nil, errors.New("desfire EV2 only support")
+		return nil, errors.New("desfire EV2 or EV1 only support")
 	}
 
 	apdu = append(apdu, cmacdata...)

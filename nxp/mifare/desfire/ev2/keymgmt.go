@@ -1,9 +1,7 @@
 package ev2
 
 import (
-	"crypto/aes"
 	"crypto/cipher"
-	"crypto/des"
 	"encoding/binary"
 	"errors"
 	"hash/crc32"
@@ -11,18 +9,18 @@ import (
 )
 
 func changeKeyCryptogramEV2(block, blockMac cipher.Block,
-	keyNo, keySetNo, authKey, keyType, keyVersion int,
+	cmd, keyNo, keySetNo, authKey, keyType, keyVersion int,
 	cmdCtr uint16,
-	newKey, oldKey, keyEnc, keyMac, ti, iv []byte) ([]byte, error) {
+	newKey, oldKey, ti, iv []byte) ([]byte, error) {
 
 	plaindata := make([]byte, 0)
-	if keyNo == authKey && keySetNo == 0 {
+	if keyNo&0x1F == authKey && keySetNo <= 0 {
 		plaindata = append(plaindata, newKey...)
 		if keyType == int(AES) {
 			plaindata = append(plaindata, byte(keyVersion))
 		}
-		plaindata = append(plaindata, crc32.NewIEEE().Sum(plaindata)...)
 	} else {
+		log.Printf("keyNo: %v, lastKey: %v", keyNo, authKey)
 		if len(oldKey) <= 0 {
 			return nil, errors.New("old key is null")
 		}
@@ -32,29 +30,59 @@ func changeKeyCryptogramEV2(block, blockMac cipher.Block,
 		if keyType == int(AES) {
 			plaindata = append(plaindata, byte(keyVersion))
 		}
-		plaindata = append(plaindata, crc32.NewIEEE().Sum(plaindata)...)
-		plaindata = append(plaindata, crc32.NewIEEE().Sum(newKey)...)
+		crcdatanewkey := make([]byte, 0)
+		crcdatanewkey = append(crcdatanewkey, newKey...)
+		crcnewkey := ^crc32.ChecksumIEEE(crcdatanewkey)
+		crcbytesnewkey := make([]byte, 4)
+		binary.LittleEndian.PutUint32(crcbytesnewkey, crcnewkey)
+		plaindata = append(plaindata, crcbytesnewkey[:]...)
 	}
+
+	log.Printf("plaindata          : [% X]", plaindata)
 
 	mode := cipher.NewCBCEncrypter(block, iv)
 
-	dest := make([]byte, len(plaindata))
-	mode.CryptBlocks(dest, plaindata)
+	if len(plaindata)%block.BlockSize() != 0 {
+		plaindata = append(plaindata, 0x80)
+		plaindata = append(plaindata, make([]byte, block.BlockSize()-len(plaindata)%block.BlockSize())...)
+	}
+	log.Printf("plaindata + padding: [% X]", plaindata)
 
-	return dest, nil
+	cipherdata := make([]byte, len(plaindata))
+	mode.CryptBlocks(cipherdata, plaindata)
+
+	log.Printf("cipher data        : [% X], len: %d", cipherdata, len(cipherdata))
+
+	cmdHeader := make([]byte, 0)
+	if keySetNo >= 0 {
+		cmdHeader = append(cmdHeader, byte(keySetNo))
+	}
+	cmdHeader = append(cmdHeader, byte(keyNo))
+
+	cmacT, err := calcMacOnCommandEV2(blockMac, ti, byte(cmd), cmdCtr, cmdHeader, cipherdata)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Printf("truncate cmac: [% X]", cmacT)
+
+	cryptograma := make([]byte, 0)
+	cryptograma = append(cryptograma, cipherdata...)
+	cryptograma = append(cryptograma, cmacT...)
+
+	return cryptograma, nil
 }
 
 func changeKeyCryptogramEV1(block cipher.Block,
 	cmd, keyNo, authKey, keyType, keyVersion int,
-	cmdCtr uint16,
-	newKey, oldKey, keyEnc, keyMac, iv []byte) ([]byte, error) {
+	newKey, oldKey, iv []byte) ([]byte, error) {
 
 	copyIV := make([]byte, block.BlockSize())
 	copy(copyIV, iv)
 	log.Printf("keyNo: %d, authKey: %d, newKey: [% X], iv: [% X], len newKey: %d",
 		keyNo, authKey, newKey, iv, len(newKey))
 	plaindata := make([]byte, 0)
-	if keyNo == authKey {
+	if (keyNo & 0x1F) == authKey {
 
 		plaindata = append(plaindata, newKey...)
 		if keyType == int(AES) {
@@ -62,7 +90,7 @@ func changeKeyCryptogramEV1(block cipher.Block,
 		}
 		crcdata := make([]byte, 0)
 		crcdata = append(crcdata, byte(cmd))
-		crcdata = append(crcdata, byte(keyNo|keyType<<6))
+		crcdata = append(crcdata, byte(keyNo))
 		crcdata = append(crcdata, plaindata...)
 
 		crc := ^crc32.ChecksumIEEE(crcdata)
@@ -121,78 +149,103 @@ func (d *desfire) ChangeKey(keyNo, keyVersion int,
 
 	cmd := 0xC4
 
+	if d.currentAppID != 0 {
+		keyNo = keyNo | secondAppIndicator.Int()<<7
+	} else {
+		keyNo = keyNo | keyType.Int()<<6
+	}
+
 	var cryptograma []byte
-	var block cipher.Block
+	// var block cipher.Block
 	var err error
 	switch d.evMode {
 	case EV2:
-		block, err = aes.NewCipher(d.keyEnc)
-		if err != nil {
-			return nil, err
-		}
-		blockMac, err := aes.NewCipher(d.keyMac)
-		if err != nil {
-			return nil, err
-		}
 		iv, err := calcCommandIVOnFullModeEV2(d.ksesAuthEnc, d.ti, d.cmdCtr)
 		if err != nil {
 			return nil, err
 		}
-		cryptograma, err = changeKeyCryptogramEV2(block, blockMac,
-			keyNo, 0, d.lastKey, keyType.Int(), keyVersion,
+		cryptograma, err = changeKeyCryptogramEV2(d.block, d.blockMac, cmd,
+			keyNo, -1, d.lastKey, keyType.Int(), keyVersion,
 			d.cmdCtr,
-			newKey, oldKey, d.keyEnc, d.keyMac, d.ti, iv)
+			newKey, oldKey, d.ti, iv)
 		if err != nil {
 			return nil, err
 		}
 	default:
-		switch len(d.keyEnc) {
-		case 8:
-			key := make([]byte, 0)
-			key = append(key, d.keyEnc[:]...)
-			key = append(key, d.keyEnc[:]...)
-			key = append(key, d.keyEnc[:]...)
-			log.Printf("key 8 enc: [% X]", key)
-			block, err = des.NewTripleDESCipher(key)
-		case 16:
-			key := make([]byte, 0)
-			key = append(key, d.keyEnc[:]...)
-			key = append(key, d.keyEnc[:8]...)
-			log.Printf("key 16 enc: [% X]", key)
-			block, err = des.NewTripleDESCipher(key)
-		case 24:
-			key := make([]byte, 0)
-			key = append(key, d.keyEnc[:]...)
-			log.Printf("key 24 enc: [% X]", key)
-			block, err = des.NewTripleDESCipher(key)
-		default:
-			return nil, errors.New("len key is invalid")
-		}
-		if err != nil {
-			return nil, err
-		}
-		cryptograma, err = changeKeyCryptogramEV1(block,
+
+		cryptograma, err = changeKeyCryptogramEV1(d.block,
 			cmd, keyNo, d.lastKey, keyType.Int(), keyVersion,
-			d.cmdCtr,
-			newKey, oldKey, d.keyEnc, d.keyMac, d.iv)
+			newKey, oldKey, d.iv)
 		if err != nil {
 			return nil, err
 		}
 		log.Printf("cryptograma: [% X], len: %d", cryptograma, len(cryptograma))
-		d.iv = cryptograma[len(cryptograma)-block.BlockSize()-1:]
+		d.iv = cryptograma[len(cryptograma)-d.block.BlockSize()-1:]
 	}
 
 	apdu := make([]byte, 0)
 	apdu = append(apdu, byte(cmd))
 	cmdHeader := make([]byte, 0)
-	if d.currentAppID == 0x00 {
-		log.Printf("keytype: %d", keyType)
-		cmdHeader = append(cmdHeader, byte(keyNo|keyType.Int()<<6))
-		apdu = append(apdu, cmdHeader...)
+
+	cmdHeader = append(cmdHeader, byte(keyNo))
+
+	apdu = append(apdu, cmdHeader...)
+
+	// cipherdata, err := encryptionOncommandEV1(block, cmd, cmdHeader, cryptograma,
+	// 	cryptograma[len(cryptograma)-block.BlockSize():])
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	apdu = append(apdu, cryptograma...)
+	resp, err := d.Apdu(apdu)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		d.cmdCtr++
+	}()
+	if err := VerifyResponse(resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// ChangeKey depending on the currently selectd AID, this command
+// update a key of the PICC or of an application keyset.
+func (d *desfire) ChangeKeyEV2(keyNo, keySetNo, keyVersion int,
+	keyType KeyType, secondAppIndicator SecondAppIndicator,
+	newKey, oldKey []byte) ([]byte, error) {
+
+	cmd := 0xC6
+
+	if d.currentAppID != 0 {
+		keyNo = keyNo | secondAppIndicator.Int()<<7
 	} else {
-		log.Printf("secondAppIndicator: %d", secondAppIndicator)
-		cmdHeader = append(cmdHeader, byte(keyNo|secondAppIndicator.Int()<<7))
-		apdu = append(apdu, cmdHeader...)
+		keyNo = keyNo | keyType.Int()<<6
+	}
+
+	apdu := make([]byte, 0)
+	apdu = append(apdu, byte(cmd))
+	cmdHeader := make([]byte, 0)
+
+	cmdHeader = append(cmdHeader, byte(keySetNo))
+	cmdHeader = append(cmdHeader, byte(keyNo))
+
+	apdu = append(apdu, cmdHeader...)
+
+	iv, err := calcCommandIVOnFullModeEV2(d.ksesAuthEnc, d.ti, d.cmdCtr)
+	if err != nil {
+		return nil, err
+	}
+
+	cryptograma, err := changeKeyCryptogramEV2(d.block, d.blockMac, cmd,
+		keyNo, keySetNo, d.lastKey, keyType.Int(), keyVersion,
+		d.cmdCtr,
+		newKey, oldKey, d.ti, iv)
+	if err != nil {
+		return nil, err
 	}
 
 	// cipherdata, err := encryptionOncommandEV1(block, cmd, cmdHeader, cryptograma,
@@ -222,10 +275,207 @@ func (d *desfire) ChangeKey(keyNo, keyVersion int,
 // for the selected application an if applicable the AppKeySettings.
 func (d *desfire) GetKeySettings() ([]byte, error) {
 
-	cmd := byte(0x45)
+	cmd := 0x45
 
 	apdu := make([]byte, 0)
-	apdu = append(apdu, cmd)
+	apdu = append(apdu, byte(cmd))
+
+	switch d.evMode {
+	case EV2:
+		cmacT, err := calcMacOnCommandEV2(d.blockMac, d.ti, byte(cmd), d.cmdCtr, nil, nil)
+		if err != nil {
+			return nil, err
+		}
+		apdu = append(apdu, cmacT...)
+	default:
+	}
+
+	resp, err := d.Apdu(apdu)
+	if err != nil {
+		return nil, err
+	}
+	if err := VerifyResponse(resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// InitializeKeySet depending on the currently selected application,
+// initialize the key set with specific index.
+func (d *desfire) InitializeKeySet(keySetNo int, keySetType KeyType,
+	secondAppIndicator SecondAppIndicator) ([]byte, error) {
+
+	cmd := 0x56
+
+	apdu := make([]byte, 0)
+	apdu = append(apdu, byte(cmd))
+
+	cmdHeader := []byte{byte(keySetNo | secondAppIndicator.Int()<<7), byte(keySetType)}
+
+	switch d.evMode {
+	case EV2:
+		cmacT, err := calcMacOnCommandEV2(d.blockMac, d.ti, byte(cmd), d.cmdCtr, cmdHeader, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		apdu = append(apdu, cmdHeader...)
+		apdu = append(apdu, cmacT...)
+	default:
+		apdu = append(apdu, cmdHeader...)
+	}
+
+	resp, err := d.Apdu(apdu)
+	if err != nil {
+		return nil, err
+	}
+	if err := VerifyResponse(resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// FinalizeKeySet the currently selected application, finalize the key set with
+// specific number.
+func (d *desfire) FinalizeKeySet(keySetNo, keySetVersion int,
+	secondAppIndicator SecondAppIndicator) ([]byte, error) {
+
+	cmd := 0x57
+
+	apdu := make([]byte, 0)
+	apdu = append(apdu, byte(cmd))
+
+	cmdHeader := []byte{byte(keySetNo | secondAppIndicator.Int()<<7), byte(keySetVersion)}
+
+	switch d.evMode {
+	case EV2:
+		cmacT, err := calcMacOnCommandEV2(d.blockMac, d.ti, byte(cmd), d.cmdCtr, cmdHeader, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		apdu = append(apdu, cmdHeader...)
+		apdu = append(apdu, cmacT...)
+	default:
+		apdu = append(apdu, cmdHeader...)
+	}
+
+	resp, err := d.Apdu(apdu)
+	if err != nil {
+		return nil, err
+	}
+	if err := VerifyResponse(resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// RollKeySet the currently selected application, roll to the key set with
+// specific number.
+func (d *desfire) RollKeySet(keySetNo int, secondAppIndicator SecondAppIndicator) ([]byte, error) {
+
+	cmd := 0x55
+
+	apdu := make([]byte, 0)
+	apdu = append(apdu, byte(cmd))
+
+	cmdHeader := []byte{byte(keySetNo | secondAppIndicator.Int()<<7)}
+
+	switch d.evMode {
+	case EV2:
+		cmacT, err := calcMacOnCommandEV2(d.blockMac, d.ti, byte(cmd), d.cmdCtr, cmdHeader, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		apdu = append(apdu, cmdHeader...)
+		apdu = append(apdu, cmacT...)
+	default:
+		apdu = append(apdu, cmdHeader...)
+	}
+
+	resp, err := d.Apdu(apdu)
+	if err != nil {
+		return nil, err
+	}
+	if err := VerifyResponse(resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// ChangeKeySettings depending on the currently selected AID, this command changes
+// the PICCKeySettings of the PICC or the AppKeySettings of the application.
+func (d *desfire) ChangeKeySettings(keySetting int) ([]byte, error) {
+
+	cmd := 0x54
+
+	apdu := make([]byte, 0)
+	apdu = append(apdu, byte(cmd))
+
+	cmdHeader := []byte{byte(keySetting)}
+
+	switch d.evMode {
+	case EV2:
+		cmacT, err := calcMacOnCommandEV2(d.blockMac, d.ti, byte(cmd), d.cmdCtr, cmdHeader, nil)
+		if err != nil {
+			return nil, err
+		}
+		apdu = append(apdu, cmdHeader...)
+		apdu = append(apdu, cmacT...)
+	default:
+		apdu = append(apdu, cmdHeader...)
+	}
+
+	resp, err := d.Apdu(apdu)
+	if err != nil {
+		return nil, err
+	}
+	if err := VerifyResponse(resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// GetKeyVersion depending on the currently selected AID and given key number
+// parameter, return key version of the key targeted or return all key set
+// versions of the selected application. (not keySetNo = -1)
+func (d *desfire) GetKeyVersion(keyNo, keySetNo int,
+	secondAppIndicator SecondAppIndicator) ([]byte, error) {
+
+	cmd := 0x64
+
+	apdu := make([]byte, 0)
+	apdu = append(apdu, byte(cmd))
+
+	keyNoByte := byte(keyNo | secondAppIndicator.Int()<<7)
+
+	cmdHeader := make([]byte, 0)
+	if keySetNo >= 0 {
+		cmdHeader = append(cmdHeader, keyNoByte|0x01)
+		cmdHeader = append(cmdHeader, byte(keySetNo))
+	} else {
+		cmdHeader = append(cmdHeader, keyNoByte)
+	}
+
+	switch d.evMode {
+	case EV2:
+		cmacT, err := calcMacOnCommandEV2(d.blockMac, d.ti, byte(cmd), d.cmdCtr, cmdHeader, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		apdu = append(apdu, cmdHeader...)
+		apdu = append(apdu, cmacT...)
+	default:
+		apdu = append(apdu, cmdHeader...)
+	}
+
 	resp, err := d.Apdu(apdu)
 	if err != nil {
 		return nil, err
