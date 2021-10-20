@@ -171,7 +171,7 @@ func (d *desfire) ChangeKey(keyNo, keyVersion int,
 		if err != nil {
 			return nil, err
 		}
-	default:
+	case EV1:
 
 		cryptograma, err = changeKeyCryptogramEV1(d.block,
 			cmd, keyNo, d.lastKey, keyType.Int(), keyVersion,
@@ -181,6 +181,8 @@ func (d *desfire) ChangeKey(keyNo, keyVersion int,
 		}
 		log.Printf("cryptograma: [% X], len: %d", cryptograma, len(cryptograma))
 		d.iv = cryptograma[len(cryptograma)-d.block.BlockSize()-1:]
+	default:
+		return nil, errors.New("only EV1 and Ev2 support")
 	}
 
 	apdu := make([]byte, 0)
@@ -217,6 +219,10 @@ func (d *desfire) ChangeKey(keyNo, keyVersion int,
 func (d *desfire) ChangeKeyEV2(keyNo, keySetNo, keyVersion int,
 	keyType KeyType, secondAppIndicator SecondAppIndicator,
 	newKey, oldKey []byte) ([]byte, error) {
+
+	if d.evMode != EV2 {
+		return nil, errors.New("only EV2 mode support")
+	}
 
 	cmd := 0xC6
 
@@ -266,7 +272,7 @@ func (d *desfire) ChangeKeyEV2(keyNo, keySetNo, keyVersion int,
 		return nil, err
 	}
 
-	return resp, nil
+	return resp[:], nil
 }
 
 // GetKeySettings depending on the selected AID, this command retrieves
@@ -287,7 +293,9 @@ func (d *desfire) GetKeySettings() ([]byte, error) {
 			return nil, err
 		}
 		apdu = append(apdu, cmacT...)
+	case EV1:
 	default:
+		return nil, errors.New("only EV1 and Ev2 support")
 	}
 
 	resp, err := d.Apdu(apdu)
@@ -298,7 +306,12 @@ func (d *desfire) GetKeySettings() ([]byte, error) {
 		return nil, err
 	}
 
-	return resp, nil
+	switch d.evMode {
+	case EV1, EV2:
+		return resp[:len(resp)-8], nil
+	default:
+		return nil, errors.New("only EV2 support")
+	}
 }
 
 // InitializeKeySet depending on the currently selected application,
@@ -322,8 +335,10 @@ func (d *desfire) InitializeKeySet(keySetNo int, keySetType KeyType,
 
 		apdu = append(apdu, cmdHeader...)
 		apdu = append(apdu, cmacT...)
-	default:
+	case EV1:
 		apdu = append(apdu, cmdHeader...)
+	default:
+		return nil, errors.New("only EV1 and Ev2 support")
 	}
 
 	resp, err := d.Apdu(apdu)
@@ -334,7 +349,12 @@ func (d *desfire) InitializeKeySet(keySetNo int, keySetType KeyType,
 		return nil, err
 	}
 
-	return resp, nil
+	switch d.evMode {
+	case EV1, EV2:
+		return resp[:len(resp)-8], nil
+	default:
+		return nil, errors.New("only EV2 support")
+	}
 }
 
 // FinalizeKeySet the currently selected application, finalize the key set with
@@ -358,8 +378,10 @@ func (d *desfire) FinalizeKeySet(keySetNo, keySetVersion int,
 
 		apdu = append(apdu, cmdHeader...)
 		apdu = append(apdu, cmacT...)
-	default:
+	case EV1:
 		apdu = append(apdu, cmdHeader...)
+	default:
+		return nil, errors.New("only EV1 and Ev2 support")
 	}
 
 	resp, err := d.Apdu(apdu)
@@ -370,7 +392,12 @@ func (d *desfire) FinalizeKeySet(keySetNo, keySetVersion int,
 		return nil, err
 	}
 
-	return resp, nil
+	switch d.evMode {
+	case EV1, EV2:
+		return resp[:len(resp)-8], nil
+	default:
+		return nil, errors.New("only EV2 support")
+	}
 }
 
 // RollKeySet the currently selected application, roll to the key set with
@@ -393,8 +420,10 @@ func (d *desfire) RollKeySet(keySetNo int, secondAppIndicator SecondAppIndicator
 
 		apdu = append(apdu, cmdHeader...)
 		apdu = append(apdu, cmacT...)
-	default:
+	case EV1:
 		apdu = append(apdu, cmdHeader...)
+	default:
+		return nil, errors.New("only EV1 and EV2 support")
 	}
 
 	resp, err := d.Apdu(apdu)
@@ -405,7 +434,12 @@ func (d *desfire) RollKeySet(keySetNo int, secondAppIndicator SecondAppIndicator
 		return nil, err
 	}
 
-	return resp, nil
+	switch d.evMode {
+	case EV1, EV2:
+		return resp[:len(resp)-8], nil
+	default:
+		return nil, errors.New("only EV2 support")
+	}
 }
 
 // ChangeKeySettings depending on the currently selected AID, this command changes
@@ -427,8 +461,10 @@ func (d *desfire) ChangeKeySettings(keySetting int) ([]byte, error) {
 		}
 		apdu = append(apdu, cmdHeader...)
 		apdu = append(apdu, cmacT...)
-	default:
+	case EV1:
 		apdu = append(apdu, cmdHeader...)
+	default:
+		return nil, errors.New("only EV1 and Ev2 support")
 	}
 
 	resp, err := d.Apdu(apdu)
@@ -439,13 +475,27 @@ func (d *desfire) ChangeKeySettings(keySetting int) ([]byte, error) {
 		return nil, err
 	}
 
-	return resp, nil
+	switch d.evMode {
+	case EV1, EV2:
+		return resp[:len(resp)-8], nil
+	default:
+		return nil, errors.New("only EV2 support")
+	}
 }
+
+type KeySetOptionVersion int
+
+const (
+	AllKeySetCurrentlyAID = iota
+	SpecificKeySetCurrentlyAID
+	NoKeySet
+)
 
 // GetKeyVersion depending on the currently selected AID and given key number
 // parameter, return key version of the key targeted or return all key set
-// versions of the selected application. (not keySetNo = -1)
-func (d *desfire) GetKeyVersion(keyNo, keySetNo int,
+// versions of the selected application. (not KeySetNo: keySetOption = 2,
+// specific KeySet in currently AID = , all KeySet in currently AID = 0)
+func (d *desfire) GetKeyVersion(keyNo, keySetNo int, keySetOption KeySetOptionVersion,
 	secondAppIndicator SecondAppIndicator) ([]byte, error) {
 
 	cmd := 0x64
@@ -456,11 +506,15 @@ func (d *desfire) GetKeyVersion(keyNo, keySetNo int,
 	keyNoByte := byte(keyNo | secondAppIndicator.Int()<<7)
 
 	cmdHeader := make([]byte, 0)
-	if keySetNo >= 0 {
-		cmdHeader = append(cmdHeader, keyNoByte|0x01)
-		cmdHeader = append(cmdHeader, byte(keySetNo))
-	} else {
-		cmdHeader = append(cmdHeader, keyNoByte)
+	switch keySetOption {
+	case AllKeySetCurrentlyAID:
+		cmdHeader = append(cmdHeader, keyNoByte|0x01<<6)
+		cmdHeader = append(cmdHeader, byte(0x01<<7))
+	case SpecificKeySetCurrentlyAID:
+		cmdHeader = append(cmdHeader, keyNoByte|0x01<<6)
+		cmdHeader = append(cmdHeader, byte(keySetNo&(0x0F<<4)))
+	case NoKeySet:
+		cmdHeader = append(cmdHeader, byte(keyNoByte&(0xFF^0x01<<6)))
 	}
 
 	switch d.evMode {
@@ -472,8 +526,10 @@ func (d *desfire) GetKeyVersion(keyNo, keySetNo int,
 
 		apdu = append(apdu, cmdHeader...)
 		apdu = append(apdu, cmacT...)
-	default:
+	case EV1:
 		apdu = append(apdu, cmdHeader...)
+	default:
+		return nil, errors.New("only EV1 and Ev2 support")
 	}
 
 	resp, err := d.Apdu(apdu)
@@ -484,5 +540,10 @@ func (d *desfire) GetKeyVersion(keyNo, keySetNo int,
 		return nil, err
 	}
 
-	return resp, nil
+	switch d.evMode {
+	case EV1, EV2:
+		return resp[:len(resp)-8], nil
+	default:
+		return nil, errors.New("only EV2 support")
+	}
 }

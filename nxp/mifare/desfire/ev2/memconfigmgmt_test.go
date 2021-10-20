@@ -173,6 +173,11 @@ func Test_desfire_GetCardUID(t *testing.T) {
 				t.Errorf("desfire.VerifyResponse() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+			// _, err = d.GetCardUID()
+			// if (err != nil) != tt.wantErr {
+			// 	t.Errorf("desfire.GetCardUID() error = %v, wantErr %v", err, tt.wantErr)
+			// 	return
+			// }
 			got, err := d.GetCardUID()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("desfire.GetCardUID() error = %v, wantErr %v", err, tt.wantErr)
