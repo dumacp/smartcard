@@ -71,26 +71,39 @@ func (d *desfire) GetVersion() ([][]byte, error) {
 
 	apdu := make([]byte, 0)
 	apdu = append(apdu, cmd)
-	resp, err := d.Apdu(apdu)
-	if err != nil {
-		return nil, err
-	}
-	if err := VerifyResponse(resp); err != nil {
-		return nil, err
-	}
-	response := make([][]byte, 0)
-	response = append(response, resp)
-	for resp[0] == 0xAF {
 
-		resp, err = d.Apdu([]byte{0xAF})
+	response := make([][]byte, 0)
+
+	for {
+
+		switch d.evMode {
+		case EV2:
+			cmacT, err := calcMacOnCommandEV2(d.blockMac, d.ti, byte(cmd), d.cmdCtr, nil, nil)
+			if err != nil {
+				return nil, err
+			}
+			apdu = append(apdu, cmacT...)
+		case EV1:
+		default:
+			return nil, errors.New("only EV1 and Ev2 support")
+		}
+
+		resp, err := d.Apdu(apdu)
 		if err != nil {
 			return nil, err
 		}
 		if err := VerifyResponse(resp); err != nil {
 			return nil, err
 		}
-		response = append(response, resp)
+
+		response = append(response, resp[1:len(resp)-8])
+
+		if resp[0] == 0x00 {
+			break
+		}
+		apdu = []byte{0xAF}
 	}
+
 	return response, nil
 }
 
@@ -141,8 +154,14 @@ func (d *desfire) GetCardUID() ([]byte, error) {
 		}
 		responseData = getDataOnFullModeResponseEV1(d.block, iv, resp)
 	default:
-		return nil, errors.New("desfire EV2 only support")
+		return nil, errors.New("only desfire EV2 mode support")
 	}
+	defer func() {
+		d.cmdCtr++
+	}()
 
-	return responseData, nil
+	if responseData[0] != 0x00 {
+		return responseData[:7], nil
+	}
+	return responseData[2 : responseData[1]+2], nil
 }
