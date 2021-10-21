@@ -1,6 +1,8 @@
 package ev2
 
-import "errors"
+import (
+	"errors"
+)
 
 // Returns the free memory avalaible on the card
 func (d *desfire) FreeMem() ([]byte, error) {
@@ -9,15 +11,32 @@ func (d *desfire) FreeMem() ([]byte, error) {
 
 	apdu := make([]byte, 0)
 	apdu = append(apdu, cmd)
-	resp, err := d.Apdu(apdu)
-	if err != nil {
-		return resp, err
-	}
-	if err := VerifyResponse(resp); err != nil {
-		return resp, err
+	switch d.evMode {
+	case EV2:
+		cmacT, err := calcMacOnCommandEV2(d.blockMac, d.ti, byte(cmd), d.cmdCtr, nil, nil)
+		if err != nil {
+			return nil, err
+		}
+		apdu = append(apdu, cmacT...)
+	case EV1:
+	default:
+		return nil, errors.New("only EV1 and Ev2 support")
 	}
 
-	return resp, nil
+	resp, err := d.Apdu(apdu)
+	if err != nil {
+		return nil, err
+	}
+	if err := VerifyResponse(resp); err != nil {
+		return nil, err
+	}
+
+	switch d.evMode {
+	case EV1, EV2:
+		return resp[:len(resp)-8], nil
+	default:
+		return nil, errors.New("only EV2 support")
+	}
 }
 
 // Format At PICC level, all applications and files are deleted. At
@@ -30,28 +49,81 @@ func (d *desfire) Format() ([]byte, error) {
 
 	apdu := make([]byte, 0)
 	apdu = append(apdu, cmd)
-	resp, err := d.Apdu(apdu)
-	if err != nil {
-		return resp, err
-	}
-	if err := VerifyResponse(resp); err != nil {
-		return resp, err
+	switch d.evMode {
+	case EV2:
+		cmacT, err := calcMacOnCommandEV2(d.blockMac, d.ti, byte(cmd), d.cmdCtr, nil, nil)
+		if err != nil {
+			return nil, err
+		}
+		apdu = append(apdu, cmacT...)
+	case EV1:
+	default:
+		return nil, errors.New("only EV1 and Ev2 support")
 	}
 
-	return resp, nil
+	resp, err := d.Apdu(apdu)
+	if err != nil {
+		return nil, err
+	}
+	if err := VerifyResponse(resp); err != nil {
+		return nil, err
+	}
+
+	switch d.evMode {
+	case EV1, EV2:
+		return resp[:len(resp)-8], nil
+	default:
+		return nil, errors.New("only EV2 support")
+	}
 }
+
+type ConfigurationOption int
+
+const (
+	PICC_CONFIGURATION ConfigurationOption = iota
+	DEFAULT_KEYS_UPDATE
+	ATS_UPDATE
+	SAK_UPDATE
+	SECURE_MESSAGING_CONFIGURATION
+	CAPABILITY_DATA
+	VC_INSTALATION_IDENTIFIER
+)
 
 // SetConfiguration Configures the card an pre personalizes the card
 // with a key, defines if the UID or the random ID is sent back
 // during communication setup and configures the ATS string.
-func (d *desfire) SetConfiguration(option int, data []byte) ([]byte, error) {
+func (d *desfire) SetConfiguration(option ConfigurationOption, data []byte) ([]byte, error) {
 
 	cmd := byte(0x5C)
 
 	apdu := make([]byte, 0)
 	apdu = append(apdu, cmd)
-	apdu = append(apdu, byte(option))
-	apdu = append(apdu, data...)
+
+	cmdHeader := make([]byte, 0)
+	cmdHeader = append(cmdHeader, byte(option))
+
+	// var cryptograma []byte
+	// var block cipher.Block
+	var err error
+	switch d.evMode {
+	case EV2:
+		iv, err := calcCommandIVOnFullModeEV2(d.ksesAuthEnc, d.ti, d.cmdCtr)
+		if err != nil {
+			return nil, err
+		}
+		cryptograma := calcCryptogramEV2(d.block, data, iv)
+		cmacT, err := calcMacOnCommandEV2(d.blockMac,
+			d.ti, cmd, d.cmdCtr, cmdHeader, cryptograma)
+		if err != nil {
+			return nil, err
+		}
+		apdu = append(apdu, cmdHeader...)
+		apdu = append(apdu, cryptograma...)
+		apdu = append(apdu, cmacT...)
+	default:
+		return nil, errors.New("only Desfire Ev2 mode support")
+	}
+
 	resp, err := d.Apdu(apdu)
 	if err != nil {
 		return resp, err

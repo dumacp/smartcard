@@ -148,3 +148,14 @@ func getDataOnFullModeResponseEV2(block cipher.Block, iv []byte,
 	mode.CryptBlocks(dest, reponse[1:len(reponse)-8])
 	return dest
 }
+
+func calcCryptogramEV2(block cipher.Block, plaindata, iv []byte) []byte {
+	if len(plaindata)%block.BlockSize() != 0 {
+		plaindata = append(plaindata, 0x80)
+		plaindata = append(plaindata, make([]byte, block.BlockSize()-len(plaindata)%block.BlockSize())...)
+	}
+	mode := cipher.NewCBCDecrypter(block, iv)
+	dest := make([]byte, len(plaindata))
+	mode.CryptBlocks(dest, plaindata)
+	return dest
+}
