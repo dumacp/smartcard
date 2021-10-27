@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"log"
 	"strings"
 
@@ -73,21 +74,22 @@ func main() {
 	}
 	log.Printf("atr: [% X]", atr)
 
-	/**
+	/**/
 	// keyA, err := hex.DecodeString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
-	keyA, err := hex.DecodeString("00000000000000000000000000000000")
+	// keyA, err := hex.DecodeString("11B03568513C473EB1250E4E581D2E81")
+	keyA, err := hex.DecodeString("24534D288BB938F0054E4A3A23420152")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	res, err := cardm.FirstAuth(0x4006, keyA)
+	res, err := cardm.FirstAuth(0x4004, keyA)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	log.Printf("res: [% X]", res)
 
-	res, err = cardm.ReadEncMacMac(14, 1)
+	res, err = cardm.ReadEncMacMac(20, 1)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -95,23 +97,23 @@ func main() {
 	log.Printf("res: [% X]", res)
 
 	block14 := []byte{0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00}
-	block16 := []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
-	block17 := []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+	// block16 := []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+	// block17 := []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 
-	if err := cardm.WriteEncMacMac(14, block14); err != nil {
+	if err := cardm.WriteEncMacMac(20, block14); err != nil {
 		log.Fatal(err)
 	}
-	if err := cardm.WriteEncMacMac(16, block16); err != nil {
+	if err := cardm.WriteEncMacMac(21, block14); err != nil {
 		log.Fatal(err)
 	}
-	if err := cardm.WriteEncMacMac(17, block17); err != nil {
+	if err := cardm.WriteEncMacMac(22, block14); err != nil {
 		log.Fatal(err)
 	}
 	// if err := cardm.IncTransfEncMacMac(20, []byte{1, 0, 0, 0}); err != nil {
 	// 	log.Fatal(err)
 	// }
 
-	res, err = cardm.ReadEncMacMac(14, 1)
+	res, err = cardm.ReadEncMacMac(20, 1)
 	if err != nil {
 		log.Fatal(err)
 	}

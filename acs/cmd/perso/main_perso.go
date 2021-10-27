@@ -105,12 +105,12 @@ func main() {
 		}
 		log.Printf("WritePerso resp: % X\n", resp)
 		/**/
-		/**/
-		// resp, err = mplus.WritePerso(0x9001, key)
-		// if err != nil {
-		// 	log.Fatalf("Error: %s\n", err)
-		// }
-		// log.Printf("WritePerso resp: % X\n", resp)
+		/**
+		resp, err = mplus.WritePerso(0x9001, key)
+		if err != nil {
+			log.Fatalf("Error: %s\n", err)
+		}
+		log.Printf("WritePerso resp: % X\n", resp)
 
 		resp, err = mplus.WritePerso(0x9000, key)
 		if err != nil {
@@ -146,7 +146,7 @@ func main() {
 		log.Printf("Commit Perso resp: % X\n", resp)
 		/**/
 
-		/**
+		/**/
 
 		resp, err = mplus.FirstAuth(0x9003, key)
 		if err != nil {

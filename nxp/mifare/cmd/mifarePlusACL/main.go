@@ -1,11 +1,13 @@
 package main
 
 import (
+	"crypto/aes"
 	"encoding/hex"
 	"flag"
 	"log"
 	"strings"
 
+	"github.com/aead/cmac"
 	"github.com/dumacp/smartcard/nxp/mifare"
 	"github.com/dumacp/smartcard/pcsc"
 )
@@ -14,9 +16,11 @@ var keyS string
 var keyType string
 var sectorInitial int
 var sectorFinal int
+var div bool
 
 func init() {
 	flag.StringVar(&keyS, "key", "00000000000000000000000000000000", "key aes128")
+	flag.BoolVar(&div, "div", false, "enable diverfisied key?")
 	flag.StringVar(&keyType, "keyType", "A", "key type (\"A\"|\"B\")")
 	flag.IntVar(&sectorInitial, "sectorInitial", 1, "sector Number initial")
 	flag.IntVar(&sectorFinal, "sectorFinal", 1, "sector Number final")
@@ -75,6 +79,35 @@ func main() {
 			log.Println("ERROR: ", err)
 		}
 		log.Printf("card ATS: % X\n", ats)
+
+		if div {
+			divData := []byte{0x01}
+			divData = append(divData, uid[:7]...)
+			for i := 0; i < len(uid[:7]); i++ {
+				divData = append(divData, uid[:7][len(uid[:7])-1-i])
+			}
+
+			log.Printf("data diversified: % X\n", divData)
+
+			block, err := aes.NewCipher(key)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			if len(divData)%block.BlockSize() != 0 {
+				divData = append(divData, 0x80)
+				if len(divData)%block.BlockSize() != 0 {
+					divData = append(divData,
+						make([]byte, block.BlockSize()-len(divData)%block.BlockSize())...)
+				}
+			}
+			log.Printf("data diversified: % X\n", divData)
+			mac, err := cmac.Sum(divData, block, block.BlockSize())
+			if err != nil {
+				log.Fatalln(err)
+			}
+			key = mac
+			log.Printf("key diversified: % X\n", key)
+		}
 
 		/**/
 		// key = []byte{0xC0, 0xA3, 0xD0, 0x80, 0x87, 0xE1, 0x84, 0xB6, 0x2B, 0xD1, 0xE1, 0x35, 0x5B, 0x68, 0x9C, 0x43}
