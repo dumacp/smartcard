@@ -23,17 +23,21 @@ func main() {
 
 	var reader pcsc.Reader
 	for i, r := range readers {
-		log.Printf("reader %q: %s", i, r)
-		if strings.Contains(r, "PICC") {
+
+		if strings.Contains(r, "01") {
+			log.Printf("reader PICC%q: %s", i, r)
 			reader = pcsc.NewReader(ctx, r)
+			break
 		}
 	}
 
 	var readerSAM pcsc.Reader
 	for i, r := range readers {
-		log.Printf("reader %q: %s", i, r)
-		if strings.Contains(r, "SAM") {
+
+		if strings.Contains(r, "00") {
+			log.Printf("reader SAM %q: %s", i, r)
 			readerSAM = pcsc.NewReader(ctx, r)
+			break
 		}
 	}
 

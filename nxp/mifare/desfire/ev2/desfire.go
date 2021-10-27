@@ -10,8 +10,7 @@ import (
 type EVmode int
 
 const (
-	PLAIN EVmode = iota
-	D40
+	D40 EVmode = iota
 	EV1
 	EV2
 )
@@ -71,13 +70,4 @@ func VerifyResponse(resp []byte) error {
 
 	return fmt.Errorf("error in response:, code error: %X, response: [% X]", resp[0], resp)
 
-}
-
-func (d *desfire) GetApplicationsID() ([]byte, error) {
-	cmd := byte(0x6A)
-	apdu := make([]byte, 0)
-
-	apdu = append(apdu, cmd)
-
-	return d.Apdu(apdu)
 }
