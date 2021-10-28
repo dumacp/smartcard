@@ -53,7 +53,7 @@ func main() {
 
 	d := ev2.NewDesfire(cardi)
 
-	_, err = d.SelectApplication(make([]byte, 3), nil)
+	err = d.SelectApplication(make([]byte, 3), nil)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -76,11 +76,11 @@ func main() {
 	log.Printf("**** auth sucess: [% X]", auth2)
 
 	keyMaster = make([]byte, 16)
-	changekey, err := d.ChangeKeyEV2(0x00, 0x00, 0x00, ev2.AES, 0x00, keyMaster, nil)
+	err = d.ChangeKeyEV2(0x00, 0x00, 0x00, ev2.AES, 0x00, keyMaster, nil)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	log.Printf("**** changekey sucess: [% X]", changekey)
+	log.Println("**** changekey sucess ****")
 
 }

@@ -94,7 +94,7 @@ func Test_desfire_AuthenticateEV2First(t *testing.T) {
 				t.Errorf("desfire.GetApplicationsID() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			_, err = d.SelectApplication([]byte{1, 0, 0}, nil)
+			err = d.SelectApplication([]byte{1, 0, 0}, nil)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("desfire.SelectApplication() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -325,7 +325,7 @@ func Test_desfire_AuthenticateISO(t *testing.T) {
 				t.Errorf("desfire.GetApplicationsID() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			_, err = d.SelectApplication([]byte{0, 0, 0}, nil)
+			err = d.SelectApplication([]byte{0, 0, 0}, nil)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("desfire.SelectApplication() error = %v, wantErr %v", err, tt.wantErr)
 				return

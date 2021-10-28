@@ -38,6 +38,7 @@ const (
 type card struct {
 	uuid []byte
 	ats  []byte
+	sak  byte
 	State
 	reader   Reader
 	modeSend SendMode

@@ -33,7 +33,7 @@ func (d *desfire) FreeMem() ([]byte, error) {
 
 	switch d.evMode {
 	case EV1, EV2:
-		return resp[:len(resp)-8], nil
+		return resp[1 : len(resp)-8], nil
 	default:
 		return nil, errors.New("only EV2 support")
 	}
@@ -43,7 +43,7 @@ func (d *desfire) FreeMem() ([]byte, error) {
 // application level (only for delegated applications), all
 // files are deleted. The deleted memory is released and can
 // be reused.
-func (d *desfire) Format() ([]byte, error) {
+func (d *desfire) Format() error {
 
 	cmd := byte(0xFC)
 
@@ -53,27 +53,27 @@ func (d *desfire) Format() ([]byte, error) {
 	case EV2:
 		cmacT, err := calcMacOnCommandEV2(d.blockMac, d.ti, byte(cmd), d.cmdCtr, nil, nil)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		apdu = append(apdu, cmacT...)
 	case EV1:
 	default:
-		return nil, errors.New("only EV1 and Ev2 support")
+		return errors.New("only EV1 and Ev2 support")
 	}
 
 	resp, err := d.Apdu(apdu)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := VerifyResponse(resp); err != nil {
-		return nil, err
+		return err
 	}
 
 	switch d.evMode {
 	case EV1, EV2:
-		return resp[:len(resp)-8], nil
+		return nil
 	default:
-		return nil, errors.New("only EV2 support")
+		return errors.New("only EV2 support")
 	}
 }
 
@@ -92,7 +92,7 @@ const (
 // SetConfiguration Configures the card an pre personalizes the card
 // with a key, defines if the UID or the random ID is sent back
 // during communication setup and configures the ATS string.
-func (d *desfire) SetConfiguration(option ConfigurationOption, data []byte) ([]byte, error) {
+func (d *desfire) SetConfiguration(option ConfigurationOption, data []byte) error {
 
 	cmd := byte(0x5C)
 
@@ -109,30 +109,30 @@ func (d *desfire) SetConfiguration(option ConfigurationOption, data []byte) ([]b
 	case EV2:
 		iv, err := calcCommandIVOnFullModeEV2(d.ksesAuthEnc, d.ti, d.cmdCtr)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		cryptograma := calcCryptogramEV2(d.block, data, iv)
 		cmacT, err := calcMacOnCommandEV2(d.blockMac,
 			d.ti, cmd, d.cmdCtr, cmdHeader, cryptograma)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		apdu = append(apdu, cmdHeader...)
 		apdu = append(apdu, cryptograma...)
 		apdu = append(apdu, cmacT...)
 	default:
-		return nil, errors.New("only Desfire Ev2 mode support")
+		return errors.New("only Desfire Ev2 mode support")
 	}
 
 	resp, err := d.Apdu(apdu)
 	if err != nil {
-		return resp, err
+		return err
 	}
 	if err := VerifyResponse(resp); err != nil {
-		return resp, err
+		return err
 	}
 
-	return resp, nil
+	return nil
 }
 
 // GetVersion returns manufacturing related data of the PICC. First

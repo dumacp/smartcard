@@ -364,22 +364,41 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	}
 
 	var uid []byte
+	var ats []byte
 
 	switch {
-	case len(resp2) >= 0x16 && (resp2[8]&0x20 == 0x20):
+	case len(resp2) >= 0x10 && resp2[0] == 0x01 && (resp2[8]&0x20 == 0x20):
 		uid = make([]byte, 7)
 		copy(uid, resp2[1:8])
-	case len(resp2) >= 0x13 && (resp2[8]&0x20 == 0x20):
+		ats = make([]byte, len(resp2[9:]))
+		copy(ats, resp2[9:])
+	case len(resp2) >= 0x10 && resp2[0] == 0x00 && (resp2[6]&0x20 == 0x20):
 		uid = make([]byte, 4)
 		copy(uid, resp2[1:5])
+		ats = make([]byte, len(resp2[6:]))
+		copy(ats, resp2[6:])
+	case len(resp2) >= 0x10 && resp2[0] == 0x01 && (resp2[8]&0x20 == 0x20):
+		uid = make([]byte, 7)
+		copy(uid, resp2[1:8])
+		ats = make([]byte, len(resp2[9:]))
+		copy(ats, resp2[5:])
+	case len(resp2) >= 0x10 && (resp2[8]&0x20 == 0x20):
+		uid = make([]byte, 4)
+		copy(uid, resp2[1:5])
+		ats = make([]byte, len(resp2[9:]))
+		copy(ats, resp2[5:])
 	default:
-		uid = make([]byte, 4)
-		copy(uid, resp2[1:5])
+		if len(resp2) >= 6 {
+			uid = make([]byte, 4)
+			copy(uid, resp2[1:5])
+			ats = make([]byte, len(resp2[5:]))
+			copy(ats, resp2[5:])
+		}
 	}
 
 	card := &card{
 		uuid:   uid,
-		ats:    resp2,
+		ats:    ats,
 		reader: r,
 	}
 
