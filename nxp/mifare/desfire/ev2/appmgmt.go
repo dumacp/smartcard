@@ -125,7 +125,7 @@ func (d *desfire) CreateApplication(aid []byte,
 
 	switch d.evMode {
 	case EV2:
-		return resp[:len(resp)-8], nil
+		return resp[1 : len(resp)-8], nil
 	default:
 		return nil, errors.New("only EV2 mode support")
 	}
@@ -133,13 +133,13 @@ func (d *desfire) CreateApplication(aid []byte,
 
 // SelectApplication select 1 or 2 applications or the PICC level specified
 // by their application identifier.
-func (d *desfire) SelectApplication(aid1, aid2 []byte) ([]byte, error) {
+func (d *desfire) SelectApplication(aid1, aid2 []byte) error {
 
 	if len(aid1) != 3 {
-		return nil, errors.New("aid format error")
+		errors.New("aid format error")
 	}
 	if len(aid2) > 0 && len(aid2) != 3 {
-		return nil, errors.New("aid format error")
+		errors.New("aid format error")
 	}
 
 	expaid1 := append(aid1, 0x00)
@@ -154,15 +154,15 @@ func (d *desfire) SelectApplication(aid1, aid2 []byte) ([]byte, error) {
 
 	resp, err := d.Apdu(apdu)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := VerifyResponse(resp); err != nil {
-		return nil, err
+		return err
 	}
 
 	d.currentAppID = int(aid)
 
-	return resp, nil
+	return nil
 }
 
 // Permanently deactivates applications on the PICC. The AID is released.
@@ -202,7 +202,7 @@ func (d *desfire) DeleteApplication(aid []byte) ([]byte, error) {
 
 	switch d.evMode {
 	case EV2:
-		return resp[:len(resp)-8], nil
+		return resp[1 : len(resp)-8], nil
 	default:
 		return nil, errors.New("only EV2 mode support")
 	}
@@ -340,7 +340,7 @@ func (d *desfire) CreateDelegateApplication(aid []byte,
 
 	switch d.evMode {
 	case EV2:
-		return resp[:len(resp)-8], nil
+		return resp[1 : len(resp)-8], nil
 	default:
 		return nil, errors.New("only EV2 mode support")
 	}
@@ -376,7 +376,7 @@ func (d *desfire) GetApplicationsID() ([]byte, error) {
 
 	switch d.evMode {
 	case EV2:
-		return resp[:len(resp)-8], nil
+		return resp[1 : len(resp)-8], nil
 	default:
 		return nil, errors.New("only EV2 mode support")
 	}
@@ -469,7 +469,7 @@ func (d *desfire) GetDeletedInfo(damSlotNo int) ([]byte, error) {
 
 	switch d.evMode {
 	case EV2:
-		return resp[:len(resp)-8], nil
+		return resp[1 : len(resp)-8], nil
 	default:
 		return nil, errors.New("only EV2 mode support")
 	}

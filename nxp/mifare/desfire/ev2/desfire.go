@@ -2,6 +2,7 @@ package ev2
 
 import (
 	"crypto/cipher"
+	"errors"
 	"fmt"
 
 	"github.com/dumacp/smartcard"
@@ -66,6 +67,8 @@ func VerifyResponse(resp []byte) error {
 
 	if len(resp) > 0 && (resp[0] == 0x00 || resp[0] == 0xAF) {
 		return nil
+	} else {
+		return errors.New("error in response: nil response")
 	}
 
 	return fmt.Errorf("error in response:, code error: %X, response: [% X]", resp[0], resp)

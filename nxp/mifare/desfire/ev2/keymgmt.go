@@ -145,7 +145,7 @@ func changeKeyCryptogramEV1(block cipher.Block,
 // update a key of the PICC or of an application AKS.
 func (d *desfire) ChangeKey(keyNo, keyVersion int,
 	keyType KeyType, secondAppIndicator SecondAppIndicator,
-	newKey, oldKey []byte) ([]byte, error) {
+	newKey, oldKey []byte) error {
 
 	cmd := 0xC4
 
@@ -162,14 +162,14 @@ func (d *desfire) ChangeKey(keyNo, keyVersion int,
 	case EV2:
 		iv, err := calcCommandIVOnFullModeEV2(d.ksesAuthEnc, d.ti, d.cmdCtr)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		cryptograma, err = changeKeyCryptogramEV2(d.block, d.blockMac, cmd,
 			keyNo, -1, d.lastKey, keyType.Int(), keyVersion,
 			d.cmdCtr,
 			newKey, oldKey, d.ti, iv)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	case EV1:
 
@@ -177,12 +177,12 @@ func (d *desfire) ChangeKey(keyNo, keyVersion int,
 			cmd, keyNo, d.lastKey, keyType.Int(), keyVersion,
 			newKey, oldKey, d.iv)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		log.Printf("cryptograma: [% X], len: %d", cryptograma, len(cryptograma))
 		d.iv = cryptograma[len(cryptograma)-d.block.BlockSize()-1:]
 	default:
-		return nil, errors.New("only EV1 and Ev2 support")
+		return errors.New("only EV1 and Ev2 support")
 	}
 
 	apdu := make([]byte, 0)
@@ -202,26 +202,26 @@ func (d *desfire) ChangeKey(keyNo, keyVersion int,
 	apdu = append(apdu, cryptograma...)
 	resp, err := d.Apdu(apdu)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer func() {
 		d.cmdCtr++
 	}()
 	if err := VerifyResponse(resp); err != nil {
-		return nil, err
+		return err
 	}
 
-	return resp, nil
+	return nil
 }
 
 // ChangeKey depending on the currently selectd AID, this command
 // update a key of the PICC or of an application keyset.
 func (d *desfire) ChangeKeyEV2(keyNo, keySetNo, keyVersion int,
 	keyType KeyType, secondAppIndicator SecondAppIndicator,
-	newKey, oldKey []byte) ([]byte, error) {
+	newKey, oldKey []byte) error {
 
 	if d.evMode != EV2 {
-		return nil, errors.New("only EV2 mode support")
+		errors.New("only EV2 mode support")
 	}
 
 	cmd := 0xC6
@@ -243,7 +243,7 @@ func (d *desfire) ChangeKeyEV2(keyNo, keySetNo, keyVersion int,
 
 	iv, err := calcCommandIVOnFullModeEV2(d.ksesAuthEnc, d.ti, d.cmdCtr)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	cryptograma, err := changeKeyCryptogramEV2(d.block, d.blockMac, cmd,
@@ -251,7 +251,7 @@ func (d *desfire) ChangeKeyEV2(keyNo, keySetNo, keyVersion int,
 		d.cmdCtr,
 		newKey, oldKey, d.ti, iv)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// cipherdata, err := encryptionOncommandEV1(block, cmd, cmdHeader, cryptograma,
@@ -263,16 +263,16 @@ func (d *desfire) ChangeKeyEV2(keyNo, keySetNo, keyVersion int,
 	apdu = append(apdu, cryptograma...)
 	resp, err := d.Apdu(apdu)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer func() {
 		d.cmdCtr++
 	}()
 	if err := VerifyResponse(resp); err != nil {
-		return nil, err
+		return err
 	}
 
-	return resp[:], nil
+	return nil
 }
 
 // GetKeySettings depending on the selected AID, this command retrieves
@@ -308,7 +308,7 @@ func (d *desfire) GetKeySettings() ([]byte, error) {
 
 	switch d.evMode {
 	case EV1, EV2:
-		return resp[:len(resp)-8], nil
+		return resp[1 : len(resp)-8], nil
 	default:
 		return nil, errors.New("only EV2 support")
 	}
@@ -351,7 +351,7 @@ func (d *desfire) InitializeKeySet(keySetNo int, keySetType KeyType,
 
 	switch d.evMode {
 	case EV1, EV2:
-		return resp[:len(resp)-8], nil
+		return resp[1 : len(resp)-8], nil
 	default:
 		return nil, errors.New("only EV2 support")
 	}
@@ -360,7 +360,7 @@ func (d *desfire) InitializeKeySet(keySetNo int, keySetType KeyType,
 // FinalizeKeySet the currently selected application, finalize the key set with
 // specific number.
 func (d *desfire) FinalizeKeySet(keySetNo, keySetVersion int,
-	secondAppIndicator SecondAppIndicator) ([]byte, error) {
+	secondAppIndicator SecondAppIndicator) error {
 
 	cmd := 0x57
 
@@ -373,7 +373,7 @@ func (d *desfire) FinalizeKeySet(keySetNo, keySetVersion int,
 	case EV2:
 		cmacT, err := calcMacOnCommandEV2(d.blockMac, d.ti, byte(cmd), d.cmdCtr, cmdHeader, nil)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		apdu = append(apdu, cmdHeader...)
@@ -381,28 +381,28 @@ func (d *desfire) FinalizeKeySet(keySetNo, keySetVersion int,
 	case EV1:
 		apdu = append(apdu, cmdHeader...)
 	default:
-		return nil, errors.New("only EV1 and Ev2 support")
+		return errors.New("only EV1 and Ev2 support")
 	}
 
 	resp, err := d.Apdu(apdu)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := VerifyResponse(resp); err != nil {
-		return nil, err
+		return err
 	}
 
 	switch d.evMode {
 	case EV1, EV2:
-		return resp[:len(resp)-8], nil
+		return nil
 	default:
-		return nil, errors.New("only EV2 support")
+		return errors.New("only EV2 support")
 	}
 }
 
 // RollKeySet the currently selected application, roll to the key set with
 // specific number.
-func (d *desfire) RollKeySet(keySetNo int, secondAppIndicator SecondAppIndicator) ([]byte, error) {
+func (d *desfire) RollKeySet(keySetNo int, secondAppIndicator SecondAppIndicator) error {
 
 	cmd := 0x55
 
@@ -415,7 +415,7 @@ func (d *desfire) RollKeySet(keySetNo int, secondAppIndicator SecondAppIndicator
 	case EV2:
 		cmacT, err := calcMacOnCommandEV2(d.blockMac, d.ti, byte(cmd), d.cmdCtr, cmdHeader, nil)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		apdu = append(apdu, cmdHeader...)
@@ -423,28 +423,28 @@ func (d *desfire) RollKeySet(keySetNo int, secondAppIndicator SecondAppIndicator
 	case EV1:
 		apdu = append(apdu, cmdHeader...)
 	default:
-		return nil, errors.New("only EV1 and EV2 support")
+		return errors.New("only EV1 and EV2 support")
 	}
 
 	resp, err := d.Apdu(apdu)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := VerifyResponse(resp); err != nil {
-		return nil, err
+		return err
 	}
 
 	switch d.evMode {
 	case EV1, EV2:
-		return resp[:len(resp)-8], nil
+		return nil
 	default:
-		return nil, errors.New("only EV2 support")
+		return errors.New("only EV2 support")
 	}
 }
 
 // ChangeKeySettings depending on the currently selected AID, this command changes
 // the PICCKeySettings of the PICC or the AppKeySettings of the application.
-func (d *desfire) ChangeKeySettings(keySetting int) ([]byte, error) {
+func (d *desfire) ChangeKeySettings(keySetting int) error {
 
 	cmd := 0x54
 
@@ -457,29 +457,29 @@ func (d *desfire) ChangeKeySettings(keySetting int) ([]byte, error) {
 	case EV2:
 		cmacT, err := calcMacOnCommandEV2(d.blockMac, d.ti, byte(cmd), d.cmdCtr, cmdHeader, nil)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		apdu = append(apdu, cmdHeader...)
 		apdu = append(apdu, cmacT...)
 	case EV1:
 		apdu = append(apdu, cmdHeader...)
 	default:
-		return nil, errors.New("only EV1 and Ev2 support")
+		return errors.New("only EV1 and Ev2 support")
 	}
 
 	resp, err := d.Apdu(apdu)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := VerifyResponse(resp); err != nil {
-		return nil, err
+		return err
 	}
 
 	switch d.evMode {
 	case EV1, EV2:
-		return resp[:len(resp)-8], nil
+		return nil
 	default:
-		return nil, errors.New("only EV2 support")
+		return errors.New("only EV2 support")
 	}
 }
 
@@ -542,7 +542,7 @@ func (d *desfire) GetKeyVersion(keyNo, keySetNo int, keySetOption KeySetOptionVe
 
 	switch d.evMode {
 	case EV1, EV2:
-		return resp[:len(resp)-8], nil
+		return resp[1 : len(resp)-8], nil
 	default:
 		return nil, errors.New("only EV2 support")
 	}
