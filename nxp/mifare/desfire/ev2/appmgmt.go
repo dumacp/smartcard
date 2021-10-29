@@ -102,6 +102,8 @@ func (d *desfire) CreateApplication(aid []byte,
 		cmdHeader = append(cmdHeader, isofileDFName...)
 	}
 
+	apdu = append(apdu, cmdHeader...)
+
 	switch d.evMode {
 	case EV2:
 		cmcT, err := calcMacOnCommandEV2(d.blockMac, d.ti, byte(cmd), d.cmdCtr,
@@ -109,7 +111,7 @@ func (d *desfire) CreateApplication(aid []byte,
 		if err != nil {
 			return nil, err
 		}
-		apdu = append(apdu, cmdHeader...)
+
 		apdu = append(apdu, cmcT...)
 	default:
 		return nil, errors.New("only EV2 mode support")
@@ -136,10 +138,10 @@ func (d *desfire) CreateApplication(aid []byte,
 func (d *desfire) SelectApplication(aid1, aid2 []byte) error {
 
 	if len(aid1) != 3 {
-		errors.New("aid format error")
+		return errors.New("aid format error")
 	}
 	if len(aid2) > 0 && len(aid2) != 3 {
-		errors.New("aid format error")
+		return errors.New("aid format error")
 	}
 
 	expaid1 := append(aid1, 0x00)
@@ -317,6 +319,8 @@ func (d *desfire) CreateDelegateApplication(aid []byte,
 		cmdHeader = append(cmdHeader, isofileDFName...)
 	}
 
+	apdu = append(apdu, cmdHeader...)
+
 	switch d.evMode {
 	case EV2:
 		cmcT, err := calcMacOnCommandEV2(d.blockMac, d.ti, byte(cmd), d.cmdCtr,
@@ -324,7 +328,7 @@ func (d *desfire) CreateDelegateApplication(aid []byte,
 		if err != nil {
 			return nil, err
 		}
-		apdu = append(apdu, cmdHeader...)
+
 		apdu = append(apdu, cmcT...)
 	default:
 		return nil, errors.New("only EV2 mode support")
@@ -446,6 +450,8 @@ func (d *desfire) GetDeletedInfo(damSlotNo int) ([]byte, error) {
 	cmdHeader := make([]byte, 0)
 	cmdHeader = append(cmdHeader, damSlotNoBytes...)
 
+	apdu = append(apdu, cmdHeader...)
+
 	switch d.evMode {
 	case EV2:
 		cmcT, err := calcMacOnCommandEV2(d.blockMac, d.ti, byte(cmd), d.cmdCtr,
@@ -453,7 +459,7 @@ func (d *desfire) GetDeletedInfo(damSlotNo int) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		apdu = append(apdu, cmdHeader...)
+
 		apdu = append(apdu, cmcT...)
 	default:
 		return nil, errors.New("only EV2 mode support")
