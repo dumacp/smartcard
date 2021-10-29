@@ -67,10 +67,9 @@ func VerifyResponse(resp []byte) error {
 
 	if len(resp) > 0 && (resp[0] == 0x00 || resp[0] == 0xAF) {
 		return nil
-	} else {
+	}
+	if len(resp) <= 0 {
 		return errors.New("error in response: nil response")
 	}
-
 	return fmt.Errorf("error in response:, code error: %X, response: [% X]", resp[0], resp)
-
 }

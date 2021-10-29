@@ -102,6 +102,8 @@ func (d *desfire) SetConfiguration(option ConfigurationOption, data []byte) erro
 	cmdHeader := make([]byte, 0)
 	cmdHeader = append(cmdHeader, byte(option))
 
+	apdu = append(apdu, cmdHeader...)
+
 	// var cryptograma []byte
 	// var block cipher.Block
 	var err error
@@ -117,7 +119,7 @@ func (d *desfire) SetConfiguration(option ConfigurationOption, data []byte) erro
 		if err != nil {
 			return err
 		}
-		apdu = append(apdu, cmdHeader...)
+
 		apdu = append(apdu, cryptograma...)
 		apdu = append(apdu, cmacT...)
 	default:
