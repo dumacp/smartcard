@@ -7,7 +7,7 @@ import (
 
 // ReadData reads data from File Type StandardData, FileType.BcakupData or
 // FileType.TransactionMAC files.
-func (d *desfire) ReadData(fileNo int, targetSecondaryApp SecondAppIndicator,
+func (d *Desfire) ReadData(fileNo int, targetSecondaryApp SecondAppIndicator,
 	offset int,
 	length int,
 	commMode CommMode,
@@ -112,7 +112,7 @@ func (d *desfire) ReadData(fileNo int, targetSecondaryApp SecondAppIndicator,
 }
 
 // WriteData write data to File Type StandardData and FileType.BcakupData files.
-func (d *desfire) WriteData(fileNo int, targetSecondaryApp SecondAppIndicator,
+func (d *Desfire) WriteData(fileNo int, targetSecondaryApp SecondAppIndicator,
 	offset int,
 	datafile []byte,
 	commMode CommMode,
@@ -225,7 +225,7 @@ func (d *desfire) WriteData(fileNo int, targetSecondaryApp SecondAppIndicator,
 }
 
 // GetValue reads the currently stored from FileType.Value file.
-func (d *desfire) GetValue(fileNo int, targetSecondaryApp SecondAppIndicator,
+func (d *Desfire) GetValue(fileNo int, targetSecondaryApp SecondAppIndicator,
 	commMode CommMode,
 ) ([]byte, error) {
 
@@ -292,14 +292,14 @@ func (d *desfire) GetValue(fileNo int, targetSecondaryApp SecondAppIndicator,
 
 	switch d.evMode {
 	case EV2:
-		return responseData, nil
+		return responseData[0:4], nil
 	default:
 		return nil, errors.New("only EV2 mode support")
 	}
 }
 
 // Credit increases a value stored in a FileType.Value file.
-func (d *desfire) Credit(fileNo int, targetSecondaryApp SecondAppIndicator,
+func (d *Desfire) Credit(fileNo int, targetSecondaryApp SecondAppIndicator,
 	value uint,
 	commMode CommMode,
 ) error {
@@ -389,7 +389,7 @@ func (d *desfire) Credit(fileNo int, targetSecondaryApp SecondAppIndicator,
 
 // LimitedCredit allows a limited increase of a value stored in a FileType.Value file
 // without having full Cmd.Credit permissions to the file.
-func (d *desfire) LimitedCredit(fileNo int, targetSecondaryApp SecondAppIndicator,
+func (d *Desfire) LimitedCredit(fileNo int, targetSecondaryApp SecondAppIndicator,
 	value uint,
 	commMode CommMode,
 ) ([]byte, error) {
@@ -476,10 +476,10 @@ func (d *desfire) LimitedCredit(fileNo int, targetSecondaryApp SecondAppIndicato
 }
 
 // Debit decreases a value stored in a FileType.Value file.
-func (d *desfire) Debit(fileNo int, targetSecondaryApp SecondAppIndicator,
+func (d *Desfire) Debit(fileNo int, targetSecondaryApp SecondAppIndicator,
 	value uint,
 	commMode CommMode,
-) ([]byte, error) {
+) error {
 
 	cmd := 0xDC
 
@@ -500,13 +500,13 @@ func (d *desfire) Debit(fileNo int, targetSecondaryApp SecondAppIndicator,
 		case FULL:
 			iv, err := calcCommandIVOnFullModeEV2(d.ksesAuthEnc, d.ti, d.cmdCtr)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			cryptograma := calcCryptogramEV2(d.block, data, iv)
 			cmacT, err := calcMacOnCommandEV2(d.blockMac,
 				d.ti, byte(cmd), d.cmdCtr, cmdHeader, cryptograma)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			apdu = append(apdu, cryptograma...)
 			apdu = append(apdu, cmacT...)
@@ -514,7 +514,7 @@ func (d *desfire) Debit(fileNo int, targetSecondaryApp SecondAppIndicator,
 			cmacT, err := calcMacOnCommandEV2(d.blockMac,
 				d.ti, byte(cmd), d.cmdCtr, cmdHeader, data)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			apdu = append(apdu, data...)
 			apdu = append(apdu, cmacT...)
@@ -522,33 +522,33 @@ func (d *desfire) Debit(fileNo int, targetSecondaryApp SecondAppIndicator,
 		default:
 		}
 	case EV1:
-		return nil, errors.New("only EV1 and Ev2 support")
+		return errors.New("only EV1 and Ev2 support")
 	default:
-		return nil, errors.New("only EV1 and Ev2 support")
+		return errors.New("only EV1 and Ev2 support")
 	}
 
 	resp, err := d.Apdu(apdu)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := VerifyResponse(resp); err != nil {
-		return nil, err
+		return err
 	}
 
-	var responseData []byte
-	switch d.evMode {
-	case EV2:
-		switch commMode {
-		case FULL, MAC:
-			responseData = resp[1 : len(resp)-8]
-		default:
-			responseData = resp[1:]
-		}
-	case EV1:
-		return nil, errors.New("only desfire EV2 mode support")
-	default:
-		return nil, errors.New("only desfire EV2 mode support")
-	}
+	// // var responseData []byte
+	// switch d.evMode {
+	// case EV2:
+	// 	switch commMode {
+	// 	case FULL, MAC:
+	// 		responseData = resp[1 : len(resp)-8]
+	// 	default:
+	// 		responseData = resp[1:]
+	// 	}
+	// case EV1:
+	// 	return errors.New("only desfire EV2 mode support")
+	// default:
+	// 	return errors.New("only desfire EV2 mode support")
+	// }
 
 	defer func() {
 		d.cmdCtr++
@@ -556,15 +556,15 @@ func (d *desfire) Debit(fileNo int, targetSecondaryApp SecondAppIndicator,
 
 	switch d.evMode {
 	case EV2:
-		return responseData, nil
+		return nil
 	default:
-		return nil, errors.New("only EV2 mode support")
+		return errors.New("only EV2 mode support")
 	}
 }
 
 // ReadRecords reads out a set of complete records from FileType.LinearRecord or
 // FileType.CyclicRecord File.
-func (d *desfire) ReadRecords(fileNo int, targetSecondaryApp SecondAppIndicator,
+func (d *Desfire) ReadRecords(fileNo int, targetSecondaryApp SecondAppIndicator,
 	recNo int,
 	recCount int,
 	commMode CommMode,
@@ -622,6 +622,10 @@ func (d *desfire) ReadRecords(fileNo int, targetSecondaryApp SecondAppIndicator,
 		if err != nil {
 			return nil, err
 		}
+		// if len(resp) > 0 && resp[0] == 0xBE && recCount == 0 {
+		// 	d.cmdCtr = 0
+		// 	return [][]byte{}, nil
+		// }
 		if err := VerifyResponse(resp); err != nil {
 			return nil, err
 		}
@@ -668,7 +672,7 @@ func (d *desfire) ReadRecords(fileNo int, targetSecondaryApp SecondAppIndicator,
 }
 
 // WriteRecord write data to record a FileType.LinearRecord or FileType.CyclicRecord.
-func (d *desfire) WriteRecord(fileNo int, targetSecondaryApp SecondAppIndicator,
+func (d *Desfire) WriteRecord(fileNo int, targetSecondaryApp SecondAppIndicator,
 	offset int,
 	dataRecord []byte,
 	commMode CommMode,
@@ -782,7 +786,7 @@ func (d *desfire) WriteRecord(fileNo int, targetSecondaryApp SecondAppIndicator,
 
 // UpdateRecord update data of an existing record a FileType.LinearRecord or
 // FileType.CyclicRecord file.
-func (d *desfire) UpdateRecord(fileNo int, targetSecondaryApp SecondAppIndicator,
+func (d *Desfire) UpdateRecord(fileNo int, targetSecondaryApp SecondAppIndicator,
 	recNo int,
 	offset int,
 	dataRecord []byte,
@@ -903,7 +907,7 @@ func (d *desfire) UpdateRecord(fileNo int, targetSecondaryApp SecondAppIndicator
 
 // ClearRecordFile clear all records in a FileType.LinearRecird o FileType.CyclicRecord
 // file.
-func (d *desfire) ClearRecordFile(fileNo int, targetSecondaryApp SecondAppIndicator,
+func (d *Desfire) ClearRecordFile(fileNo int, targetSecondaryApp SecondAppIndicator,
 ) error {
 
 	cmd := 0xEB

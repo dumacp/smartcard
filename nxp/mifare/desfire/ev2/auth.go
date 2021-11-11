@@ -27,7 +27,7 @@ func Apdu_AuthenticateISO(secondAppIndicator int, keyNumber int) []byte {
 // AuthenticateISO authentication as already support by DESFire EV1. Only for KeyType.2TDEA
 // or KeyType.3TDEA keys. After this authentication EV1 backwards compatible secure
 // messaging is used.
-func (d *desfire) AuthenticateISO(secondAppIndicator SecondAppIndicator, keyNumber int) ([]byte, error) {
+func (d *Desfire) AuthenticateISO(secondAppIndicator SecondAppIndicator, keyNumber int) ([]byte, error) {
 
 	apdu := Apdu_AuthenticateISO(secondAppIndicator.Int(), keyNumber)
 
@@ -57,10 +57,13 @@ func Apdu_AuthenticateISOPart2(cryptograma []byte) []byte {
 
 }
 
-func (d *desfire) AuthenticateISOPart2(key, data []byte) ([]byte, error) {
+func (d *Desfire) AuthenticateISOPart2(key, data []byte) ([]byte, error) {
 
 	if len(key) == 16 {
 		key = append(key, key[:8]...)
+	}
+	if len(data) < 8 {
+		return nil, errors.New("nil data")
 	}
 
 	rand.Seed(time.Now().UnixNano())
@@ -212,7 +215,7 @@ func Apdu_AuthenticateEV2FirstPart2(data []byte) []byte {
 
 // AuthenticateEV2First authentication for Keytype AES keys. After this authentication EV2 secure
 // messaging is used. This authentication in intended to be the first in a transaction.
-func (d *desfire) AuthenticateEV2First(secondAppIndicator SecondAppIndicator, keyNumber int, pcdCap2 []byte) ([]byte, error) {
+func (d *Desfire) AuthenticateEV2First(secondAppIndicator SecondAppIndicator, keyNumber int, pcdCap2 []byte) ([]byte, error) {
 
 	apdu := Apdu_AuthenticateEV2First(secondAppIndicator.Int(), keyNumber, pcdCap2)
 
@@ -231,7 +234,7 @@ func (d *desfire) AuthenticateEV2First(secondAppIndicator SecondAppIndicator, ke
 	return resp, nil
 }
 
-func (d *desfire) AuthenticateEV2FirstPart2(key, data []byte) ([]byte, error) {
+func (d *Desfire) AuthenticateEV2FirstPart2(key, data []byte) ([]byte, error) {
 
 	rand.Seed(time.Now().UnixNano())
 
@@ -354,10 +357,10 @@ func (d *desfire) AuthenticateEV2FirstPart2(key, data []byte) ([]byte, error) {
 	return resp, nil
 }
 
-func (d *desfire) AuthenticateEV2NonFirst() ([]byte, error) {
+func (d *Desfire) AuthenticateEV2NonFirst() ([]byte, error) {
 	panic("not implemented") // TODO: Implement
 }
 
-func (d *desfire) AuthenticateEV2NonFirstPart2() ([]byte, error) {
+func (d *Desfire) AuthenticateEV2NonFirstPart2() ([]byte, error) {
 	panic("not implemented") // TODO: Implement
 }

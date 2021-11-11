@@ -73,7 +73,7 @@ func Test_desfire_GetVersion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &desfire{
+			d := &Desfire{
 				ICard: tt.fields.ICard,
 			}
 			got, err := d.GetVersion()
@@ -150,7 +150,7 @@ func Test_desfire_GetCardUID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &desfire{
+			d := &Desfire{
 				ICard: tt.fields.ICard,
 			}
 			auth1, err := d.AuthenticateEV2First(0, 0, nil)

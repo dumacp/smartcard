@@ -2,6 +2,8 @@ package ev2
 
 import (
 	"crypto/cipher"
+	"encoding/binary"
+	"errors"
 	"hash/crc32"
 	"log"
 
@@ -65,4 +67,72 @@ func getDataOnFullModeResponseEV1(block cipher.Block, iv []byte,
 
 	return dest
 
+}
+
+func changeKeyCryptogramEV1(block cipher.Block,
+	cmd, keyNo, authKey, keyType, keyVersion int,
+	newKey, oldKey, iv []byte) ([]byte, error) {
+
+	copyIV := make([]byte, block.BlockSize())
+	copy(copyIV, iv)
+	log.Printf("keyNo: %d, authKey: %d, newKey: [% X], iv: [% X], len newKey: %d",
+		keyNo, authKey, newKey, iv, len(newKey))
+	plaindata := make([]byte, 0)
+	if (keyNo & 0x1F) == authKey {
+
+		plaindata = append(plaindata, newKey...)
+		if keyType == int(AES) {
+			plaindata = append(plaindata, byte(keyVersion))
+		}
+		crcdata := make([]byte, 0)
+		crcdata = append(crcdata, byte(cmd))
+		crcdata = append(crcdata, byte(keyNo))
+		crcdata = append(crcdata, plaindata...)
+
+		crc := ^crc32.ChecksumIEEE(crcdata)
+		log.Printf("crc32 data: [% X], crc: %X", crcdata, crc)
+		crcbytes := make([]byte, 4)
+		binary.LittleEndian.PutUint32(crcbytes, crc)
+		plaindata = append(plaindata, crcbytes[:]...)
+		// log.Printf("crc32: [% X]", crc)
+		// plaindata = append(plaindata, crc...)
+	} else {
+		if len(oldKey) <= 0 {
+			return nil, errors.New("old key is null")
+		}
+		for i := range newKey {
+			plaindata = append(plaindata, newKey[i]^oldKey[i])
+		}
+		if keyType == int(AES) {
+			plaindata = append(plaindata, byte(keyVersion))
+		}
+		crcdata := make([]byte, 0)
+		crcdata = append(crcdata, byte(cmd))
+		crcdata = append(crcdata, byte(keyNo))
+		crcdata = append(crcdata, plaindata...)
+		crc := ^crc32.ChecksumIEEE(crcdata)
+		crcbytes := make([]byte, 4)
+		binary.LittleEndian.PutUint32(crcbytes, crc)
+		plaindata = append(plaindata, crcbytes[:]...)
+
+		crcNK := ^crc32.ChecksumIEEE(newKey)
+		crcNKbytes := make([]byte, 4)
+		binary.LittleEndian.PutUint32(crcNKbytes, crcNK)
+		plaindata = append(plaindata, crcNKbytes[:]...)
+	}
+
+	mode := cipher.NewCBCEncrypter(block, copyIV)
+
+	log.Printf("plaindata: [% X]; len plaindata: %d, %d",
+		plaindata, len(plaindata), block.BlockSize())
+	if len(plaindata)%block.BlockSize() != 0 {
+		plaindata = append(plaindata, make([]byte, block.BlockSize()-len(plaindata)%block.BlockSize())...)
+	}
+	log.Printf("plaindata: [% X]; len plaindata: %d, %d",
+		plaindata, len(plaindata), block.BlockSize())
+
+	dest := make([]byte, len(plaindata))
+	mode.CryptBlocks(dest, plaindata)
+
+	return dest, nil
 }

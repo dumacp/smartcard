@@ -29,7 +29,7 @@ func Test_crc32b(t *testing.T) {
 			args: args{
 				message: key,
 			},
-			want: 0,
+			want: 0xABB3C93D,
 		},
 	}
 	for _, tt := range tests {

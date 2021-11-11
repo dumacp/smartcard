@@ -9,9 +9,9 @@ import (
 // initialized according to the given settings. The application keys of the
 // active key set aer initilized with the default Application key.
 //
-func (d *desfire) CreateApplication(aid []byte,
+func (d *Desfire) CreateApplication(aid []byte,
 	keyTypeAKS KeyType,
-	changeKey int,
+	changeKey AccessRights,
 	numberOfAppKeys int,
 
 	appKeySettingChangeable,
@@ -26,12 +26,12 @@ func (d *desfire) CreateApplication(aid []byte,
 	keySett3_appKeySetsEnable,
 
 	use2byte_ISOIEC_7816_4_fileID bool,
-	appKeySetsEnable_rollKey,
+	appKeySetsEnable_rollKey AccessRights,
 	appKeySetsEnable_aksVersion, appKeySetsEnable_NoKeySets, appKeySetsEnable_maxKeySize int,
-	isoFileID, isofileDFName []byte) ([]byte, error) {
+	isoFileID, isofileDFName []byte) error {
 
 	if len(aid) != 3 {
-		return nil, errors.New("aid format error")
+		return errors.New("aid format error")
 	}
 
 	cmd := 0xCA
@@ -45,10 +45,10 @@ func (d *desfire) CreateApplication(aid []byte,
 	if appKeySettingChangeable {
 		keySett1 |= 0x01 << 3
 	}
-	if fileCreateDeleteWithAppMasterKey {
-		keySett1 |= 0x02 << 2
+	if !fileCreateDeleteWithAppMasterKey {
+		keySett1 |= 0x01 << 2
 	}
-	if fileDirAccessConfWithAppMasterKey {
+	if !fileDirAccessConfWithAppMasterKey {
 		keySett1 |= 0x01 << 1
 	}
 	if appMasterKeyChangeable {
@@ -86,13 +86,14 @@ func (d *desfire) CreateApplication(aid []byte,
 	if keySett3_Enabled && keySett3_appKeySetsEnable {
 		cmdHeader = append(cmdHeader, byte(appKeySetsEnable_aksVersion))
 		if appKeySetsEnable_NoKeySets < 2 || appKeySetsEnable_NoKeySets > 16 {
-			return nil, errors.New("minimum 2 and maximum 16 key sets")
+			return errors.New("minimum 2 and maximum 16 key sets")
 		}
 		cmdHeader = append(cmdHeader, byte(appKeySetsEnable_NoKeySets))
 		if (appKeySetsEnable_maxKeySize != 16) && (appKeySetsEnable_maxKeySize != 24) {
-			return nil, errors.New("max key size error")
+			return errors.New("max key size error")
 		}
 		cmdHeader = append(cmdHeader, byte(appKeySetsEnable_maxKeySize))
+		cmdHeader = append(cmdHeader, byte(appKeySetsEnable_rollKey))
 	}
 
 	if len(isoFileID) > 0 {
@@ -109,33 +110,36 @@ func (d *desfire) CreateApplication(aid []byte,
 		cmcT, err := calcMacOnCommandEV2(d.blockMac, d.ti, byte(cmd), d.cmdCtr,
 			cmdHeader, nil)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		apdu = append(apdu, cmcT...)
 	default:
-		return nil, errors.New("only EV2 mode support")
+		return errors.New("only EV2 mode support")
 	}
 
 	resp, err := d.Apdu(apdu)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := VerifyResponse(resp); err != nil {
-		return nil, err
+		return err
 	}
+	defer func() {
+		d.cmdCtr++
+	}()
 
 	switch d.evMode {
 	case EV2:
-		return resp[1 : len(resp)-8], nil
+		return nil
 	default:
-		return nil, errors.New("only EV2 mode support")
+		return errors.New("only EV2 mode support")
 	}
 }
 
 // SelectApplication select 1 or 2 applications or the PICC level specified
 // by their application identifier.
-func (d *desfire) SelectApplication(aid1, aid2 []byte) error {
+func (d *Desfire) SelectApplication(aid1, aid2 []byte) error {
 
 	if len(aid1) != 3 {
 		return errors.New("aid format error")
@@ -168,10 +172,10 @@ func (d *desfire) SelectApplication(aid1, aid2 []byte) error {
 }
 
 // Permanently deactivates applications on the PICC. The AID is released.
-func (d *desfire) DeleteApplication(aid []byte) ([]byte, error) {
+func (d *Desfire) DeleteApplication(aid []byte) error {
 
 	if len(aid) != 3 {
-		return nil, errors.New("aid format error")
+		return errors.New("aid format error")
 	}
 
 	cmd := byte(0xDA)
@@ -186,27 +190,27 @@ func (d *desfire) DeleteApplication(aid []byte) ([]byte, error) {
 		cmcT, err := calcMacOnCommandEV2(d.blockMac, d.ti, byte(cmd), d.cmdCtr,
 			cmdHeader, nil)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		apdu = append(apdu, cmdHeader...)
 		apdu = append(apdu, cmcT...)
 	default:
-		return nil, errors.New("only EV2 mode support")
+		return errors.New("only EV2 mode support")
 	}
 
 	resp, err := d.Apdu(apdu)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := VerifyResponse(resp); err != nil {
-		return nil, err
+		return err
 	}
 
 	switch d.evMode {
 	case EV2:
-		return resp[1 : len(resp)-8], nil
+		return nil
 	default:
-		return nil, errors.New("only EV2 mode support")
+		return errors.New("only EV2 mode support")
 	}
 }
 
@@ -214,7 +218,7 @@ func (d *desfire) DeleteApplication(aid []byte) ([]byte, error) {
 // limited memory consumption. The application is initialized according to
 // the gievn settings. The application keys of the active key set are
 // initialized with the provided keyID.AppDAMDefaultKey
-func (d *desfire) CreateDelegateApplication(aid []byte,
+func (d *Desfire) CreateDelegateApplication(aid []byte,
 	damSlotNo, damSlotVersion int,
 	quotaLimit int,
 	keyTypeAKS KeyType,
@@ -351,7 +355,7 @@ func (d *desfire) CreateDelegateApplication(aid []byte,
 }
 
 // GetApplicationsID returns the application IDentifiers of all active application
-func (d *desfire) GetApplicationsID() ([]byte, error) {
+func (d *Desfire) GetApplicationsID() ([]byte, error) {
 	cmd := byte(0x5A)
 	apdu := make([]byte, 0)
 
@@ -389,7 +393,7 @@ func (d *desfire) GetApplicationsID() ([]byte, error) {
 // GetVersion returns the Application IDentifiers together with a File ID
 // and (optionally) a DF Name of all active applications with
 // ISO/IEC 7816-4 support.
-func (d *desfire) GetDFNames() ([][]byte, error) {
+func (d *Desfire) GetDFNames() ([][]byte, error) {
 
 	cmd := byte(0x6D)
 
@@ -433,7 +437,7 @@ func (d *desfire) GetDFNames() ([][]byte, error) {
 
 // GetDeletedInfo returns the DAMSlotVersion and QoutaLimit of a target DAM Slot
 // on the card.
-func (d *desfire) GetDeletedInfo(damSlotNo int) ([]byte, error) {
+func (d *Desfire) GetDeletedInfo(damSlotNo int) ([]byte, error) {
 
 	if damSlotNo > 0xFFFF {
 		return nil, errors.New("DAMSlotNo format error")

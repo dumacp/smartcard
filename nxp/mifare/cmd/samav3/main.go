@@ -17,12 +17,15 @@ func main() {
 		log.Fatalln(err)
 	}
 	rs, err := ctx.ListReaders()
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	funcExtractReader := func() []byte {
 
 		for _, v := range rs {
 			fmt.Printf("reader: %q\n", v)
-			if bytes.Contains([]byte(v), []byte("00 00")) {
+			if bytes.Contains([]byte(v), []byte("SAM")) {
 				return []byte(v)
 			}
 		}
@@ -44,9 +47,24 @@ func main() {
 	}
 
 	reader := multiiso.NewReader(dev, "multiiso", 1)
+
+
 	/**/
 
-	cardi, err := reader.ConnectCardPCSC_T0()
+	// direct, err := reader.ConnectDirect()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// resp1, err := direct.ControlApdu(0x42000000+2079,
+	// 	[]byte{0xE0, 0x00, 0x13, 0x11, 0x04, 0xFF, 0x11, 0x86, 0x68})
+	// if err != nil {
+	// 	log.Fatal(err)
+	// } else {
+	// 	log.Printf("pps: [% X]", resp1)
+	// }
+	// direct.DisconnectCard()
+
+	cardi, err := reader.ConnectCardPCSC()
 	if err != nil {
 		log.Fatalln(err)
 	}

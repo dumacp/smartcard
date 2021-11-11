@@ -5,7 +5,7 @@ import (
 )
 
 // Returns the free memory avalaible on the card
-func (d *desfire) FreeMem() ([]byte, error) {
+func (d *Desfire) FreeMem() ([]byte, error) {
 
 	cmd := byte(0x6E)
 
@@ -43,7 +43,7 @@ func (d *desfire) FreeMem() ([]byte, error) {
 // application level (only for delegated applications), all
 // files are deleted. The deleted memory is released and can
 // be reused.
-func (d *desfire) Format() error {
+func (d *Desfire) Format() error {
 
 	cmd := byte(0xFC)
 
@@ -68,6 +68,9 @@ func (d *desfire) Format() error {
 	if err := VerifyResponse(resp); err != nil {
 		return err
 	}
+	defer func() {
+		d.cmdCtr++
+	}()
 
 	switch d.evMode {
 	case EV1, EV2:
@@ -92,7 +95,7 @@ const (
 // SetConfiguration Configures the card an pre personalizes the card
 // with a key, defines if the UID or the random ID is sent back
 // during communication setup and configures the ATS string.
-func (d *desfire) SetConfiguration(option ConfigurationOption, data []byte) error {
+func (d *Desfire) SetConfiguration(option ConfigurationOption, data []byte) error {
 
 	cmd := byte(0x5C)
 
@@ -106,7 +109,7 @@ func (d *desfire) SetConfiguration(option ConfigurationOption, data []byte) erro
 
 	// var cryptograma []byte
 	// var block cipher.Block
-	var err error
+	// var err error
 	switch d.evMode {
 	case EV2:
 		iv, err := calcCommandIVOnFullModeEV2(d.ksesAuthEnc, d.ti, d.cmdCtr)
@@ -133,13 +136,16 @@ func (d *desfire) SetConfiguration(option ConfigurationOption, data []byte) erro
 	if err := VerifyResponse(resp); err != nil {
 		return err
 	}
+	defer func() {
+		d.cmdCtr++
+	}()
 
 	return nil
 }
 
 // GetVersion returns manufacturing related data of the PICC. First
 // part HW related information as specified in CardVersioinList Table.
-func (d *desfire) GetVersion() ([][]byte, error) {
+func (d *Desfire) GetVersion() ([][]byte, error) {
 
 	cmd := byte(0x60)
 
@@ -177,12 +183,15 @@ func (d *desfire) GetVersion() ([][]byte, error) {
 		}
 		apdu = []byte{0xAF}
 	}
+	defer func() {
+		d.cmdCtr++
+	}()
 
 	return response, nil
 }
 
 // GetCardUID resturn the UID
-func (d *desfire) GetCardUID() ([]byte, error) {
+func (d *Desfire) GetCardUID() ([]byte, error) {
 
 	cmd := 0x51
 
