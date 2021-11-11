@@ -1,6 +1,6 @@
 package ev2
 
-type Desfire interface {
+type IDesfire interface {
 	AuthenticateEV2First(targetKey SecondAppIndicator, keyNumber int, pcdCap2 []byte) ([]byte, error)
 	AuthenticateEV2FirstPart2(key, response []byte) ([]byte, error)
 	AuthenticateEV2NonFirst() ([]byte, error)

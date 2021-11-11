@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"log"
 
-	"github.com/dumacp/smartcard/nxp/mifare/samav2"
 	"github.com/dumacp/smartcard/nxp/mifare/samav3"
 	"github.com/dumacp/smartcard/pcsc"
 )
@@ -20,12 +19,13 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	log.Printf("readers: %q\n", rs)
 
 	funcExtractReader := func() []byte {
 		// count := 0
 		for _, v := range rs {
 			log.Println(v)
-			if bytes.Contains([]byte(v), []byte("00 00")) {
+			if bytes.Contains([]byte(v), []byte("00 02")) {
 				// if count > 0 {
 				return []byte(v)
 				// }
@@ -148,7 +148,7 @@ func main() {
 
 	// log.Printf("change key [ %v ] response: [% X]", key1, res1)
 
-	/**/
+	/**
 	key2 := 22
 	for i := range keyMaster {
 		keyMaster[i] = 0x00

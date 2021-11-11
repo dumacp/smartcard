@@ -155,9 +155,9 @@ func (r *reader) TransmitAscii(cmd, data []byte) ([]byte, error) {
 	if data != nil {
 		apdu = append(apdu, strings.ToUpper(hex.EncodeToString(data))...)
 	}
-	// fmt.Printf("reqs TransmitAscii: [% X]\n", apdu)
+	// fmt.Printf("reqs TransmitAscii: [%s]\n", apdu)
 	resp1, err := r.device.SendRecv(apdu)
-	// fmt.Printf("resp TransmitAscii: [% X]\n", resp1)
+	// fmt.Printf("resp TransmitAscii: [%s]\n", resp1)
 	// fmt.Printf("resp TransmitAscii: %q\n", resp1)
 	if err != nil {
 		return nil, smartcard.Error(err)
@@ -254,10 +254,10 @@ func (r *reader) SendAPDU1443_4(data []byte) ([]byte, error) {
 func (r *reader) SendSAMDataFrameTransfer(data []byte) ([]byte, error) {
 	innerData := make([]byte, 0)
 
-	innerData = append(innerData, 0x65)
+	// innerData = append(innerData, 0x65)
 	innerData = append(innerData, data...)
 
-	response, err := r.TransmitBinary([]byte{}, innerData)
+	response, err := r.Transmit([]byte{0x65}, innerData)
 	if err != nil {
 		time.Sleep(600 * time.Millisecond) // restore time
 		return nil, err
@@ -419,14 +419,16 @@ func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
 	// 	return nil, err
 	// }
 
-	trama1 := []byte{00, 0x81, 0x00, 0x10, 0x11, 00}
+	trama1 := []byte{00, 0x92, 0x00, 0x10, 0x11, 00}
 	// if r.transmitProto == T0 {
 	// 	trama1[1] = 0xC1
 	// }
 	if _, err := r.SendSAMDataFrameTransfer(trama1); err != nil {
-		time.Sleep(100 * time.Millisecond)
-		trama3 := []byte{00, 0x82, 0x10, 0x11, 00}
-		_, err := r.SendSAMDataFrameTransfer(trama3)
+		return nil, err
+	}
+	time.Sleep(100 * time.Millisecond)
+	trama3 := []byte{00, 0x91, 0x00, 0x10, 0x11, 00}
+	if _, err := r.SendSAMDataFrameTransfer(trama3); err != nil {
 		return nil, err
 	}
 	// fmt.Printf("resp1: [%s]\n", resp1)

@@ -38,7 +38,7 @@ const (
 	TargetSecondaryApp
 )
 
-type desfire struct {
+type Desfire struct {
 	smartcard.ICard
 	ti           []byte
 	keyEnc       []byte
@@ -57,8 +57,8 @@ type desfire struct {
 }
 
 //SamAV2 Create SAM from Card
-func NewDesfire(c smartcard.ICard) Desfire {
-	d := new(desfire)
+func NewDesfire(c smartcard.ICard) *Desfire {
+	d := new(Desfire)
 	d.ICard = c
 	return d
 }

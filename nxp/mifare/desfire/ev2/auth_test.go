@@ -1,6 +1,7 @@
 package ev2
 
 import (
+	"crypto/cipher"
 	"encoding/binary"
 	"encoding/hex"
 	"hash/crc32"
@@ -85,7 +86,7 @@ func Test_desfire_AuthenticateEV2First(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &desfire{
+			d := &Desfire{
 				ICard: tt.fields.ICard,
 			}
 
@@ -177,7 +178,7 @@ func Test_desfire_GetApplicationsID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &desfire{
+			d := &Desfire{
 				ICard: tt.fields.ICard,
 			}
 			got, err := d.GetApplicationsID()
@@ -316,7 +317,7 @@ func Test_desfire_AuthenticateISO(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &desfire{
+			d := &Desfire{
 				ICard: tt.fields.ICard,
 			}
 
@@ -357,6 +358,68 @@ func Test_desfire_AuthenticateISO(t *testing.T) {
 			}
 			if !reflect.DeepEqual(auth2, tt.want) {
 				t.Errorf("desfire.AuthenticateISO() = %v, want %v", auth2, tt.want)
+			}
+		})
+	}
+}
+
+func TestDesfire_AuthenticateEV2FirstPart2(t *testing.T) {
+	type fields struct {
+		ICard        smartcard.ICard
+		ti           []byte
+		keyEnc       []byte
+		keyMac       []byte
+		cmdCtr       uint16
+		lastKey      int
+		evMode       EVmode
+		iv           []byte
+		currentAppID int
+		pcdCap2      []byte
+		pdCap2       []byte
+		block        cipher.Block
+		blockMac     cipher.Block
+		ksesAuthEnc  []byte
+		ksesAuthMac  []byte
+	}
+	type args struct {
+		key  []byte
+		data []byte
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []byte
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := &Desfire{
+				ICard:        tt.fields.ICard,
+				ti:           tt.fields.ti,
+				keyEnc:       tt.fields.keyEnc,
+				keyMac:       tt.fields.keyMac,
+				cmdCtr:       tt.fields.cmdCtr,
+				lastKey:      tt.fields.lastKey,
+				evMode:       tt.fields.evMode,
+				iv:           tt.fields.iv,
+				currentAppID: tt.fields.currentAppID,
+				pcdCap2:      tt.fields.pcdCap2,
+				pdCap2:       tt.fields.pdCap2,
+				block:        tt.fields.block,
+				blockMac:     tt.fields.blockMac,
+				ksesAuthEnc:  tt.fields.ksesAuthEnc,
+				ksesAuthMac:  tt.fields.ksesAuthMac,
+			}
+			got, err := d.AuthenticateEV2FirstPart2(tt.args.key, tt.args.data)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Desfire.AuthenticateEV2FirstPart2() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Desfire.AuthenticateEV2FirstPart2() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -4,6 +4,8 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/binary"
+	"errors"
+	"hash/crc32"
 	"log"
 
 	"github.com/aead/cmac"
@@ -146,16 +148,97 @@ func getDataOnFullModeResponseEV2(block cipher.Block, iv []byte,
 
 	dest := make([]byte, len(reponse[1:len(reponse)-8]))
 	mode.CryptBlocks(dest, reponse[1:len(reponse)-8])
+	log.Printf("palindata EV2: [% X], len: %d", dest, len(dest))
 	return dest
 }
 
 func calcCryptogramEV2(block cipher.Block, plaindata, iv []byte) []byte {
+	switch {
+
+	case len(plaindata)%block.BlockSize() == 0:
+		plaindata = append(plaindata, 0x80)
+		plaindata = append(plaindata,
+			make([]byte, block.BlockSize()-len(plaindata)%block.BlockSize())...)
+	case len(plaindata)%block.BlockSize() == block.BlockSize()-1:
+		plaindata = append(plaindata, []byte{0x80, 0x00}...)
+		plaindata = append(plaindata,
+			make([]byte, block.BlockSize()-len(plaindata)%block.BlockSize())...)
+	case len(plaindata)%block.BlockSize() != 0 &&
+		len(plaindata)%block.BlockSize() != block.BlockSize()-1:
+		plaindata = append(plaindata, 0x80)
+		plaindata = append(plaindata,
+			make([]byte, block.BlockSize()-len(plaindata)%block.BlockSize())...)
+
+	}
+	mode := cipher.NewCBCEncrypter(block, iv)
+	dest := make([]byte, len(plaindata))
+	mode.CryptBlocks(dest, plaindata)
+	log.Printf("palindata EV2: [% X], len: %d", plaindata, len(plaindata))
+	log.Printf("crytogram EV2: [% X], len: %d", dest, len(dest))
+	return dest
+}
+
+func changeKeyCryptogramEV2(block, blockMac cipher.Block,
+	cmd, keyNo, keySetNo, authKey, keyType, keyVersion int,
+	cmdCtr uint16,
+	newKey, oldKey, ti, iv []byte) ([]byte, error) {
+
+	plaindata := make([]byte, 0)
+	if keyNo&0x1F == authKey && keySetNo <= 0 {
+		plaindata = append(plaindata, newKey...)
+		if keyType == int(AES) {
+			plaindata = append(plaindata, byte(keyVersion))
+		}
+	} else {
+		log.Printf("keyNo: %v, lastKey: %v", keyNo, authKey)
+		if len(oldKey) <= 0 {
+			return nil, errors.New("old key is null")
+		}
+		for i := range newKey {
+			plaindata = append(plaindata, newKey[i]^oldKey[i])
+		}
+		if keyType == int(AES) {
+			plaindata = append(plaindata, byte(keyVersion))
+		}
+		crcdatanewkey := make([]byte, 0)
+		crcdatanewkey = append(crcdatanewkey, newKey...)
+		crcnewkey := ^crc32.ChecksumIEEE(crcdatanewkey)
+		crcbytesnewkey := make([]byte, 4)
+		binary.LittleEndian.PutUint32(crcbytesnewkey, crcnewkey)
+		plaindata = append(plaindata, crcbytesnewkey[:]...)
+	}
+
+	log.Printf("plaindata          : [% X]", plaindata)
+
+	mode := cipher.NewCBCEncrypter(block, iv)
+
 	if len(plaindata)%block.BlockSize() != 0 {
 		plaindata = append(plaindata, 0x80)
 		plaindata = append(plaindata, make([]byte, block.BlockSize()-len(plaindata)%block.BlockSize())...)
 	}
-	mode := cipher.NewCBCDecrypter(block, iv)
-	dest := make([]byte, len(plaindata))
-	mode.CryptBlocks(dest, plaindata)
-	return dest
+	log.Printf("plaindata + padding: [% X]", plaindata)
+
+	cipherdata := make([]byte, len(plaindata))
+	mode.CryptBlocks(cipherdata, plaindata)
+
+	log.Printf("cipher data        : [% X], len: %d", cipherdata, len(cipherdata))
+
+	cmdHeader := make([]byte, 0)
+	if keySetNo >= 0 {
+		cmdHeader = append(cmdHeader, byte(keySetNo))
+	}
+	cmdHeader = append(cmdHeader, byte(keyNo))
+
+	cmacT, err := calcMacOnCommandEV2(blockMac, ti, byte(cmd), cmdCtr, cmdHeader, cipherdata)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Printf("truncate cmac: [% X]", cmacT)
+
+	cryptograma := make([]byte, 0)
+	cryptograma = append(cryptograma, cipherdata...)
+	cryptograma = append(cryptograma, cmacT...)
+
+	return cryptograma, nil
 }
