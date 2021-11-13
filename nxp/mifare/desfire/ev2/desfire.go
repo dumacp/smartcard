@@ -40,6 +40,8 @@ const (
 
 type Desfire struct {
 	smartcard.ICard
+	rndA         []byte
+	rndB         []byte
 	ti           []byte
 	keyEnc       []byte
 	keyMac       []byte

@@ -567,6 +567,7 @@ func (d *Desfire) Debit(fileNo int, targetSecondaryApp SecondAppIndicator,
 func (d *Desfire) ReadRecords(fileNo int, targetSecondaryApp SecondAppIndicator,
 	recNo int,
 	recCount int,
+	sizeRecord int,
 	commMode CommMode,
 ) ([][]byte, error) {
 
@@ -595,7 +596,7 @@ func (d *Desfire) ReadRecords(fileNo int, targetSecondaryApp SecondAppIndicator,
 
 	apdu = append(apdu, cmdHeader...)
 
-	response := make([][]byte, 0)
+	response := make([]byte, 0)
 
 	for {
 
@@ -651,7 +652,7 @@ func (d *Desfire) ReadRecords(fileNo int, targetSecondaryApp SecondAppIndicator,
 		default:
 			return nil, errors.New("only desfire EV2 mode support")
 		}
-		response = append(response, responseData)
+		response = append(response, responseData...)
 
 		if resp[0] == 0x00 {
 			break
@@ -663,9 +664,19 @@ func (d *Desfire) ReadRecords(fileNo int, targetSecondaryApp SecondAppIndicator,
 		d.cmdCtr++
 	}()
 
+	result := make([][]byte, 0)
+
+	for len(response) > sizeRecord {
+		record := make([]byte, 0)
+		record = append(record, response[:sizeRecord]...)
+		result = append(result, record)
+		response = response[sizeRecord:]
+	}
+	result = append(result, response)
+
 	switch d.evMode {
 	case EV2:
-		return response, nil
+		return result, nil
 	default:
 		return nil, errors.New("only EV2 mode support")
 	}

@@ -149,4 +149,6 @@ func main() {
 		log.Fatalf("SetConfiguration error: %s", err)
 	}
 
+	log.Println("///////////// SUCCESSSSSSS   ////////////")
+
 }

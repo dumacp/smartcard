@@ -208,7 +208,7 @@ func (d *Desfire) GetCardUID() ([]byte, error) {
 		}
 	case EV1:
 	default:
-		return nil, errors.New("desfire EV2 or EV1 only support")
+		// return nil, errors.New("desfire EV2 or EV1 only support")
 	}
 
 	apdu = append(apdu, cmacdata...)

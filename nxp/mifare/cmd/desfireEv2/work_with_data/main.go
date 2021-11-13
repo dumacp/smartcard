@@ -161,7 +161,7 @@ func main() {
 		log.Printf("ReadData: %s, lenL %d", data, len(data))
 	}
 
-	if data, err := d.ReadRecords(0x05, ev2.TargetPrimaryApp, 0x00, 0x00,
+	if data, err := d.ReadRecords(0x05, ev2.TargetPrimaryApp, 0x00, 0x00, 64,
 		ev2.FULL); err != nil {
 		log.Fatalf("ReadRecords error: %s", err)
 	} else {
