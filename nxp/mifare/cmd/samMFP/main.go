@@ -1,16 +1,17 @@
 package main
 
 import (
+	"encoding/hex"
 	"log"
-	"strings"
+	"time"
 
-	"github.com/dumacp/smartcard/nxp/mifare"
+	"github.com/dumacp/smartcard/multiiso"
 	"github.com/dumacp/smartcard/nxp/mifare/samav3"
-	"github.com/dumacp/smartcard/pcsc"
 )
 
 func main() {
 
+	/**
 	ctx, err := pcsc.NewContext()
 	if err != nil {
 		log.Fatal(err)
@@ -67,15 +68,16 @@ func main() {
 
 	// sam, err := samav3.ConnectSam(readerSAM)
 
-	// dev, err := multiiso.NewDevice("/dev/ttyUSB0", 115200, 300*time.Millisecond)
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
+	/**/
+	dev, err := multiiso.NewDevice("/dev/ttyUSB0", 115200, 300*time.Millisecond)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-	// reader := multiiso.NewReader(dev, "multiiso", 1)
+	reader := multiiso.NewReader(dev, "multiiso", 1)
 
-	//cardi, err := reader.ConnectSamCard()
-	cardi, err := readerSAM.ConnectCardPCSC()
+	cardi, err := reader.ConnectSamCard()
+	// cardi, err := readerSAM.ConnectCardPCSC()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -83,13 +85,15 @@ func main() {
 	sam := samav3.SamAV3(cardi)
 
 	// keyMaster := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16}
-	keyMaster := make([]byte, 16)
+	// keyMaster := make([]byte, 16)
+	keyMaster, _ := hex.DecodeString("AF000000000000000000000000000000")
 	if resp, err := sam.AuthHost(keyMaster, 0, 0, 0); err != nil {
 		log.Fatal(err)
 	} else {
 		log.Printf("Auth SAM resp: [% X]", resp)
 	}
 
+	/**
 	cardp, err := reader.ConnectCardPCSC()
 	if err != nil {
 		log.Fatalln(err)
@@ -129,7 +133,7 @@ func main() {
 	}
 	log.Printf("keyDiv: [% #X]", keyDiv)
 
-	/**/
+	/**
 
 	for _, i := range []int{1, 2, 3, 4, 5, 6, 7} {
 		resp, err := cardo.FirstAuthf1(0x4000 + 2*i + 1)

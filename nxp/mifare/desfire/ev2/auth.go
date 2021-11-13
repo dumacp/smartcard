@@ -231,10 +231,13 @@ func (d *Desfire) AuthenticateEV2First(secondAppIndicator SecondAppIndicator, ke
 	d.pcdCap2 = pcdCap2
 	d.lastKey = keyNumber
 
-	return resp, nil
+	return resp[1:], nil
 }
 
 func (d *Desfire) AuthenticateEV2FirstPart2(key, data []byte) ([]byte, error) {
+
+	log.Printf("key: %X", key)
+	log.Printf("data: %X", data)
 
 	rand.Seed(time.Now().UnixNano())
 
@@ -249,7 +252,7 @@ func (d *Desfire) AuthenticateEV2FirstPart2(key, data []byte) ([]byte, error) {
 	// modeD := cipher.NewCBCDecrypter(block, iv)
 
 	// log.Printf("aid1 response: [ %X ], apdu: [ %X ]", response, aid1)
-	rndBC := data[1:]
+	rndBC := data[:]
 
 	rndB := make([]byte, len(rndBC))
 	mode.CryptBlocks(rndB, rndBC)
@@ -355,6 +358,114 @@ func (d *Desfire) AuthenticateEV2FirstPart2(key, data []byte) ([]byte, error) {
 	d.cmdCtr = 0
 
 	return resp, nil
+}
+
+func (d *Desfire) AuthenticateEV2FirstPart2_block_1(rndB []byte) ([]byte, error) {
+
+	rand.Seed(time.Now().UnixNano())
+
+	// block, err := aes.NewCipher(key)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// iv := make([]byte, block.BlockSize())
+
+	// mode := cipher.NewCBCDecrypter(block, iv)
+
+	// rndBC := data[1:]
+
+	// rndB := make([]byte, len(rndBC))
+	// mode.CryptBlocks(rndB, rndBC)
+	d.rndB = make([]byte, len(rndB))
+	copy(d.rndB, rndB)
+	rndBr := make([]byte, len(rndB))
+	copy(rndBr, rndB)
+	rndBr = append(rndBr, rndBr[0])
+	rndBr = rndBr[1:]
+	log.Printf("rotate rndB: [ %X ], [ %X ]", rndB, rndBr)
+	rndA := make([]byte, len(rndB))
+	rand.Read(rndA)
+	d.rndA = make([]byte, len(rndA))
+	copy(d.rndA, rndA)
+	log.Printf("origin rndA: [ %X ]", rndA)
+
+	rndD := make([]byte, 0)
+
+	rndD = append(rndD, rndA...)
+	rndD = append(rndD, rndBr...)
+
+	return rndD, nil
+
+}
+func (d *Desfire) AuthenticateEV2FirstPart2_block_2(rndDc []byte) ([]byte, error) {
+
+	apdu := Apdu_AuthenticateEV2FirstPart2(rndDc)
+	resp, err := d.Apdu(apdu)
+	if err != nil {
+		log.Printf("fail response: [ %X ], apdu: [ %X ]", resp, apdu)
+		return nil, err
+	}
+
+	if err := VerifyResponse(resp); err != nil {
+		return nil, err
+	}
+
+	return resp[1:], nil
+
+}
+func (d *Desfire) AuthenticateEV2FirstPart2_block_3(lastResp []byte) ([]byte, []byte, error) {
+
+	d.ti = make([]byte, 0)
+	d.ti = append(d.ti, lastResp[:4]...)
+
+	log.Printf("TI: [ %X ]", d.ti)
+
+	d.pdCap2 = make([]byte, 0)
+	d.pdCap2 = append(d.pdCap2, lastResp[len(lastResp)-6:]...)
+
+	d.evMode = EV2
+
+	sv1 := []byte{0xA5, 0x5A, 0x00, 0x01, 0x00, 0x80}
+	sv2 := []byte{0x5A, 0xA5, 0x00, 0x01, 0x00, 0x80}
+
+	trailing := make([]byte, 0)
+	trailing = append(trailing, d.rndA[0:2]...)
+	xor := make([]byte, 0)
+	for _, indx := range []int{2, 3, 4, 5, 6, 7} {
+		xor = append(xor, d.rndA[indx])
+	}
+	for i, v := range d.rndB[0:6] {
+		trailing = append(trailing, xor[i]^v)
+	}
+	trailing = append(trailing, d.rndB[6:]...)
+	trailing = append(trailing, d.rndA[8:]...)
+
+	sv1 = append(sv1, trailing...)
+	sv2 = append(sv2, trailing...)
+
+	return sv1, sv2, nil
+}
+func (d *Desfire) AuthenticateEV2FirstPart2_block_4(ksesAuthEnc, ksesAuthMac []byte) error {
+
+	var err error
+	d.ksesAuthEnc = make([]byte, len(ksesAuthEnc))
+	copy(d.ksesAuthEnc, ksesAuthEnc)
+
+	d.ksesAuthMac = make([]byte, len(ksesAuthMac))
+	copy(d.ksesAuthMac, ksesAuthMac)
+
+	d.block, err = aes.NewCipher(ksesAuthEnc)
+	if err != nil {
+		return err
+	}
+	d.blockMac, err = aes.NewCipher(ksesAuthMac)
+	if err != nil {
+		return err
+	}
+
+	d.cmdCtr = 0
+
+	return nil
 }
 
 func (d *Desfire) AuthenticateEV2NonFirst() ([]byte, error) {

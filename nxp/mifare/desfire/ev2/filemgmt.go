@@ -39,7 +39,7 @@ const (
 // an existing application on the PICC.
 func (d *Desfire) CreateStdDataFile(fileNo int, targetSecondaryApp SecondAppIndicator,
 	isoFileID []byte,
-	fileOption_Disabled bool,
+	fileOption_AdditionalACL_Disabled bool,
 	fileOption_commMode CommMode,
 	accessRights_Read AccessRights,
 	accessRights_Write AccessRights,
@@ -59,7 +59,7 @@ func (d *Desfire) CreateStdDataFile(fileNo int, targetSecondaryApp SecondAppIndi
 	cmdHeader := make([]byte, 0)
 	cmdHeader = append(cmdHeader, byte(fileNo|targetSecondaryApp.Int()<<7))
 	cmdHeader = append(cmdHeader, isoFileID...)
-	if fileOption_Disabled {
+	if !fileOption_AdditionalACL_Disabled {
 		cmdHeader = append(cmdHeader, byte(fileOption_commMode|0x01<<7))
 	} else {
 		cmdHeader = append(cmdHeader, byte(fileOption_commMode&0x7F))
@@ -122,7 +122,7 @@ func (d *Desfire) CreateStdDataFile(fileNo int, targetSecondaryApp SecondAppIndi
 // backup mechanism.
 func (d *Desfire) CreateBackupDataFile(fileNo int, targetSecondaryApp SecondAppIndicator,
 	isoFileID []byte,
-	fileOption_Disabled bool,
+	fileOption_AdditionalACL_Disabled bool,
 	fileOption_commMode CommMode,
 	accessRights_Read AccessRights,
 	accessRights_Write AccessRights,
@@ -142,7 +142,7 @@ func (d *Desfire) CreateBackupDataFile(fileNo int, targetSecondaryApp SecondAppI
 	cmdHeader := make([]byte, 0)
 	cmdHeader = append(cmdHeader, byte(fileNo|targetSecondaryApp.Int()<<7))
 	cmdHeader = append(cmdHeader, isoFileID...)
-	if fileOption_Disabled {
+	if !fileOption_AdditionalACL_Disabled {
 		cmdHeader = append(cmdHeader, byte(fileOption_commMode|0x01<<7))
 	} else {
 		cmdHeader = append(cmdHeader, byte(fileOption_commMode&0x7F))
@@ -205,7 +205,7 @@ func (d *Desfire) CreateBackupDataFile(fileNo int, targetSecondaryApp SecondAppI
 // an existing application on the PICC.
 func (d *Desfire) CreateValueFile(fileNo int, targetSecondaryApp SecondAppIndicator,
 	isoFileID []byte,
-	fileOption_Disabled bool,
+	fileOption_AdditionalACL_Disabled bool,
 	fileOption_commMode CommMode,
 	accessRights_Read AccessRights,
 	accessRights_Write AccessRights,
@@ -236,7 +236,7 @@ func (d *Desfire) CreateValueFile(fileNo int, targetSecondaryApp SecondAppIndica
 	cmdHeader := make([]byte, 0)
 	cmdHeader = append(cmdHeader, byte(fileNo|targetSecondaryApp.Int()<<7))
 	cmdHeader = append(cmdHeader, isoFileID...)
-	if fileOption_Disabled {
+	if !fileOption_AdditionalACL_Disabled {
 		cmdHeader = append(cmdHeader, byte(fileOption_commMode|0x01<<7))
 	} else {
 		cmdHeader = append(cmdHeader, byte(fileOption_commMode&0x7F))
@@ -341,7 +341,7 @@ func (d *Desfire) CreateLinearRecorFile(fileNo int, targetSecondaryApp SecondApp
 	cmdHeader := make([]byte, 0)
 	cmdHeader = append(cmdHeader, byte(fileNo|targetSecondaryApp.Int()<<7))
 	cmdHeader = append(cmdHeader, isoFileID...)
-	if fileOption_AdditionalAccessRights_Disabled {
+	if !fileOption_AdditionalAccessRights_Disabled {
 		cmdHeader = append(cmdHeader, byte(fileOption_commMode|0x01<<7))
 	} else {
 		cmdHeader = append(cmdHeader, byte(fileOption_commMode&0x7F))
@@ -434,7 +434,7 @@ func (d *Desfire) CreateCyclicRecorFile(fileNo int, targetSecondaryApp SecondApp
 	cmdHeader := make([]byte, 0)
 	cmdHeader = append(cmdHeader, byte(fileNo|targetSecondaryApp.Int()<<7))
 	cmdHeader = append(cmdHeader, isoFileID...)
-	if fileOption_AdditionalAccessRights_Disabled {
+	if !fileOption_AdditionalAccessRights_Disabled {
 		cmdHeader = append(cmdHeader, byte(fileOption_commMode|0x01<<7))
 	} else {
 		cmdHeader = append(cmdHeader, byte(fileOption_commMode&0x7F))
@@ -785,7 +785,7 @@ func (d *Desfire) ChangeFileSettings(fileNo int, targetSecondaryApp SecondAppInd
 
 	data := make([]byte, 0)
 	data = append(data, isoFileID...)
-	if fileOption_AdditionalAccessRights_Disabled {
+	if !fileOption_AdditionalAccessRights_Disabled {
 		data = append(data, byte(fileOption_commMode|0x01<<7))
 	} else {
 		data = append(data, byte(fileOption_commMode&0x7F))
@@ -833,7 +833,7 @@ func (d *Desfire) ChangeFileSettings(fileNo int, targetSecondaryApp SecondAppInd
 		return err
 	}
 	if err := VerifyResponse(resp); err != nil {
-		return err
+		return fmt.Errorf("%w, apdu: [% X]", err, apdu)
 	}
 
 	// var responseData []byte

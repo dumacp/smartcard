@@ -149,6 +149,16 @@ func getDataOnFullModeResponseEV2(block cipher.Block, iv []byte,
 	dest := make([]byte, len(reponse[1:len(reponse)-8]))
 	mode.CryptBlocks(dest, reponse[1:len(reponse)-8])
 	log.Printf("palindata EV2: [% X], len: %d", dest, len(dest))
+
+	for i := range dest {
+		if dest[len(dest)-1-i] == 0x00 {
+			continue
+		}
+		if i != 0 && dest[len(dest)-1-i] == 0x80 {
+			return dest[:len(dest)-i-1]
+		}
+		break
+	}
 	return dest
 }
 

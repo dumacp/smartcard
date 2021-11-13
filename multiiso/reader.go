@@ -177,9 +177,9 @@ func (r *reader) TransmitBinary(cmd, data []byte) ([]byte, error) {
 	}
 	apdu = append(apdu, checksum(apdu[1:]))
 	apdu = append(apdu, 0x03)
-	// fmt.Printf("apdu TransmitBinary: [% X]\n", apdu)
+	fmt.Printf("apdu TransmitBinary: [% X]\n", apdu)
 	resp1, err := r.device.SendRecv(apdu)
-	// fmt.Printf("resp TransmitBinary: [% X]\n", resp1)
+	fmt.Printf("resp TransmitBinary: [% X]\n", resp1)
 	if err != nil {
 		return nil, smartcard.Error(err)
 	}
@@ -258,6 +258,7 @@ func (r *reader) SendSAMDataFrameTransfer(data []byte) ([]byte, error) {
 	innerData = append(innerData, data...)
 
 	response, err := r.Transmit([]byte{0x65}, innerData)
+	// response, err := r.Transmit([]byte{}, innerData)
 	if err != nil {
 		time.Sleep(600 * time.Millisecond) // restore time
 		return nil, err
@@ -419,16 +420,18 @@ func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
 	// 	return nil, err
 	// }
 
-	trama1 := []byte{00, 0x92, 0x00, 0x10, 0x11, 00}
+	trama1 := []byte{00, 0x91, 0x00, 0x10, 0x11, 00}
 	// if r.transmitProto == T0 {
 	// 	trama1[1] = 0xC1
 	// }
 	if _, err := r.SendSAMDataFrameTransfer(trama1); err != nil {
-		return nil, err
-	}
-	time.Sleep(100 * time.Millisecond)
-	trama3 := []byte{00, 0x91, 0x00, 0x10, 0x11, 00}
-	if _, err := r.SendSAMDataFrameTransfer(trama3); err != nil {
+		// 	return nil, err
+		// }
+		time.Sleep(100 * time.Millisecond)
+		trama3 := []byte{00, 0x92, 0x00, 0x10, 0x11, 00}
+		if _, err := r.SendSAMDataFrameTransfer(trama3); err != nil {
+			return nil, err
+		}
 		return nil, err
 	}
 	// fmt.Printf("resp1: [%s]\n", resp1)

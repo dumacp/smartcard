@@ -218,7 +218,7 @@ func (dev *Device) SendRecv(data []byte) ([]byte, error) {
 	} else if n <= 0 {
 		return nil, fmt.Errorf("dont write in SendRecv command, %w", smartcard.ErrComm)
 	}
-	dev.port.Flush()
+	// dev.port.Flush()
 	select {
 	case v, ok := <-dev.chRecv:
 		if !ok {

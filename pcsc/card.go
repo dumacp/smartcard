@@ -13,6 +13,7 @@ import (
 	//"fmt"
 
 	"fmt"
+	"log"
 
 	"github.com/dumacp/smartcard"
 	"github.com/ebfe/scard"
@@ -71,12 +72,12 @@ func (c *card) Apdu(apdu []byte) ([]byte, error) {
 	if c.State != CONNECTED {
 		return nil, fmt.Errorf("don't Connect to Card, %w", smartcard.ErrComm)
 	}
-	// log.Printf("APDU: [% X], len: %d", apdu, len(apdu))
+	log.Printf("APDU: [% X], len: %d", apdu, len(apdu))
 	resp, err := c.Transmit(apdu)
 	if err != nil {
 		return resp, smartcard.Error(err)
 	}
-	// log.Printf("Response: [% X], len: %d", resp, len(resp))
+	log.Printf("Response: [% X], len: %d", resp, len(resp))
 	result := make([]byte, len(resp))
 	copy(result, resp)
 	return result, nil

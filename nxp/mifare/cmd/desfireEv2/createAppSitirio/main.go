@@ -88,26 +88,13 @@ func main() {
 	// keyDebito := ev2.KeyID_0x03
 	keyCredito := ev2.KeyID_0x04
 	keyOperation := ev2.KeyID_0x01
+	// keyAppMaster := ev2.KeyID_0x00
 
 	//llave persistina en un paso anterior
 	keyDefault, err := hex.DecodeString("3ED6B7C6823D442D7783F8B3A0B1C9C659E7D8BDDF7FCD6A")
 	if err != nil {
 		log.Fatalln(err)
 	}
-
-	// uid, err := d.GetCardUID()
-	// if err != nil {
-	// 	log.Fatalf("GetCardUID() error: %s", err)
-	// }
-
-	// bytesUid := make([]byte, len(uid))
-	// copy(bytesUid, uid)
-	// divData := make([]byte, 0)
-	// divData = append(divData, 0x01)
-	// divData = append(divData, bytesUid...)
-	// for i := 0; i < len(bytesUid); i++ {
-	// 	divData = append(divData, bytesUid[len(bytesUid)-1-i])
-	// }
 
 	// samCard.DumpSecretKey()
 
@@ -185,21 +172,50 @@ func main() {
 
 	log.Printf("**** auth APP AES sucess: [% X]", authApp2)
 
+	accessRights := uint16(0)
+
+	accessRights |= (uint16(keyCredito) << 12)
+	accessRights |= (uint16(keyOperation) << 8)
+	accessRights |= (uint16(keyOperation) << 4)
+	accessRights |= (uint16(0x0F) << 0)
+
+	accessRightsBytes := make([]byte, 2)
+
+	binary.LittleEndian.PutUint16(accessRightsBytes, accessRights)
+
 	// se crea un archivo en la app seleccionada
-	if err := d.CreateStdDataFile(0x01, ev2.TargetPrimaryApp, nil, false, ev2.MAC,
+	if err := d.CreateStdDataFile(0x01, ev2.TargetPrimaryApp, nil, true, ev2.MAC,
 		keyPublic, keyOperation, ev2.NO_ACCESS, ev2.KeyID_0x00, 64); err != nil {
 		log.Fatalf("CreateStdDataFile error: %s", err)
 	}
 
 	// se crea un archivo en la app seleccionada
 	if err := d.CreateBackupDataFile(0x02, ev2.TargetPrimaryApp, nil, false, ev2.FULL,
-		keyDebito, keyOperation, keyCredito, ev2.KeyID_0x00, 32); err != nil {
+		keyDebito, keyOperation, keyOperation, ev2.KeyID_0x00, 32); err != nil {
 		log.Fatalf("CreateBackupDataFile error: %s", err)
 	}
+	if err := d.ChangeFileSettings(0x02, ev2.TargetPrimaryApp, nil, false, ev2.FULL,
+		keyDebito, keyOperation, keyOperation, ev2.KeyID_0x00, 1,
+		accessRightsBytes); err != nil {
+		log.Fatalf("ChangeFileSettings error: %s", err)
+	}
+
+	accessRights = uint16(0)
+
+	accessRights |= (uint16(keyOperation) << 12)
+	accessRights |= (uint16(keyOperation) << 8)
+	accessRights |= (uint16(keyOperation) << 4)
+	accessRights |= (uint16(0x0F) << 0)
+
 	// se crea un archivo en la app seleccionada
 	if err := d.CreateBackupDataFile(0x03, ev2.TargetPrimaryApp, nil, false, ev2.FULL,
 		keyCredito, keyDebito, keyCredito, ev2.KeyID_0x00, 32); err != nil {
 		log.Fatalf("CreateBackupDataFile error: %s", err)
+	}
+	if err := d.ChangeFileSettings(0x03, ev2.TargetPrimaryApp, nil, false, ev2.FULL,
+		keyCredito, keyDebito, keyCredito, ev2.KeyID_0x00, 1,
+		accessRightsBytes); err != nil {
+		log.Fatalf("ChangeFileSettings error: %s", err)
 	}
 	// se crea un archivo en la app seleccionada
 	if err := d.CreateValueFile(0x05, ev2.TargetPrimaryApp, nil, false, ev2.FULL,
@@ -213,11 +229,21 @@ func main() {
 		32, 3); err != nil {
 		log.Fatalf("CreateCyclicRecorFile error: %s", err)
 	}
+	if err := d.ChangeFileSettings(0x06, ev2.TargetPrimaryApp, nil, false, ev2.FULL,
+		keyCredito, keyDebito, keyCredito, ev2.KeyID_0x00, 1,
+		accessRightsBytes); err != nil {
+		log.Fatalf("ChangeFileSettings error: %s", err)
+	}
 	// se crea un archivo en la app seleccionada
 	if err := d.CreateCyclicRecorFile(0x07, ev2.TargetPrimaryApp, nil, false, ev2.FULL,
 		keyCredito, keyDebito, keyCredito, ev2.KeyID_0x00,
-		32, 9); err != nil {
+		32, 7); err != nil {
 		log.Fatalf("CreateCyclicRecorFile error: %s", err)
+	}
+	if err := d.ChangeFileSettings(0x07, ev2.TargetPrimaryApp, nil, false, ev2.FULL,
+		keyCredito, keyDebito, keyCredito, ev2.KeyID_0x00, 1,
+		accessRightsBytes); err != nil {
+		log.Fatalf("ChangeFileSettings error: %s", err)
 	}
 
 	// se crea un archivo para verificar la integridad d elas transacciones en la tarjeta
@@ -263,7 +289,7 @@ func main() {
 	datafile_01 := make([]byte, 54)
 
 	offset := 0
-	for i, v := range []byte("camilo zapata") {
+	for i, v := range []byte("JUAN PEREZ PEREZ") {
 		datafile_01[i+offset] = v
 	}
 	offset = 32
@@ -363,21 +389,31 @@ func main() {
 	}
 
 	dataRecord_01 := make([]byte, 32)
-	dataRecord_01[0] = 0x20
+	// dataRecord_01[0] = 0x20
 
-	if err := d.WriteRecord(0x06, ev2.TargetPrimaryApp, 0x00, dataRecord_01,
-		ev2.FULL); err != nil {
-		log.Fatalf("WriteRecord error: %s", err)
-	}
-	if err := d.WriteRecord(0x07, ev2.TargetPrimaryApp, 0x00, make([]byte, 32),
-		ev2.FULL); err != nil {
-		log.Fatalf("WriteRecord error: %s", err)
-	}
+	for range []int{1, 2, 3} {
+		if err := d.WriteRecord(0x06, ev2.TargetPrimaryApp, 0x00, dataRecord_01,
+			ev2.FULL); err != nil {
+			log.Fatalf("WriteRecord error: %s", err)
 
-	if data, err := d.CommitTransaction(true); err != nil {
-		log.Fatalf("CommitTransaction error: %s", err)
-	} else {
-		log.Printf("CommitTransaction: %X, len: %d", data, len(data))
+		}
+		if data, err := d.CommitTransaction(true); err != nil {
+			log.Fatalf("CommitTransaction error: %s", err)
+		} else {
+			log.Printf("CommitTransaction: %X, len: %d", data, len(data))
+		}
+	}
+	for range []int{1, 2, 3, 4, 5, 6, 7, 8, 9} {
+		// dataRecord_01[0] = byte(i)
+		if err := d.WriteRecord(0x07, ev2.TargetPrimaryApp, 0x00, dataRecord_01,
+			ev2.FULL); err != nil {
+			log.Fatalf("WriteRecord error: %s", err)
+		}
+		if data, err := d.CommitTransaction(true); err != nil {
+			log.Fatalf("CommitTransaction error: %s", err)
+		} else {
+			log.Printf("CommitTransaction: %X, len: %d", data, len(data))
+		}
 	}
 
 	if data, err := d.ReadData(0x02, ev2.TargetPrimaryApp, 0x00, 0x00,
@@ -403,13 +439,13 @@ func main() {
 		log.Printf("GetValue: %d, %X, len: %d", dataInt, data, len(data))
 	}
 
-	if data, err := d.ReadRecords(0x07, ev2.TargetPrimaryApp, 0x00, 0x01,
+	if data, err := d.ReadRecords(0x07, ev2.TargetPrimaryApp, 0x00, 0x00, 32,
 		ev2.FULL); err != nil {
 		log.Fatalf("ReadRecords error: %s", err)
 	} else {
 		log.Printf("ReadRecords 06: %X, len: %d", data, len(data))
 	}
-	if data, err := d.ReadRecords(0x06, ev2.TargetPrimaryApp, 0x00, 0x00,
+	if data, err := d.ReadRecords(0x06, ev2.TargetPrimaryApp, 0x00, 0x00, 32,
 		ev2.FULL); err != nil {
 		log.Fatalf("ReadRecords error: %s", err)
 	} else {
