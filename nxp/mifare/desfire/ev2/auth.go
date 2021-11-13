@@ -236,8 +236,8 @@ func (d *Desfire) AuthenticateEV2First(secondAppIndicator SecondAppIndicator, ke
 
 func (d *Desfire) AuthenticateEV2FirstPart2(key, data []byte) ([]byte, error) {
 
-	log.Printf("key: %X", key)
-	log.Printf("data: %X", data)
+	// log.Printf("key: %X", key)
+	// log.Printf("data: %X", data)
 
 	rand.Seed(time.Now().UnixNano())
 
@@ -260,10 +260,10 @@ func (d *Desfire) AuthenticateEV2FirstPart2(key, data []byte) ([]byte, error) {
 	copy(rndBr, rndB)
 	rndBr = append(rndBr, rndBr[0])
 	rndBr = rndBr[1:]
-	log.Printf("rotate rndB: [ %X ], [ %X ]", rndB, rndBr)
+	// log.Printf("rotate rndB: [ %X ], [ %X ]", rndB, rndBr)
 	rndA := make([]byte, len(rndB))
 	rand.Read(rndA)
-	log.Printf("origin rndA: [ %X ]", rndA)
+	// log.Printf("origin rndA: [ %X ]", rndA)
 
 	rndD := make([]byte, 0)
 
@@ -291,15 +291,15 @@ func (d *Desfire) AuthenticateEV2FirstPart2(key, data []byte) ([]byte, error) {
 	// mode = cipher.NewCBCDecrypter(block, rndDc[len(rndDc)-block.BlockSize():])
 	mode = cipher.NewCBCDecrypter(block, iv[:])
 	mode.CryptBlocks(lastResp, resp[1:])
-	log.Printf("response last: [ %X ]", lastResp)
+	// log.Printf("response last: [ %X ]", lastResp)
 
 	d.ti = make([]byte, 0)
 	d.ti = append(d.ti, lastResp[:4]...)
 
-	log.Printf("TI: [ %X ]", d.ti)
+	// log.Printf("TI: [ %X ]", d.ti)
 
-	log.Printf("origin rndA: [ %X ]", rndA)
-	log.Printf("respon rndA: [ %X ]", lastResp[4:len(rndA)+4])
+	// log.Printf("origin rndA: [ %X ]", rndA)
+	// log.Printf("respon rndA: [ %X ]", lastResp[4:len(rndA)+4])
 
 	d.pdCap2 = make([]byte, 0)
 	d.pdCap2 = append(d.pdCap2, lastResp[len(lastResp)-6:]...)
@@ -382,12 +382,12 @@ func (d *Desfire) AuthenticateEV2FirstPart2_block_1(rndB []byte) ([]byte, error)
 	copy(rndBr, rndB)
 	rndBr = append(rndBr, rndBr[0])
 	rndBr = rndBr[1:]
-	log.Printf("rotate rndB: [ %X ], [ %X ]", rndB, rndBr)
+	// log.Printf("rotate rndB: [ %X ], [ %X ]", rndB, rndBr)
 	rndA := make([]byte, len(rndB))
 	rand.Read(rndA)
 	d.rndA = make([]byte, len(rndA))
 	copy(d.rndA, rndA)
-	log.Printf("origin rndA: [ %X ]", rndA)
+	// log.Printf("origin rndA: [ %X ]", rndA)
 
 	rndD := make([]byte, 0)
 
@@ -418,7 +418,7 @@ func (d *Desfire) AuthenticateEV2FirstPart2_block_3(lastResp []byte) ([]byte, []
 	d.ti = make([]byte, 0)
 	d.ti = append(d.ti, lastResp[:4]...)
 
-	log.Printf("TI: [ %X ]", d.ti)
+	// log.Printf("TI: [ %X ]", d.ti)
 
 	d.pdCap2 = make([]byte, 0)
 	d.pdCap2 = append(d.pdCap2, lastResp[len(lastResp)-6:]...)
