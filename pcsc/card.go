@@ -112,7 +112,11 @@ func (c *card) ATR() ([]byte, error) {
 //Get Data 0x00
 func (c *card) UID() ([]byte, error) {
 	aid := []byte{0xFF, 0xCA, 0x00, 0x00, 0x00}
-	return c.Apdu(aid)
+	uid, err := c.Apdu(aid)
+	if err != nil {
+		return nil, err
+	}
+	return uid[:len(uid)-2], nil
 }
 
 //Get Data 0x01

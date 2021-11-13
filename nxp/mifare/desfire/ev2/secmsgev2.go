@@ -81,14 +81,14 @@ func calcMacOnCommandEV2(block cipher.Block, ti []byte,
 	// 		make([]byte, block.BlockSize()-len(datamac)%block.BlockSize())...)
 	// }
 
-	log.Printf("data in cmac: [% X]", datamac)
+	// log.Printf("data in cmac: [% X]", datamac)
 
 	result, err := cmac.Sum(datamac, block, block.BlockSize())
 	if err != nil {
 		return nil, err
 	}
 
-	log.Printf("long cmac: [% X]", result)
+	// log.Printf("long cmac: [% X]", result)
 
 	cmacT := make([]byte, 0)
 	for i, v := range result {
@@ -97,7 +97,7 @@ func calcMacOnCommandEV2(block cipher.Block, ti []byte,
 		}
 	}
 
-	log.Printf("truncate cmac: [% X]", cmacT)
+	// log.Printf("truncate cmac: [% X]", cmacT)
 
 	return cmacT, nil
 }
@@ -120,14 +120,14 @@ func calcMacOnResponseEV2(block cipher.Block, ti []byte,
 	// 		make([]byte, block.BlockSize()-len(datamac)%block.BlockSize())...)
 	// }
 
-	log.Printf("data in cmac: [% X]", datamac)
+	// log.Printf("data in cmac: [% X]", datamac)
 
 	result, err := cmac.Sum(datamac, block, block.BlockSize())
 	if err != nil {
 		return nil, err
 	}
 
-	log.Printf("long cmac: [% X]", result)
+	// log.Printf("long cmac: [% X]", result)
 
 	cmacT := make([]byte, 0)
 	for i, v := range result {
@@ -136,7 +136,7 @@ func calcMacOnResponseEV2(block cipher.Block, ti []byte,
 		}
 	}
 
-	log.Printf("truncate cmac: [% X]", cmacT)
+	// log.Printf("truncate cmac: [% X]", cmacT)
 
 	return cmacT, nil
 }
@@ -148,7 +148,7 @@ func getDataOnFullModeResponseEV2(block cipher.Block, iv []byte,
 
 	dest := make([]byte, len(reponse[1:len(reponse)-8]))
 	mode.CryptBlocks(dest, reponse[1:len(reponse)-8])
-	log.Printf("palindata EV2: [% X], len: %d", dest, len(dest))
+	// log.Printf("palindata EV2: [% X], len: %d", dest, len(dest))
 
 	for i := range dest {
 		if dest[len(dest)-1-i] == 0x00 {
@@ -183,8 +183,8 @@ func calcCryptogramEV2(block cipher.Block, plaindata, iv []byte) []byte {
 	mode := cipher.NewCBCEncrypter(block, iv)
 	dest := make([]byte, len(plaindata))
 	mode.CryptBlocks(dest, plaindata)
-	log.Printf("palindata EV2: [% X], len: %d", plaindata, len(plaindata))
-	log.Printf("crytogram EV2: [% X], len: %d", dest, len(dest))
+	// log.Printf("palindata EV2: [% X], len: %d", plaindata, len(plaindata))
+	// log.Printf("crytogram EV2: [% X], len: %d", dest, len(dest))
 	return dest
 }
 
@@ -218,7 +218,7 @@ func changeKeyCryptogramEV2(block, blockMac cipher.Block,
 		plaindata = append(plaindata, crcbytesnewkey[:]...)
 	}
 
-	log.Printf("plaindata          : [% X]", plaindata)
+	// log.Printf("plaindata          : [% X]", plaindata)
 
 	mode := cipher.NewCBCEncrypter(block, iv)
 
@@ -226,12 +226,12 @@ func changeKeyCryptogramEV2(block, blockMac cipher.Block,
 		plaindata = append(plaindata, 0x80)
 		plaindata = append(plaindata, make([]byte, block.BlockSize()-len(plaindata)%block.BlockSize())...)
 	}
-	log.Printf("plaindata + padding: [% X]", plaindata)
+	// log.Printf("plaindata + padding: [% X]", plaindata)
 
 	cipherdata := make([]byte, len(plaindata))
 	mode.CryptBlocks(cipherdata, plaindata)
 
-	log.Printf("cipher data        : [% X], len: %d", cipherdata, len(cipherdata))
+	// log.Printf("cipher data        : [% X], len: %d", cipherdata, len(cipherdata))
 
 	cmdHeader := make([]byte, 0)
 	if keySetNo >= 0 {
@@ -244,7 +244,7 @@ func changeKeyCryptogramEV2(block, blockMac cipher.Block,
 		return nil, err
 	}
 
-	log.Printf("truncate cmac: [% X]", cmacT)
+	// log.Printf("truncate cmac: [% X]", cmacT)
 
 	cryptograma := make([]byte, 0)
 	cryptograma = append(cryptograma, cipherdata...)

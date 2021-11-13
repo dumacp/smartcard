@@ -209,11 +209,11 @@ func main() {
 
 	// se crea un archivo en la app seleccionada
 	if err := d.CreateBackupDataFile(0x03, ev2.TargetPrimaryApp, nil, false, ev2.FULL,
-		keyCredito, keyDebito, keyCredito, ev2.KeyID_0x00, 32); err != nil {
+		keyDebito, keyCredito, keyCredito, ev2.KeyID_0x00, 32); err != nil {
 		log.Fatalf("CreateBackupDataFile error: %s", err)
 	}
 	if err := d.ChangeFileSettings(0x03, ev2.TargetPrimaryApp, nil, false, ev2.FULL,
-		keyCredito, keyDebito, keyCredito, ev2.KeyID_0x00, 1,
+		keyDebito, keyCredito, keyCredito, ev2.KeyID_0x00, 1,
 		accessRightsBytes); err != nil {
 		log.Fatalf("ChangeFileSettings error: %s", err)
 	}
@@ -225,23 +225,23 @@ func main() {
 	}
 	// se crea un archivo en la app seleccionada
 	if err := d.CreateCyclicRecorFile(0x06, ev2.TargetPrimaryApp, nil, false, ev2.FULL,
-		keyCredito, keyDebito, keyCredito, ev2.KeyID_0x00,
+		keyDebito, keyDebito, keyCredito, ev2.KeyID_0x00,
 		32, 3); err != nil {
 		log.Fatalf("CreateCyclicRecorFile error: %s", err)
 	}
 	if err := d.ChangeFileSettings(0x06, ev2.TargetPrimaryApp, nil, false, ev2.FULL,
-		keyCredito, keyDebito, keyCredito, ev2.KeyID_0x00, 1,
+		keyDebito, keyDebito, keyCredito, ev2.KeyID_0x00, 1,
 		accessRightsBytes); err != nil {
 		log.Fatalf("ChangeFileSettings error: %s", err)
 	}
 	// se crea un archivo en la app seleccionada
 	if err := d.CreateCyclicRecorFile(0x07, ev2.TargetPrimaryApp, nil, false, ev2.FULL,
-		keyCredito, keyDebito, keyCredito, ev2.KeyID_0x00,
+		keyDebito, keyDebito, keyCredito, ev2.KeyID_0x00,
 		32, 7); err != nil {
 		log.Fatalf("CreateCyclicRecorFile error: %s", err)
 	}
 	if err := d.ChangeFileSettings(0x07, ev2.TargetPrimaryApp, nil, false, ev2.FULL,
-		keyCredito, keyDebito, keyCredito, ev2.KeyID_0x00, 1,
+		keyDebito, keyDebito, keyCredito, ev2.KeyID_0x00, 1,
 		accessRightsBytes); err != nil {
 		log.Fatalf("ChangeFileSettings error: %s", err)
 	}
