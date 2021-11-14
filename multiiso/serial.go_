@@ -1,6 +1,7 @@
 package multiiso
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -31,13 +32,13 @@ func NewDevice(portName string, baudRate int, timeout time.Duration) (*Device, e
 		Name: portName,
 		Baud: baudRate,
 		//TODO if change, change funcerr
-		// ReadTimeout: 1 * time.Second,
+		ReadTimeout: 3 * time.Second,
 	}
-	if timeout < 1*time.Second {
-		config.ReadTimeout = 1 * time.Second
-	} else {
-		config.ReadTimeout = timeout + 300*time.Millisecond
-	}
+	// if timeout < 1*time.Second {
+	// 	config.ReadTimeout = 1 * time.Second
+	// } else {
+	// 	config.ReadTimeout = timeout + 300*time.Millisecond
+	// }
 	s, err := serial.OpenPort(config)
 	if err != nil {
 		return nil, err
@@ -103,10 +104,8 @@ func (dev *Device) read() {
 				return err
 			case errors.Is(err, io.EOF):
 				if countError > 3 {
-					if !dev.Ok {
-						return err
-					}
-					countError = 0
+					dev.Ok = false
+					return err
 				}
 				countError++
 			}
@@ -121,34 +120,33 @@ func (dev *Device) read() {
 			// countError++
 			// return nil
 		}
-		// bf := bufio.NewReader(dev.port)
-		tempb := make([]byte, 1024)
-		buff := make([]byte, 1)
-		indxb := 0
+		bf := bufio.NewReader(dev.port)
+		tempbuff := make([]byte, 0)
+		buff := make([]byte, 256)
 		for {
 			if !dev.Ok {
 				// log.Printf("Device is closed === %s  ######", dev)
 				return
 			}
 			// log.Println("0")
-			// if dev.mode != 0 {
-			// 	line, _, err := bf.ReadLine()
-			// 	if err != nil {
-			// 		if err := funcerr(err); err != nil {
-			// 			return
-			// 		}
-			// 		continue
-			// 	}
-			// 	countError = 0
-			// 	select {
-			// 	case <-dev.chQuit:
-			// 		return
-			// 	case dev.chRecv <- line:
-			// 	case <-time.After(1 * time.Second):
-			// 	}
-			// 	continue
-			// }
-			n, err := dev.port.Read(buff)
+			if dev.mode != 0 {
+				line, _, err := bf.ReadLine()
+				if err != nil {
+					if err := funcerr(err); err != nil {
+						return
+					}
+					continue
+				}
+				countError = 0
+				select {
+				case <-dev.chQuit:
+					return
+				case dev.chRecv <- line:
+				case <-time.After(1 * time.Second):
+				}
+				continue
+			}
+			n, err := bf.Read(buff)
 			if err != nil {
 				if err := funcerr(err); err != nil {
 					// log.Printf("0, err: %s", err)
@@ -156,45 +154,39 @@ func (dev *Device) read() {
 				}
 				continue
 			}
-			var b byte
-			if n > 0 {
-				b = buff[0]
-			} else {
-				continue
-			}
-			// log.Printf("0, err: %s, [% X]", err, buff[:n])
-			// if err != nil {
-			if err := funcerr(err); err != nil {
-				return
-			}
-			if indxb <= 0 {
-				if b == '\x02' {
-					tempb[0] = b
-					indxb = 1
-				}
-				continue
-			}
-
-			tempb[indxb] = b
-			indxb++
-			// fmt.Printf("len: %v, %v\n", indxb, int(tempb[2])+5)
-			if indxb < 6 {
-				continue
-			}
-			// log.Println("2")
-			if b == '\x03' && (indxb >= int(tempb[2])+5) {
-				// fmt.Printf("tempb final: [% X]\n", tempb[:indxb])
+			switch {
+			case len(tempbuff) <= 0 && buff[0] == '\x02' && buff[n-1] == '\x03' &&
+				len(buff[0:n]) >= 6 && int(buff[2]) >= len(buff[0:n])-5:
+				tempbuff = append(tempbuff, buff[0:n]...)
 				select {
 				case <-dev.chQuit:
 					// log.Println("3")
 					return
-				case dev.chRecv <- tempb[0:indxb]:
-					tempb = make([]byte, 1024)
-					// fmt.Printf("tempb final: [% X]\n", tempb[:])
+				case dev.chRecv <- tempbuff[:]:
+					for {
+						bf.ReadByte()
+					}
 				case <-time.After(1 * time.Second):
 				}
-				indxb = 0
+				tempbuff = make([]byte, 0)
+			case len(tempbuff) <= 0 && buff[0] == '\x02':
+				tempbuff = append(tempbuff, buff[0:n]...)
+			case len(tempbuff) > 0 && buff[n-1] != '\x03':
+				tempbuff = append(tempbuff, buff[0:n]...)
+			case len(tempbuff) > 2 && buff[n-1] == '\x03' && int(tempbuff[2]) >= len(tempbuff)-5:
+				tempbuff = append(tempbuff, buff[0:n]...)
+				select {
+				case <-dev.chQuit:
+					// log.Println("3")
+					return
+				case dev.chRecv <- tempbuff[:]:
+				case <-time.After(1 * time.Second):
+				}
+				tempbuff = make([]byte, 0)
+			default:
+				tempbuff = make([]byte, 0)
 			}
+
 		}
 	}()
 	log.Println("reading port")
@@ -211,14 +203,11 @@ func (dev *Device) Send(data []byte) (int, error) {
 
 //SendRecv write daa bytes in serial device and wait by response
 func (dev *Device) SendRecv(data []byte) ([]byte, error) {
-
 	dev.mux.Lock()
 	defer dev.mux.Unlock()
-	buff := make([]byte, 0)
-	buff = append(buff, data[:]...)
-
+	recv := make([]byte, 0)
 	// log.Printf("data send: [% X]", data)
-	if n, err := dev.port.Write(buff); err != nil {
+	if n, err := dev.port.Write(data); err != nil {
 		return nil, err
 	} else if n <= 0 {
 		return nil, fmt.Errorf("dont write in SendRecv command, %w", smartcard.ErrComm)
@@ -229,14 +218,17 @@ func (dev *Device) SendRecv(data []byte) ([]byte, error) {
 		if !ok {
 			return nil, fmt.Errorf("close channel in dev")
 		}
-		recv := make([]byte, 0)
 		if len(v) > 0 {
 			recv = append(recv, v...)
 		}
-		return recv, nil
 	case <-time.After(dev.timeout):
+	}
+
+	if recv == nil || len(recv) <= 0 {
 		return nil, fmt.Errorf("timeout error in SendRecv command, %w", smartcard.ErrComm)
 	}
+	dev.port.Flush()
+	return recv, nil
 }
 
 //Recv read data bytes in serial device
