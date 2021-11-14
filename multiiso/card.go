@@ -62,7 +62,14 @@ func (c *card) Apdu(apdu []byte) ([]byte, error) {
 		// case T0TransactionV2:
 		// 	return c.reader.T0TransactionV2(apdu)
 	}
-	return c.reader.TransmitBinary([]byte{}, apdu)
+	response, err := c.reader.TransmitBinary([]byte{}, apdu)
+	if err != nil {
+		return response, err
+	}
+
+	result := make([]byte, len(response[:]))
+	copy(result, response[:])
+	return result, nil
 
 }
 

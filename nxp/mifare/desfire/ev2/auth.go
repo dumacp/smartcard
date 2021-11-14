@@ -454,11 +454,11 @@ func (d *Desfire) AuthenticateEV2FirstPart2_block_4(ksesAuthEnc, ksesAuthMac []b
 	d.ksesAuthMac = make([]byte, len(ksesAuthMac))
 	copy(d.ksesAuthMac, ksesAuthMac)
 
-	d.block, err = aes.NewCipher(ksesAuthEnc)
+	d.block, err = aes.NewCipher(d.ksesAuthEnc)
 	if err != nil {
 		return err
 	}
-	d.blockMac, err = aes.NewCipher(ksesAuthMac)
+	d.blockMac, err = aes.NewCipher(d.ksesAuthMac)
 	if err != nil {
 		return err
 	}
