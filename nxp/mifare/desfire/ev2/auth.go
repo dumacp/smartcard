@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/des"
 	"errors"
+	"fmt"
 	"log"
 	"math/rand"
 	"time"
@@ -252,7 +253,7 @@ func (d *Desfire) AuthenticateEV2FirstPart2(key, data []byte) ([]byte, error) {
 	// modeD := cipher.NewCBCDecrypter(block, iv)
 
 	// log.Printf("aid1 response: [ %X ], apdu: [ %X ]", response, aid1)
-	rndBC := data[:]
+	rndBC := data[0:]
 
 	rndB := make([]byte, len(rndBC))
 	mode.CryptBlocks(rndB, rndBC)
@@ -464,6 +465,8 @@ func (d *Desfire) AuthenticateEV2FirstPart2_block_4(ksesAuthEnc, ksesAuthMac []b
 	}
 
 	d.cmdCtr = 0
+
+	fmt.Printf("//////////// SUCESS AUTH key: %d /////////\n", d.lastKey)
 
 	return nil
 }

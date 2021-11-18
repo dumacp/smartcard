@@ -101,8 +101,9 @@ type reader struct {
 	idx          int
 	ModeProtocol int
 	// transmitProto TransmitProto
-	transmit  transmitfunc
-	chainning bool
+	transmit    transmitfunc
+	chainning   bool
+	blocknumber byte
 }
 
 //NewReader Create New Reader interface
@@ -224,6 +225,7 @@ func (r *reader) SendAPDU1443_4(data []byte) ([]byte, error) {
 	cmd = append(cmd, byte(len(data)+1))
 	cmd = append(cmd, 0x0F)
 	cmd = append(cmd, r.blockNumber())
+
 	cmd = append(cmd, data...)
 
 	response, err := r.SendDataFrameTransfer(cmd)
@@ -238,6 +240,7 @@ func (r *reader) SendAPDU1443_4(data []byte) ([]byte, error) {
 		listResponse := make([]byte, 0)
 		listResponse = append(listResponse, response[2:]...)
 		for (response[1] & 0x10) == 0x10 {
+			r.blocknumber = response[1]
 			frame := []byte{0x01, 0x0F, byte(0xA0 + r.blockNumber())}
 			response, err = r.SendDataFrameTransfer(frame)
 			if err != nil {
@@ -247,6 +250,7 @@ func (r *reader) SendAPDU1443_4(data []byte) ([]byte, error) {
 		}
 		return listResponse, nil
 	}
+	r.blocknumber = response[1]
 
 	return response[2:], nil
 }
@@ -398,9 +402,10 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	}
 
 	card := &card{
-		uuid:   uid,
-		ats:    ats,
-		reader: r,
+		uuid:     uid,
+		ats:      ats,
+		reader:   r,
+		modeSend: APDU1443_4,
 	}
 
 	return card, nil
@@ -464,11 +469,11 @@ func (r *reader) SetChainning(chainning bool) {
 }
 
 func (r *reader) blockNumber() byte {
-	ret := byte(0x02)
-	if r.chainning {
-		ret = 0x03
+	switch {
+	case r.blocknumber&0x03 == 0x03:
+		return 0x02
+	case r.blocknumber&0x03 == 0x02:
+		return 0x03
 	}
-	r.chainning = !r.chainning
-
-	return ret
+	return 0x02
 }

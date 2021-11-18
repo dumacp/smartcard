@@ -1,6 +1,7 @@
 package multiiso
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -121,9 +122,9 @@ func (dev *Device) read() {
 			// countError++
 			// return nil
 		}
-		// bf := bufio.NewReader(dev.port)
+		bf := bufio.NewReader(dev.port)
 		tempb := make([]byte, 1024)
-		buff := make([]byte, 1)
+		// buff := make([]byte, 1)
 		indxb := 0
 		for {
 			if !dev.Ok {
@@ -148,7 +149,7 @@ func (dev *Device) read() {
 			// 	}
 			// 	continue
 			// }
-			n, err := dev.port.Read(buff)
+			b, err := bf.ReadByte()
 			if err != nil {
 				if err := funcerr(err); err != nil {
 					// log.Printf("0, err: %s", err)
@@ -156,12 +157,12 @@ func (dev *Device) read() {
 				}
 				continue
 			}
-			var b byte
-			if n > 0 {
-				b = buff[0]
-			} else {
-				continue
-			}
+			// var b byte
+			// if n > 0 {
+			// 	b = buff[0]
+			// } else {
+			// 	continue
+			// }
 			// log.Printf("0, err: %s, [% X]", err, buff[:n])
 			// if err != nil {
 			if err := funcerr(err); err != nil {
@@ -189,7 +190,6 @@ func (dev *Device) read() {
 					// log.Println("3")
 					return
 				case dev.chRecv <- tempb[0:indxb]:
-					tempb = make([]byte, 1024)
 					// fmt.Printf("tempb final: [% X]\n", tempb[:])
 				case <-time.After(1 * time.Second):
 				}
@@ -211,7 +211,6 @@ func (dev *Device) Send(data []byte) (int, error) {
 
 //SendRecv write daa bytes in serial device and wait by response
 func (dev *Device) SendRecv(data []byte) ([]byte, error) {
-
 	dev.mux.Lock()
 	defer dev.mux.Unlock()
 	buff := make([]byte, 0)
@@ -223,7 +222,6 @@ func (dev *Device) SendRecv(data []byte) ([]byte, error) {
 	} else if n <= 0 {
 		return nil, fmt.Errorf("dont write in SendRecv command, %w", smartcard.ErrComm)
 	}
-	// dev.port.Flush()
 	select {
 	case v, ok := <-dev.chRecv:
 		if !ok {

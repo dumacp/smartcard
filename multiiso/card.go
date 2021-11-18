@@ -66,10 +66,7 @@ func (c *card) Apdu(apdu []byte) ([]byte, error) {
 	if err != nil {
 		return response, err
 	}
-
-	result := make([]byte, len(response[:]))
-	copy(result, response[:])
-	return result, nil
+	return response[:], nil
 
 }
 
