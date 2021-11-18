@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/dumacp/smartcard/nxp/mifare/desfire/ev2"
-	"github.com/dumacp/smartcard/nxp/mifare/samav3"
 	"github.com/dumacp/smartcard/pcsc"
 )
 
@@ -77,7 +76,7 @@ func main() {
 	}
 
 	reader := multiiso.NewReader(dev, "multiiso", 1)
-	readerSam := reader
+	// readerSam := reader
 	/**/
 
 	cardi, err := reader.ConnectCard()
@@ -87,12 +86,12 @@ func main() {
 
 	///// SAM
 
-	sami, err := readerSam.ConnectSamCard()
-	if err != nil {
-		log.Fatal(err)
-	}
+	// sami, err := readerSam.ConnectSamCard()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	samCard := samav3.SamAV3(sami)
+	// samCard := samav3.SamAV3(sami)
 
 	//////////////////////////////////////////////////
 	//////////////////////////////////////////////////
@@ -108,39 +107,39 @@ func main() {
 
 	log.Printf("UID(): [% X]", uid)
 
-	bytesUid := make([]byte, len(uid))
-	copy(bytesUid, uid[:])
-	divData := make([]byte, 0)
-	divData = append(divData, 0x01)
-	divData = append(divData, bytesUid...)
-	for i := 0; i < len(bytesUid); i++ {
-		divData = append(divData, bytesUid[len(bytesUid)-1-i])
-	}
+	// bytesUid := make([]byte, len(uid))
+	// copy(bytesUid, uid[:])
+	// divData := make([]byte, 0)
+	// divData = append(divData, 0x01)
+	// divData = append(divData, bytesUid...)
+	// for i := 0; i < len(bytesUid); i++ {
+	// 	divData = append(divData, bytesUid[len(bytesUid)-1-i])
+	// }
 
 	// keyBytesOp, err := samCard.DumpSecretKey(30, 0, divData)
 	// if err != nil {
 	// 	log.Fatalf("DumpSecretKey error: %s", err)
 	// }
-	keyBytesAppMaster, err := samCard.DumpSecretKey(40, 0, divData)
+	keyBytesAppMaster, err := hex.DecodeString("3F7FDAF06884B5DCAC3C38CF4E563F57")
 	if err != nil {
 		log.Fatalf("DumpSecretKey error: %s", err)
 	}
 	log.Printf("DumpSecretKey: %X", keyBytesAppMaster)
-	keyBytesOp, err := samCard.DumpSecretKey(41, 0, divData)
+	keyBytesOp, err := hex.DecodeString("5C2E41175784B17A91BA27D4F6B84DB6")
 	if err != nil {
 		log.Fatalf("DumpSecretKey error: %s", err)
 	}
 
-	keyBytesPublic, err := samCard.DumpSecretKey(30, 0, divData)
+	keyBytesPublic, err := hex.DecodeString("1C321D89A1B366AE350D1ED00AB23358")
 	if err != nil {
 		log.Fatalf("DumpSecretKey error: %s", err)
 	}
-	keyBytesDebit, err := samCard.DumpSecretKey(31, 0, divData)
+	keyBytesDebit, err := hex.DecodeString("41771199CE908F49F26B80E739565D57")
 	if err != nil {
 		log.Fatalf("DumpSecretKey error: %s", err)
 	}
 	log.Printf("DumpSecretKey: %X", keyBytesDebit)
-	keyBytesCredit, err := samCard.DumpSecretKey(32, 0, divData)
+	keyBytesCredit, err := hex.DecodeString("92C58F8A7354B323F2ED59DC1BC2FE99")
 	if err != nil {
 		log.Fatalf("DumpSecretKey error: %s", err)
 	}
@@ -203,7 +202,7 @@ func main() {
 		log.Printf("ChangeKeyEV2 keyBytes: %X", v)
 		// Cambio del contenido y tipo de la llave maestra del PICC
 		err = d.ChangeKeyEV2(idx, 0x00, 0x00, ev2.AES, ev2.TargetPrimaryApp,
-			v[:len(v)-2], keyDefault[0:16])
+			v[0:16], keyDefault[0:16])
 		if err != nil {
 			log.Println(err)
 		} else {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/hex"
+	"fmt"
 	"log"
 	"strings"
 
@@ -13,6 +14,7 @@ func main() {
 
 	//// Detectar lectora y tarjeta //////
 	//////////////////////////////////////
+	/**/
 	ctx, err := pcsc.NewContext()
 	if err != nil {
 		log.Fatal(err)
@@ -28,7 +30,22 @@ func main() {
 		log.Printf("reader %q: %s", i, r)
 		if strings.Contains(r, "PICC") {
 			reader = pcsc.NewReader(ctx, r)
+			log.Printf("reader PICC detected %q", r)
+			break
 		}
+	}
+
+	var readerSam pcsc.Reader
+	for i, r := range readers {
+		log.Printf("reader %q: %s", i, r)
+		if strings.Contains(r, "SAM") {
+			readerSam = pcsc.NewReader(ctx, r)
+			break
+		}
+	}
+
+	if reader == nil || readerSam == nil {
+		log.Fatalln(err)
 	}
 
 	direct, err := reader.ConnectDirect()
@@ -50,13 +67,25 @@ func main() {
 
 	direct.DisconnectCard()
 
-	cardi, err := reader.ConnectCardPCSC()
+	/**
+	/////////////////// MULTI_ISO  ///////
+
+	dev, err := multiiso.NewDevice("/dev/ttyUSB0", 115200, 300*time.Millisecond)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	/////////////////////////////////////////////
-	/////////////////////////////////////////////
+	reader := multiiso.NewReader(dev, "multiiso", 1)
+	// readerSam := reader
+	/**/
+
+	cardi, err := reader.ConnectCard()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	//////////////////////////////////////////////////
+	//////////////////////////////////////////////////
 
 	//// Se instancia la tarjeta Desfire
 
@@ -88,17 +117,31 @@ func main() {
 		if err != nil {
 			log.Fatalln(err)
 		}
-		keyMaster, _ = hex.DecodeString("AF000000000000000000000000000001")
+		// keyMaster, _ = hex.DecodeString("AF00000000000000000000000000001") before version
+		keyMaster, _ = hex.DecodeString("AFFAAF00000000000000000000030201")
 
+		fmt.Println("////////////////// 1  ")
 		auth2, err = d.AuthenticateEV2FirstPart2(keyMaster, auth1)
 		if err != nil {
-			log.Fatalln(err)
+			log.Println(err)
+			fmt.Println("////////////////// 2  ")
+			auth1, err = d.AuthenticateEV2First(0, 0, nil)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			keyMaster, _ = hex.DecodeString("AF000000000000000000000000000001")
+
+			auth2, err = d.AuthenticateEV2FirstPart2(keyMaster, auth1)
+			if err != nil {
+				log.Fatalln(err)
+			}
 		}
 	}
 
 	log.Printf("**** auth sucess: [% X]", auth2)
 
-	keyMaster, _ = hex.DecodeString("AF000000000000000000000000000001")
+	// keyMaster, _ = hex.DecodeString("AF00000000000000000000000000001") before version
+	keyMaster, _ = hex.DecodeString("AFFAAF00000000000000000000030201")
 
 	// Cambio del contenido y tipo de la llave maestra del PICC
 	err = d.ChangeKey(0x00, 0x00, ev2.AES, 0x00, keyMaster, nil)

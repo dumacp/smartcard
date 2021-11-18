@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"log"
 	"strings"
 
@@ -14,6 +15,7 @@ func main() {
 
 	//// Detectar lectora y tarjeta //////
 	//////////////////////////////////////
+	/**/
 	ctx, err := pcsc.NewContext()
 	if err != nil {
 		log.Fatal(err)
@@ -29,20 +31,23 @@ func main() {
 		log.Printf("reader %q: %s", i, r)
 		if strings.Contains(r, "PICC") {
 			reader = pcsc.NewReader(ctx, r)
+			log.Printf("reader PICC detected %q", r)
+			break
 		}
 	}
 
-	// var readerSam pcsc.Reader
-	// for i, r := range readers {
-	// 	log.Printf("reader %q: %s", i, r)
-	// 	if strings.Contains(r, "SAM") {
-	// 		readerSam = pcsc.NewReader(ctx, r)
-	// 	}
-	// }
+	var readerSam pcsc.Reader
+	for i, r := range readers {
+		log.Printf("reader %q: %s", i, r)
+		if strings.Contains(r, "SAM") {
+			readerSam = pcsc.NewReader(ctx, r)
+			break
+		}
+	}
 
-	// if reader == nil || readerSam == nil {
-	// 	log.Fatalln(err)
-	// }
+	if reader == nil || readerSam == nil {
+		log.Fatalln(err)
+	}
 
 	direct, err := reader.ConnectDirect()
 	if err != nil {
@@ -63,19 +68,22 @@ func main() {
 
 	direct.DisconnectCard()
 
-	cardi, err := reader.ConnectCardPCSC()
+	/**
+	/////////////////// MULTI_ISO  ///////
+
+	dev, err := multiiso.NewDevice("/dev/ttyUSB0", 115200, 300*time.Millisecond)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	// SAM
+	reader := multiiso.NewReader(dev, "multiiso", 1)
 
-	// sami, err := reader.ConnectSamCard()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	/**/
 
-	// samCard := samav3.SamAV3(sami)
+	cardi, err := reader.ConnectCard()
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	//////////////////////////////////////////////////
 	//////////////////////////////////////////////////
@@ -119,7 +127,19 @@ func main() {
 
 	auth4, err := d.AuthenticateEV2FirstPart2(keyMaster, auth3)
 	if err != nil {
-		log.Fatalf("AuthenticateEV2FirstPart2 error: %s", err)
+
+		auth3, err = d.AuthenticateEV2First(0, 0, nil)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		keyMaster, _ = hex.DecodeString("AFFAAF00000000000000000000030201")
+
+		fmt.Println("////////////////// 1  ")
+		auth4, err = d.AuthenticateEV2FirstPart2(keyMaster, auth3)
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
 
 	log.Printf("**** auth AES sucess: [% X]", auth4)
@@ -326,7 +346,7 @@ func main() {
 
 	datafile_02 := make([]byte, 8)
 	offset = 0
-	for i, v := range []byte{0x01} {
+	for i, v := range []byte{0x04} {
 		datafile_02[i+offset] = v
 	}
 	offset = 1
@@ -343,7 +363,7 @@ func main() {
 	}
 	offset = 4
 	for i, v := range []byte{0x00, 0x01, 0x01, 0x01} {
-		datafile_01[i+offset] = v
+		datafile_02[i+offset] = v
 	}
 
 	if err := d.WriteData(0x02, ev2.TargetPrimaryApp, 0x00, datafile_02,
@@ -385,16 +405,16 @@ func main() {
 	}
 	if err := d.WriteData(0x03, ev2.TargetPrimaryApp, 0x00, datafile_03,
 		ev2.FULL); err != nil {
-		log.Fatalf("WriteData error: %s", err)
+		log.Fatalf("WriteData 03 error: %s", err)
 	}
 
 	dataRecord_01 := make([]byte, 32)
 	// dataRecord_01[0] = 0x20
 
-	for range []int{1, 2, 3} {
+	for i := range []int{1, 2, 3} {
 		if err := d.WriteRecord(0x06, ev2.TargetPrimaryApp, 0x00, dataRecord_01,
 			ev2.FULL); err != nil {
-			log.Fatalf("WriteRecord error: %s", err)
+			log.Fatalf("WriteRecord 06 (%d) error: %s", i, err)
 
 		}
 		if data, err := d.CommitTransaction(true); err != nil {
@@ -403,11 +423,11 @@ func main() {
 			log.Printf("CommitTransaction: %X, len: %d", data, len(data))
 		}
 	}
-	for range []int{1, 2, 3, 4, 5, 6, 7, 8, 9} {
+	for i := range []int{1, 2, 3, 4, 5, 6, 7, 8, 9} {
 		// dataRecord_01[0] = byte(i)
 		if err := d.WriteRecord(0x07, ev2.TargetPrimaryApp, 0x00, dataRecord_01,
 			ev2.FULL); err != nil {
-			log.Fatalf("WriteRecord error: %s", err)
+			log.Fatalf("WriteRecord 07 (%d) error: %s", i, err)
 		}
 		if data, err := d.CommitTransaction(true); err != nil {
 			log.Fatalf("CommitTransaction error: %s", err)
