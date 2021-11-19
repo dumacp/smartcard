@@ -239,9 +239,14 @@ func main() {
 	}
 	// se crea un archivo en la app seleccionada
 	if err := d.CreateValueFile(0x05, ev2.TargetPrimaryApp, nil, false, ev2.FULL,
-		keyDebito, keyCredito, keyOperation, ev2.KeyID_0x00,
+		keyDebito, keyCredito, keyCredito, ev2.KeyID_0x00,
 		-30_000, 1_000_000, 0, true, false); err != nil {
 		log.Fatalf("CreateValueFile error: %s", err)
+	}
+	if err := d.ChangeFileSettings(0x05, ev2.TargetPrimaryApp, nil, false, ev2.FULL,
+		keyDebito, keyCredito, keyCredito, ev2.KeyID_0x00, 1,
+		accessRightsBytes); err != nil {
+		log.Fatalf("ChangeFileSettings error: %s", err)
 	}
 	// se crea un archivo en la app seleccionada
 	if err := d.CreateCyclicRecorFile(0x06, ev2.TargetPrimaryApp, nil, false, ev2.FULL,
