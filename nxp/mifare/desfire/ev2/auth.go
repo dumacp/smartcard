@@ -6,7 +6,6 @@ import (
 	"crypto/des"
 	"errors"
 	"fmt"
-	"log"
 	"math/rand"
 	"time"
 
@@ -87,10 +86,10 @@ func (d *Desfire) AuthenticateISOPart2(key, data []byte) ([]byte, error) {
 	copy(rndBr, rndB)
 	rndBr = append(rndBr, rndBr[0])
 	rndBr = rndBr[1:]
-	log.Printf("rotate rndB: [ %X ], [ %X ]", rndB, rndBr)
+	// log.Printf("rotate rndB: [ %X ], [ %X ]", rndB, rndBr)
 	rndA := make([]byte, len(rndB))
 	rand.Read(rndA)
-	log.Printf("origin rndA: [ %X ]", rndA)
+	// log.Printf("origin rndA: [ %X ]", rndA)
 
 	rndD := make([]byte, 0)
 
@@ -105,7 +104,7 @@ func (d *Desfire) AuthenticateISOPart2(key, data []byte) ([]byte, error) {
 	apdu := Apdu_AuthenticateISOPart2(rndDc)
 	resp, err := d.Apdu(apdu)
 	if err != nil {
-		log.Printf("fail response: [ %X ], apdu: [ %X ]", resp, apdu)
+		// log.Printf("fail response: [ %X ], apdu: [ %X ]", resp, apdu)
 		return nil, err
 	}
 
@@ -117,8 +116,8 @@ func (d *Desfire) AuthenticateISOPart2(key, data []byte) ([]byte, error) {
 	mode = cipher.NewCBCDecrypter(block, rndDc[len(rndDc)-block.BlockSize():])
 	mode.CryptBlocks(piccRndA, resp[1:])
 
-	log.Printf("origin rndA: [ %X ]", rndA)
-	log.Printf("respon rndA: [ %X ]", piccRndA)
+	// log.Printf("origin rndA: [ %X ]", rndA)
+	// log.Printf("respon rndA: [ %X ]", piccRndA)
 
 	d.evMode = EV1
 	d.iv = make([]byte, block.BlockSize())
@@ -158,20 +157,20 @@ func (d *Desfire) AuthenticateISOPart2(key, data []byte) ([]byte, error) {
 		key = append(key, kex...)
 		key = append(key, kex...)
 		key = append(key, kex...)
-		log.Printf("key 8 enc: [% X]", key)
+		// fmt.Printf("key 8 enc: [% X]\n", key)
 		d.keyEnc = key
 		block, err = des.NewTripleDESCipher(key)
 	case 16:
 		key := make([]byte, 0)
 		key = append(key, kex...)
 		key = append(key, kex[:8]...)
-		log.Printf("key 16 enc: [% X]", key)
+		// fmt.Printf("key 16 enc: [% X]\n", key)
 		d.keyEnc = key
 		block, err = des.NewTripleDESCipher(key)
 	case 24:
 		key := make([]byte, 0)
 		key = append(key, kex[:]...)
-		log.Printf("key 24 enc: [% X]", key)
+		// fmt.Printf("key 24 enc: [% X]\n", key)
 		d.keyEnc = key
 		block, err = des.NewTripleDESCipher(key)
 	default:
@@ -280,7 +279,7 @@ func (d *Desfire) AuthenticateEV2FirstPart2(key, data []byte) ([]byte, error) {
 	apdu := Apdu_AuthenticateEV2FirstPart2(rndDc)
 	resp, err := d.Apdu(apdu)
 	if err != nil {
-		log.Printf("fail response: [ %X ], apdu: [ %X ]", resp, apdu)
+		fmt.Printf("fail response: [ %X ], apdu: [ %X ]\n", resp, apdu)
 		return nil, err
 	}
 
@@ -403,7 +402,7 @@ func (d *Desfire) AuthenticateEV2FirstPart2_block_2(rndDc []byte) ([]byte, error
 	apdu := Apdu_AuthenticateEV2FirstPart2(rndDc)
 	resp, err := d.Apdu(apdu)
 	if err != nil {
-		log.Printf("fail response: [ %X ], apdu: [ %X ]", resp, apdu)
+		fmt.Printf("fail response: [ %X ], apdu: [ %X ]\n", resp, apdu)
 		return nil, err
 	}
 
@@ -466,7 +465,7 @@ func (d *Desfire) AuthenticateEV2FirstPart2_block_4(ksesAuthEnc, ksesAuthMac []b
 
 	d.cmdCtr = 0
 
-	fmt.Printf("//////////// SUCESS AUTH key: %d /////////\n", d.lastKey)
+	// fmt.Printf("//////////// SUCESS AUTH key: %d /////////\n", d.lastKey)
 
 	return nil
 }

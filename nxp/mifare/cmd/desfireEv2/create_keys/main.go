@@ -131,10 +131,11 @@ func main() {
 		log.Fatalf("DumpSecretKey error: %s", err)
 	}
 
-	keyBytesPublic, err := samCard.DumpSecretKey(30, 0, divData)
+	keyBytesPublic, err := samCard.DumpSecretKey(30, 0, nil)
 	if err != nil {
-		log.Fatalf("DumpSecretKey error: %s", err)
+		log.Fatalf("DumpSecretKey public error: %s", err)
 	}
+	log.Printf("DumpSecretKey public: %X", keyBytesPublic)
 	keyBytesDebit, err := samCard.DumpSecretKey(31, 0, divData)
 	if err != nil {
 		log.Fatalf("DumpSecretKey error: %s", err)
