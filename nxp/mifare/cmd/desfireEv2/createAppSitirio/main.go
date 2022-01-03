@@ -204,9 +204,14 @@ func main() {
 	binary.LittleEndian.PutUint16(accessRightsBytes, accessRights)
 
 	// se crea un archivo en la app seleccionada
-	if err := d.CreateStdDataFile(0x01, ev2.TargetPrimaryApp, nil, true, ev2.MAC,
-		keyPublic, keyOperation, ev2.NO_ACCESS, ev2.KeyID_0x00, 64); err != nil {
+	if err := d.CreateStdDataFile(0x01, ev2.TargetPrimaryApp, nil, false, ev2.MAC,
+		keyPublic, ev2.NO_ACCESS, keyOperation, ev2.KeyID_0x00, 64); err != nil {
 		log.Fatalf("CreateStdDataFile error: %s", err)
+	}
+	if err := d.ChangeFileSettings(0x01, ev2.TargetPrimaryApp, nil, false, ev2.MAC,
+		keyPublic, ev2.NO_ACCESS, keyOperation, ev2.KeyID_0x00, 1,
+		accessRightsBytes); err != nil {
+		log.Fatalf("ChangeFileSettings error: %s", err)
 	}
 
 	// se crea un archivo en la app seleccionada

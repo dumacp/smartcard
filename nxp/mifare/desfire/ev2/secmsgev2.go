@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"hash/crc32"
-	"log"
 
 	"github.com/aead/cmac"
 )
@@ -81,14 +80,14 @@ func calcMacOnCommandEV2(block cipher.Block, ti []byte,
 	// 		make([]byte, block.BlockSize()-len(datamac)%block.BlockSize())...)
 	// }
 
-	log.Printf("data in cmac: [% X]", datamac)
+	// log.Printf("data in cmac: [% X]", datamac)
 
 	result, err := cmac.Sum(datamac, block, block.BlockSize())
 	if err != nil {
 		return nil, err
 	}
 
-	log.Printf("long cmac: [% X]", result)
+	// log.Printf("long cmac: [% X]", result)
 
 	cmacT := make([]byte, 0)
 	for i, v := range result {
@@ -97,7 +96,7 @@ func calcMacOnCommandEV2(block cipher.Block, ti []byte,
 		}
 	}
 
-	log.Printf("truncate cmac: [% X]", cmacT)
+	// log.Printf("truncate cmac: [% X]", cmacT)
 
 	return cmacT, nil
 }
@@ -183,8 +182,8 @@ func calcCryptogramEV2(block cipher.Block, plaindata, iv []byte) []byte {
 	mode := cipher.NewCBCEncrypter(block, iv)
 	dest := make([]byte, len(plaindata))
 	mode.CryptBlocks(dest, plaindata)
-	log.Printf("palindata EV2: [% X], len: %d", plaindata, len(plaindata))
-	log.Printf("crytogram EV2: [% X], len: %d", dest, len(dest))
+	// log.Printf("palindata EV2: [% X], len: %d", plaindata, len(plaindata))
+	// log.Printf("crytogram EV2: [% X], len: %d", dest, len(dest))
 	return dest
 }
 
@@ -200,7 +199,7 @@ func changeKeyCryptogramEV2(block, blockMac cipher.Block,
 			plaindata = append(plaindata, byte(keyVersion))
 		}
 	} else {
-		log.Printf("keyNo: %v, lastKey: %v", keyNo, authKey)
+		// log.Printf("keyNo: %v, lastKey: %v", keyNo, authKey)
 		if len(oldKey) <= 0 {
 			return nil, errors.New("old key is null")
 		}
