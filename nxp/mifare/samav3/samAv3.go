@@ -1,8 +1,8 @@
 package samav3
 
 import (
-	"github.com/dumacp/smartcard"
-	"github.com/dumacp/smartcard/nxp/mifare/samav2"
+	"github.com/nmelo/smartcard"
+	"github.com/nmelo/smartcard/nxp/mifare/samav2"
 )
 
 //SamAv3 Interface

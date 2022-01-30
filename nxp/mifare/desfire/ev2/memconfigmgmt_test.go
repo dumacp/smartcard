@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dumacp/smartcard"
-	"github.com/dumacp/smartcard/pcsc"
+	"github.com/nmelo/smartcard"
+	"github.com/nmelo/smartcard/pcsc"
 )
 
 func Test_desfire_GetVersion(t *testing.T) {

@@ -10,8 +10,8 @@ package main
 import (
   "log"
   "strings"
-  "github.com/dumacp/smartcard"
-  "github.com/dumacp/smartcard/nxp/mifare"
+  "github.com/nmelo/smartcard"
+  "github.com/nmelo/smartcard/nxp/mifare"
 )
 
 func main() {
@@ -53,8 +53,8 @@ import (
 	"flag"
 	"strings"
 	"encoding/hex"
-	"github.com/dumacp/smartcard"
-	"github.com/dumacp/smartcard/nxp/mifare"
+	"github.com/nmelo/smartcard"
+	"github.com/nmelo/smartcard/nxp/mifare"
 )
 
 var keyS string

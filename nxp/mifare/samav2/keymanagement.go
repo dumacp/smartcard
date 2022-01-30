@@ -9,9 +9,9 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/dumacp/smartcard"
-	"github.com/dumacp/smartcard/nxp/mifare"
-	"github.com/dumacp/smartcard/nxp/mifare/tools"
+	"github.com/nmelo/smartcard"
+	"github.com/nmelo/smartcard/nxp/mifare"
+	"github.com/nmelo/smartcard/nxp/mifare/tools"
 )
 
 //apduChangeKeyEntry create APDU to SAM_ApduChangeKeyEntry

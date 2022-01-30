@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dumacp/smartcard/nxp/mifare"
-	"github.com/dumacp/smartcard/nxp/mifare/samav2"
-	"github.com/dumacp/smartcard/pcsc"
+	"github.com/nmelo/smartcard/nxp/mifare"
+	"github.com/nmelo/smartcard/nxp/mifare/samav2"
+	"github.com/nmelo/smartcard/pcsc"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 

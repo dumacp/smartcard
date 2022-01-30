@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/aead/cmac"
-	"github.com/dumacp/smartcard"
-	"github.com/dumacp/smartcard/nxp/mifare"
+	"github.com/nmelo/smartcard"
+	"github.com/nmelo/smartcard/nxp/mifare"
 )
 
 type CrytoAlgorithm int

@@ -6,8 +6,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/dumacp/smartcard/nxp/mifare/desfire/ev2"
-	"github.com/dumacp/smartcard/pcsc"
+	"github.com/nmelo/smartcard/nxp/mifare/desfire/ev2"
+	"github.com/nmelo/smartcard/pcsc"
 )
 
 func main() {

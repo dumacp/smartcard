@@ -8,7 +8,7 @@ import (
 	"log"
 
 	"github.com/aead/cmac"
-	"github.com/dumacp/smartcard"
+	"github.com/nmelo/smartcard"
 )
 
 //EncryptFullProtection function to Encrypted data in full protection mode

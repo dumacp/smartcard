@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dumacp/smartcard/acs"
-	"github.com/dumacp/smartcard/pcsc"
+	"github.com/nmelo/smartcard/acs"
+	"github.com/nmelo/smartcard/pcsc"
 )
 
 var op string

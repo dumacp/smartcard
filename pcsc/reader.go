@@ -10,7 +10,7 @@ projects on which it is based:
 package pcsc
 
 import (
-	"github.com/dumacp/smartcard"
+	"github.com/nmelo/smartcard"
 	"github.com/ebfe/scard"
 )
 

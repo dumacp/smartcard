@@ -1,7 +1,7 @@
 package mifare
 
 import (
-	"github.com/dumacp/smartcard"
+	"github.com/nmelo/smartcard"
 )
 
 //Classic Mifare Plus Interface

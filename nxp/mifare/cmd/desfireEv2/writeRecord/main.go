@@ -5,9 +5,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/dumacp/smartcard/multiiso"
-	"github.com/dumacp/smartcard/nxp/mifare/desfire/ev2"
-	"github.com/dumacp/smartcard/nxp/mifare/samav3"
+	"github.com/nmelo/smartcard/multiiso"
+	"github.com/nmelo/smartcard/nxp/mifare/desfire/ev2"
+	"github.com/nmelo/smartcard/nxp/mifare/samav3"
 )
 
 func main() {

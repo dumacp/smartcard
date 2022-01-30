@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/aead/cmac"
-	"github.com/dumacp/smartcard"
+	"github.com/nmelo/smartcard"
 )
 
 //MifarePlus MifarePlus Interface

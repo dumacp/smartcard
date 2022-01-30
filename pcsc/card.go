@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/dumacp/smartcard"
+	"github.com/nmelo/smartcard"
 	"github.com/ebfe/scard"
 )
 

@@ -6,9 +6,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/dumacp/smartcard/nxp/mifare"
+	"github.com/nmelo/smartcard/nxp/mifare"
 
-	"github.com/dumacp/smartcard/multiiso"
+	"github.com/nmelo/smartcard/multiiso"
 )
 
 var port string

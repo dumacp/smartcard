@@ -10,7 +10,7 @@ projects on which it is based:
 package multiiso
 
 import (
-	"github.com/dumacp/smartcard"
+	"github.com/nmelo/smartcard"
 )
 
 //Card Interface

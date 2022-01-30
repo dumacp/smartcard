@@ -9,9 +9,9 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/dumacp/smartcard/nxp/mifare"
+	"github.com/nmelo/smartcard/nxp/mifare"
 
-	"github.com/dumacp/smartcard/multiiso"
+	"github.com/nmelo/smartcard/multiiso"
 )
 
 type tagprueba struct {

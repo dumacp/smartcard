@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"log"
 
-	"github.com/dumacp/smartcard/nxp/mifare/samav3"
-	"github.com/dumacp/smartcard/pcsc"
+	"github.com/nmelo/smartcard/nxp/mifare/samav3"
+	"github.com/nmelo/smartcard/pcsc"
 )
 
 func main() {

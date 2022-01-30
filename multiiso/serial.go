@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dumacp/smartcard"
+	"github.com/nmelo/smartcard"
 	"github.com/tarm/serial"
 )
 

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dumacp/smartcard"
-	"github.com/dumacp/smartcard/nxp/mifare"
+	"github.com/nmelo/smartcard"
+	"github.com/nmelo/smartcard/nxp/mifare"
 )
 
 //ApduEncipher_Data SAM_EncipherOffile_Data command encrypts data received from any other system based on the given cipher text data andt the current valid cryptographic OfflineCrypto Key.

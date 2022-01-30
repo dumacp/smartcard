@@ -56,8 +56,8 @@ import (
 	"net/url"
 	"time"
 
-	_ "github.com/dumacp/smartcard/nxp/mifare"
-	"github.com/dumacp/smartcard/samfarm"
+	_ "github.com/nmelo/smartcard/nxp/mifare"
+	"github.com/nmelo/smartcard/samfarm"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 

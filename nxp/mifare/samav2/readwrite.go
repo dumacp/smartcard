@@ -3,8 +3,8 @@ package samav2
 import (
 	"fmt"
 
-	"github.com/dumacp/smartcard"
-	"github.com/dumacp/smartcard/nxp/mifare"
+	"github.com/nmelo/smartcard"
+	"github.com/nmelo/smartcard/nxp/mifare"
 )
 
 type TypeMFPdata int

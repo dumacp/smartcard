@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/dumacp/go-appliance-contactless/business/card/mifareplus"
-	"github.com/dumacp/smartcard/nxp/mifare"
-	"github.com/dumacp/smartcard/nxp/mifare/samav3"
-	"github.com/dumacp/smartcard/pcsc"
+	"github.com/nmelo/smartcard/nxp/mifare"
+	"github.com/nmelo/smartcard/nxp/mifare/samav3"
+	"github.com/nmelo/smartcard/pcsc"
 )
 
 func main() {

@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/url"
 
-	"github.com/dumacp/smartcard/samfarm"
+	"github.com/nmelo/smartcard/samfarm"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 

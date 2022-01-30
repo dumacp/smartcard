@@ -3,8 +3,8 @@ package samav2
 import (
 	"encoding/binary"
 
-	"github.com/dumacp/smartcard"
-	"github.com/dumacp/smartcard/nxp/mifare"
+	"github.com/nmelo/smartcard"
+	"github.com/nmelo/smartcard/nxp/mifare"
 )
 
 //PKIGenerateKeyPair creates a pair of a public and prvate key

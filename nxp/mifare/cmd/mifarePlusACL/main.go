@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/aead/cmac"
-	"github.com/dumacp/smartcard/nxp/mifare"
-	"github.com/dumacp/smartcard/pcsc"
+	"github.com/nmelo/smartcard/nxp/mifare"
+	"github.com/nmelo/smartcard/pcsc"
 )
 
 var keyS string

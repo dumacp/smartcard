@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dumacp/smartcard"
+	"github.com/nmelo/smartcard"
 )
 
 type EVmode int
