@@ -123,31 +123,8 @@ func (d *Desfire) AuthenticateISOPart2(key, data []byte) ([]byte, error) {
 	d.iv = make([]byte, block.BlockSize())
 
 	kex := make([]byte, 0)
-	// kex = append(kex, rndA[4:8]...)
-	// kex = append(kex, rndB[4:8]...)
 	kex = append(kex, rndA[0:4]...)
 	kex = append(kex, rndB[0:4]...)
-	// kex = append(kex, rndA[4:8]...)
-	// kex = append(kex, rndB[4:8]...)
-
-	// for _, i := range []int{7, 6, 5, 4} {
-	// 	kex = append(kex, rndA[i])
-	// }
-	// for _, i := range []int{7, 6, 5, 4} {
-	// 	kex = append(kex, rndB[i])
-	// }
-	// for _, i := range []int{3, 2, 1, 0} {
-	// 	kex = append(kex, rndA[i])
-	// }
-	// for _, i := range []int{3, 2, 1, 0} {
-	// 	kex = append(kex, rndB[i])
-	// }
-	// for _, i := range []int{7, 6, 5, 4} {
-	// 	kex = append(kex, rndA[i])
-	// }
-	// for _, i := range []int{7, 6, 5, 4} {
-	// 	kex = append(kex, rndB[i])
-	// }
 
 	d.cmdCtr = 0
 
@@ -236,9 +213,6 @@ func (d *Desfire) AuthenticateEV2First(secondAppIndicator SecondAppIndicator, ke
 
 func (d *Desfire) AuthenticateEV2FirstPart2(key, data []byte) ([]byte, error) {
 
-	// log.Printf("key: %X", key)
-	// log.Printf("data: %X", data)
-
 	rand.Seed(time.Now().UnixNano())
 
 	block, err := aes.NewCipher(key)
@@ -248,10 +222,6 @@ func (d *Desfire) AuthenticateEV2FirstPart2(key, data []byte) ([]byte, error) {
 	iv := make([]byte, block.BlockSize())
 
 	mode := cipher.NewCBCDecrypter(block, iv)
-	// modeE := cipher.NewCBCEncrypter(block, iv)
-	// modeD := cipher.NewCBCDecrypter(block, iv)
-
-	// log.Printf("aid1 response: [ %X ], apdu: [ %X ]", response, aid1)
 	rndBC := data[0:]
 
 	rndB := make([]byte, len(rndBC))
@@ -260,10 +230,8 @@ func (d *Desfire) AuthenticateEV2FirstPart2(key, data []byte) ([]byte, error) {
 	copy(rndBr, rndB)
 	rndBr = append(rndBr, rndBr[0])
 	rndBr = rndBr[1:]
-	// log.Printf("rotate rndB: [ %X ], [ %X ]", rndB, rndBr)
 	rndA := make([]byte, len(rndB))
 	rand.Read(rndA)
-	// log.Printf("origin rndA: [ %X ]", rndA)
 
 	rndD := make([]byte, 0)
 
@@ -271,11 +239,9 @@ func (d *Desfire) AuthenticateEV2FirstPart2(key, data []byte) ([]byte, error) {
 	rndD = append(rndD, rndBr...)
 
 	rndDc := make([]byte, len(rndD))
-	// mode = cipher.NewCBCEncrypter(block, rndBC[:])
 	mode = cipher.NewCBCEncrypter(block, iv[:])
 	mode.CryptBlocks(rndDc, rndD)
 
-	//fmt.Printf("aid2: [% X]\n", aid2)
 	apdu := Apdu_AuthenticateEV2FirstPart2(rndDc)
 	resp, err := d.Apdu(apdu)
 	if err != nil {
@@ -288,18 +254,11 @@ func (d *Desfire) AuthenticateEV2FirstPart2(key, data []byte) ([]byte, error) {
 	}
 
 	lastResp := make([]byte, len(resp[1:]))
-	// mode = cipher.NewCBCDecrypter(block, rndDc[len(rndDc)-block.BlockSize():])
 	mode = cipher.NewCBCDecrypter(block, iv[:])
 	mode.CryptBlocks(lastResp, resp[1:])
-	// log.Printf("response last: [ %X ]", lastResp)
 
 	d.ti = make([]byte, 0)
 	d.ti = append(d.ti, lastResp[:4]...)
-
-	// log.Printf("TI: [ %X ]", d.ti)
-
-	// log.Printf("origin rndA: [ %X ]", rndA)
-	// log.Printf("respon rndA: [ %X ]", lastResp[4:len(rndA)+4])
 
 	d.pdCap2 = make([]byte, 0)
 	d.pdCap2 = append(d.pdCap2, lastResp[len(lastResp)-6:]...)
@@ -364,30 +323,16 @@ func (d *Desfire) AuthenticateEV2FirstPart2_block_1(rndB []byte) ([]byte, error)
 
 	rand.Seed(time.Now().UnixNano())
 
-	// block, err := aes.NewCipher(key)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// iv := make([]byte, block.BlockSize())
-
-	// mode := cipher.NewCBCDecrypter(block, iv)
-
-	// rndBC := data[1:]
-
-	// rndB := make([]byte, len(rndBC))
-	// mode.CryptBlocks(rndB, rndBC)
 	d.rndB = make([]byte, len(rndB))
 	copy(d.rndB, rndB)
 	rndBr := make([]byte, len(rndB))
 	copy(rndBr, rndB)
 	rndBr = append(rndBr, rndBr[0])
 	rndBr = rndBr[1:]
-	// log.Printf("rotate rndB: [ %X ], [ %X ]", rndB, rndBr)
 	rndA := make([]byte, len(rndB))
 	rand.Read(rndA)
 	d.rndA = make([]byte, len(rndA))
 	copy(d.rndA, rndA)
-	// log.Printf("origin rndA: [ %X ]", rndA)
 
 	rndD := make([]byte, 0)
 
@@ -464,8 +409,6 @@ func (d *Desfire) AuthenticateEV2FirstPart2_block_4(ksesAuthEnc, ksesAuthMac []b
 	}
 
 	d.cmdCtr = 0
-
-	// fmt.Printf("//////////// SUCESS AUTH key: %d /////////\n", d.lastKey)
 
 	return nil
 }
