@@ -1,10 +1,9 @@
 /**
-package to handle the communication of smartcard devices under the PCSC implementation
+package to handle the communication of "omnikey/multi-iso" reader
 
 projects on which it is based:
 
-	https://github.com/LudovicRousseau/PCSC
-	github.com/ebfe/scard
+	https://github.com/dumacp/smartcard
 
 /**/
 package multiiso
@@ -23,8 +22,6 @@ import (
 type Reader interface {
 	smartcard.IReader
 	mifare.IReaderClassic
-	// ConnectCard() (smartcard.ICard, error)
-	// ConnectSamCard() (smartcard.ICard, error)
 
 	Transmit([]byte, []byte) ([]byte, error)
 	TransmitAscii([]byte, []byte) ([]byte, error)
@@ -128,6 +125,7 @@ func checksum(data []byte) byte {
 
 type transmitfunc func([]byte, []byte) ([]byte, error)
 
+//SetModeProtocol set mode protocol to communication (0: binary, 1: ascii)
 func (r *reader) SetModeProtocol(mode int) {
 	if mode == BinaryMode {
 		r.transmit = r.TransmitBinary
@@ -255,6 +253,7 @@ func (r *reader) SendAPDU1443_4(data []byte) ([]byte, error) {
 	return response[2:], nil
 }
 
+//SendSAMDataFrameTransfer send APDU to SAM device in special socket ("e" command)
 func (r *reader) SendSAMDataFrameTransfer(data []byte) ([]byte, error) {
 	innerData := make([]byte, 0)
 
@@ -279,6 +278,7 @@ func (r *reader) SendSAMDataFrameTransfer(data []byte) ([]byte, error) {
 	return response[3:], nil
 }
 
+//T1TransactionV2 function to send wrapped frames T1 to SAM device through "e" command
 func (r *reader) T1TransactionV2(data []byte) ([]byte, error) {
 	trama := make([]byte, 0)
 
@@ -294,22 +294,6 @@ func (r *reader) T1TransactionV2(data []byte) ([]byte, error) {
 	return r.SendSAMDataFrameTransfer(trama)
 
 }
-
-// func (r *reader) T0TransactionV2(data []byte) ([]byte, error) {
-// 	trama := make([]byte, 0)
-
-// 	trama = append(trama, byte(len(data)&0xFF))
-// 	trama = append(trama, 0xDF)                    // APDU T=1 Transaction. OptionByte V2
-// 	trama = append(trama, byte(len(data)>>8&0xFF)) // Downlink length MSB (1 byte)
-// 	trama = append(trama, 0x13)                    // Timeout
-// 	trama = append(trama, 0x86)                    // Transmission factor byte (1 byte)
-// 	trama = append(trama, 0x00)                    // Return length
-
-// 	trama = append(trama, data...)
-
-// 	return r.SendSAMDataFrameTransfer(trama)
-
-// }
 
 //GetRegister send in format Data Frame Transfer
 func (r *reader) GetRegister(register byte) ([]byte, error) {
@@ -339,17 +323,6 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	if !r.device.Ok {
 		return nil, fmt.Errorf("serial device is not ready, %w", smartcard.ErrComm)
 	}
-	// if r.ModeProtocol != BinaryMode {
-	// 	return nil, fmt.Errorf("protocol mode is not binary, ascii mode is not support")
-	// }
-
-	// resp1, err := r.GetRegister(OpMode)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// if resp1[0] != 0x01 {
-	// 	return nil, fmt.Errorf("OpMode in reader is not ISO 14443A")
-	// }
 
 	cmd := []byte(highspeedselect)
 	apdu := make([]byte, 0)
@@ -416,14 +389,6 @@ func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
 	if !r.device.Ok {
 		return nil, fmt.Errorf("serial device is not ready, %w", smartcard.ErrComm)
 	}
-	// if r.ModeProtocol != BinaryMode {
-	// 	return nil, fmt.Errorf("protocol mode is not binary, ascii mode is not support")
-	// }
-
-	// _, err := r.GetRegister(OpMode)
-	// if err != nil {
-	// 	return nil, err
-	// }
 
 	trama1 := []byte{00, 0x91, 0x00, 0x10, 0x11, 00}
 	// if r.transmitProto == T0 {
@@ -454,12 +419,6 @@ func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
 		reader:   r,
 		modeSend: T1TransactionV2,
 	}
-
-	// if r.transmitProto == T0 {
-	// 	card.modeSend = T0TransactionV2
-	// } else {
-	// 	card.modeSend = T1TransactionV2
-	// }
 
 	return card, nil
 }

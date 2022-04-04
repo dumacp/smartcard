@@ -4,7 +4,7 @@ package to handle the communication of smartcard devices under the PCSC implemen
 projects on which it is based:
 
 	https://github.com/LudovicRousseau/PCSC
-	github.com/ebfe/scard
+	https://github.com/ebfe/scard
 
 /**/
 package pcsc
@@ -21,8 +21,6 @@ type Context struct {
 //Interface to Reader device
 type Reader interface {
 	smartcard.IReader
-	// ConnectSamCard() (smartcard.ICard, error)
-	// ConnectCard() (smartcard.ICard, error)
 	ConnectDirect() (Card, error)
 	ConnectCardPCSC() (Card, error)
 	ConnectCardPCSC_T0() (Card, error)

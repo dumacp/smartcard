@@ -1,3 +1,13 @@
+/**
+package with common functions to manage a Desfire TAG
+
+projects on which it is based:
+
+	https://github.com/LudovicRousseau/PCSC
+	https://github.com/ebfe/scard
+	https://github.com/dumacp/smartcard
+
+/**/
 package ev2
 
 import (
@@ -38,6 +48,7 @@ const (
 	TargetSecondaryApp
 )
 
+//Desfire desfire card
 type Desfire struct {
 	smartcard.ICard
 	rndA         []byte
@@ -58,13 +69,14 @@ type Desfire struct {
 	ksesAuthMac  []byte
 }
 
-//SamAV2 Create SAM from Card
+//NewDesfire Create Desfire from Card
 func NewDesfire(c smartcard.ICard) *Desfire {
 	d := new(Desfire)
 	d.ICard = c
 	return d
 }
 
+//VerifyResponse function to verify response APDU
 func VerifyResponse(resp []byte) error {
 
 	if len(resp) > 0 && (resp[0] == 0x00 || resp[0] == 0xAF) {

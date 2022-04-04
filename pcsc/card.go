@@ -1,12 +1,3 @@
-/**
-package to handle the communication of smartcard devices under the PCSC implementation
-
-projects on which it is based:
-
-        https://github.com/LudovicRousseau/PCSC
-        github.com/ebfe/scard
-
-/**/
 package pcsc
 
 import (
@@ -47,21 +38,25 @@ type card struct {
 	*scard.Card
 }
 
+//DisconnectCard disconnect card from reader
 func (c *card) DisconnectCard() error {
 	c.State = DISCONNECTED
 	return c.Disconnect(0x00)
 }
 
+//DiconnectResetCard disconnect card from reader and reset reader
 func (c *card) DiconnectResetCard() error {
 	c.State = DISCONNECTED
 	return c.Disconnect(0x01)
 }
 
+//DisconnectUnpowerCard disconnect card from reader
 func (c *card) DisconnectUnpowerCard() error {
 	c.State = DISCONNECTED
 	return c.Disconnect(0x02)
 }
 
+//DisconnectEjectCard disconnect card from reader
 func (c *card) DisconnectEjectCard() error {
 	c.State = DISCONNECTED
 	return c.Disconnect(0x03)
@@ -134,6 +129,8 @@ func (c *card) TransparentSessionStart() ([]byte, error) {
 	}
 	return resp, nil
 }
+
+//TransparentSessionStartOnly start transparent session to send APDU
 func (c *card) TransparentSessionStartOnly() ([]byte, error) {
 	apdu := []byte{0xFF, 0xC2, 0x00, 0x00, 0x02, 0x81, 0x00}
 	resp, err := c.Transmit(apdu)
@@ -142,6 +139,8 @@ func (c *card) TransparentSessionStartOnly() ([]byte, error) {
 	}
 	return resp, nil
 }
+
+//TransparentSessionResetRF start transparent session to send APDU
 func (c *card) TransparentSessionResetRF() ([]byte, error) {
 	apdu1 := []byte{0xFF, 0xC2, 0x00, 0x00, 0x02, 0x83, 0x00}
 	resp, err := c.Transmit(apdu1)
@@ -155,6 +154,8 @@ func (c *card) TransparentSessionResetRF() ([]byte, error) {
 	}
 	return resp2, nil
 }
+
+//TransparentSessionEnd finish transparent session
 func (c *card) TransparentSessionEnd() ([]byte, error) {
 	apdu := []byte{0xFF, 0xC2, 0x00, 0x00, 0x02, 0x82, 0x00, 0x00}
 	resp, err := c.Transmit(apdu)
@@ -163,6 +164,8 @@ func (c *card) TransparentSessionEnd() ([]byte, error) {
 	}
 	return resp, nil
 }
+
+//Switch1444_4 switch channel reader to send ISO 1444-4 APDU
 func (c *card) Switch1444_4() ([]byte, error) {
 	apdu := []byte{0xff, 0xc2, 0x00, 0x02, 0x04, 0x8F, 0x02, 0x00, 0x04}
 	resp, err := c.Transmit(apdu)
@@ -171,6 +174,8 @@ func (c *card) Switch1444_4() ([]byte, error) {
 	}
 	return resp, nil
 }
+
+//Switch1444_4 switch channel reader to send ISO 1444-3 APDU
 func (c *card) Switch1444_3() ([]byte, error) {
 	apdu := []byte{0xff, 0xc2, 0x00, 0x02, 0x04, 0x8f, 0x02, 0x00, 0x03}
 	resp, err := c.Transmit(apdu)
