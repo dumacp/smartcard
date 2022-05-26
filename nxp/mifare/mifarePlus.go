@@ -8,7 +8,6 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"fmt"
-	"log"
 	"math/rand"
 	"time"
 
@@ -403,12 +402,12 @@ func (mplus *mifarePlus) WriteEncMacMac(bNr int, data []byte) error {
 	aid := []byte{cmd, bNB2, bNB1}
 	aid = append(aid, dataE...)
 	aid = append(aid, cmacReq...)
-	log.Printf("write APDU: [% X]", aid)
+	// log.Printf("write APDU: [% X]", aid)
 	response, err := mplus.Apdu(aid)
 	if err != nil {
 		return err
 	}
-	log.Printf("write respnse APDU: [% X]", response)
+	// log.Printf("write respnse APDU: [% X]", response)
 	if err := verifyResponse(response); err != nil {
 		return err
 	}

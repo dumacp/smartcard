@@ -343,40 +343,63 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 
 	var uid []byte
 	var ats []byte
+	var sak byte
 
 	switch {
-	case len(resp2) >= 0x10 && resp2[0] == 0x01 && (resp2[8]&0x20 == 0x20):
+	case len(resp2) > 9 && resp2[0] == 0x01 && (resp2[8]&0x20 == 0x20):
 		uid = make([]byte, 7)
 		copy(uid, resp2[1:8])
 		ats = make([]byte, len(resp2[9:]))
+		sak = resp2[8]
 		copy(ats, resp2[9:])
-	case len(resp2) >= 0x10 && resp2[0] == 0x00 && (resp2[6]&0x20 == 0x20):
+	case len(resp2) > 9 && resp2[0] == 0x01:
+		uid = make([]byte, 7)
+		copy(uid, resp2[1:8])
+		ats = make([]byte, len(resp2[9:]))
+		sak = resp2[8]
+		copy(ats, resp2[10:])
+	case len(resp2) > 8 && resp2[0] == 0x01:
+		uid = make([]byte, 7)
+		copy(uid, resp2[1:8])
+		ats = make([]byte, 0)
+		sak = resp2[9]
+	case len(resp2) > 6 && resp2[0] == 0x00 && (resp2[5]&0x20 == 0x20):
 		uid = make([]byte, 4)
 		copy(uid, resp2[1:5])
+		sak = resp2[5]
 		ats = make([]byte, len(resp2[6:]))
 		copy(ats, resp2[6:])
-	case len(resp2) >= 0x10 && resp2[0] == 0x01 && (resp2[8]&0x20 == 0x20):
-		uid = make([]byte, 7)
-		copy(uid, resp2[1:8])
-		ats = make([]byte, len(resp2[9:]))
-		copy(ats, resp2[5:])
-	case len(resp2) >= 0x10 && (resp2[8]&0x20 == 0x20):
+	case len(resp2) > 6 && resp2[0] == 0x00:
 		uid = make([]byte, 4)
 		copy(uid, resp2[1:5])
-		ats = make([]byte, len(resp2[9:]))
-		copy(ats, resp2[5:])
+		sak = resp2[5]
+		ats = make([]byte, len(resp2[6:]))
+		copy(ats, resp2[7:])
+	case len(resp2) > 5 && resp2[0] == 0x00:
+		uid = make([]byte, 4)
+		copy(uid, resp2[1:5])
+		sak = resp2[5]
+		ats = make([]byte, 0)
 	default:
-		if len(resp2) >= 6 {
+		switch {
+		case len(resp2) > 6:
 			uid = make([]byte, 4)
 			copy(uid, resp2[1:5])
-			ats = make([]byte, len(resp2[5:]))
-			copy(ats, resp2[5:])
+			sak = resp2[5]
+			ats = make([]byte, len(resp2[6:]))
+			copy(ats, resp2[7:])
+		case len(resp2) > 5:
+			uid = make([]byte, 4)
+			copy(uid, resp2[1:5])
+			sak = resp2[5]
+			ats = make([]byte, 0)
 		}
 	}
 
 	card := &card{
 		uuid:     uid,
 		ats:      ats,
+		sak:      sak,
 		reader:   r,
 		modeSend: APDU1443_4,
 	}

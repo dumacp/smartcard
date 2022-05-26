@@ -75,7 +75,7 @@ func (r *reader) ConnectCardPCSC() (Card, error) {
 
 	c, err := r.Context.Connect(r.ReaderName, scard.ShareExclusive, scard.ProtocolT1)
 	if err != nil {
-		return nil, smartcard.Error(err)
+		return nil, err
 	}
 	cardS := &card{
 		CONNECTED,
@@ -92,7 +92,7 @@ func (r *reader) ConnectCardPCSC_T0() (Card, error) {
 
 	c, err := r.Context.Connect(r.ReaderName, scard.ShareExclusive, scard.ProtocolT0)
 	if err != nil {
-		return nil, smartcard.Error(err)
+		return nil, err
 	}
 	cardS := &card{
 		CONNECTED,
@@ -109,7 +109,7 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 
 	c, err := r.Context.Connect(r.ReaderName, scard.ShareExclusive, scard.ProtocolT1)
 	if err != nil {
-		return nil, smartcard.Error(err)
+		return nil, err
 	}
 	cardS := &card{
 		CONNECTED,
@@ -130,7 +130,7 @@ func (r *reader) connectCard() (*card, error) {
 
 	c, err := r.Context.Connect(r.ReaderName, scard.ShareExclusive, scard.ProtocolT1)
 	if err != nil {
-		return nil, smartcard.Error(err)
+		return nil, err
 	}
 	cardS := &card{
 		CONNECTED,
@@ -146,7 +146,7 @@ func (r *reader) ConnectDirect() (Card, error) {
 
 	c, err := r.Context.Connect(r.ReaderName, scard.ShareDirect, scard.ProtocolUndefined)
 	if err != nil {
-		return nil, smartcard.Error(err)
+		return nil, err
 	}
 	cardS := &card{
 		CONNECTEDDirect,
@@ -158,5 +158,5 @@ func (r *reader) ConnectDirect() (Card, error) {
 //Release Context in pcscd
 func (c *Context) Release() error {
 	err := c.Context.Release()
-	return smartcard.Error(err)
+	return err
 }
