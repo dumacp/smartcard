@@ -23,6 +23,7 @@ type ICard interface {
 }
 
 var ErrComm = Error(errors.New("error communication"))
+var ErrTransmit = Error(errors.New("error transmit"))
 
 type SmartcardError struct {
 	Err error
@@ -36,6 +37,9 @@ func (e *SmartcardError) Error() string {
 	return e.Err.Error()
 }
 
-func (e *SmartcardError) Unwrap() error {
-	return ErrComm
-}
+//func (e *SmartcardError) Unwrap() error {
+//if errors.Is(e.Err, ErrComm) {
+//	return ErrComm
+//}
+//	return ErrTransmit
+//}
