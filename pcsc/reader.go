@@ -10,6 +10,8 @@ projects on which it is based:
 package pcsc
 
 import (
+	"fmt"
+
 	"github.com/dumacp/smartcard"
 	"github.com/ebfe/scard"
 )
@@ -70,7 +72,7 @@ func newReader(ctx *Context, readerName string) *reader {
 //ConnectCardPCSC Create New Card interface
 func (r *reader) ConnectCardPCSC() (Card, error) {
 	if ok, err := r.Context.IsValid(); err != nil && !ok {
-		return nil, smartcard.Error(err)
+		return nil, fmt.Errorf("context err = %w, %w", err, smartcard.ErrComm)
 	}
 
 	c, err := r.Context.Connect(r.ReaderName, scard.ShareExclusive, scard.ProtocolT1)
@@ -87,7 +89,7 @@ func (r *reader) ConnectCardPCSC() (Card, error) {
 //ConnectCardPCSCT0 Create New Card interface
 func (r *reader) ConnectCardPCSC_T0() (Card, error) {
 	if ok, err := r.Context.IsValid(); err != nil && !ok {
-		return nil, smartcard.Error(err)
+		return nil, fmt.Errorf("context err = %w, %w", err, smartcard.ErrComm)
 	}
 
 	c, err := r.Context.Connect(r.ReaderName, scard.ShareExclusive, scard.ProtocolT0)
@@ -104,7 +106,7 @@ func (r *reader) ConnectCardPCSC_T0() (Card, error) {
 //Create New Card interface
 func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	if ok, err := r.Context.IsValid(); err != nil && !ok {
-		return nil, smartcard.Error(err)
+		return nil, fmt.Errorf("context err = %w, %w", err, smartcard.ErrComm)
 	}
 
 	c, err := r.Context.Connect(r.ReaderName, scard.ShareExclusive, scard.ProtocolT1)
@@ -125,7 +127,7 @@ func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
 
 func (r *reader) connectCard() (*card, error) {
 	if ok, err := r.Context.IsValid(); err != nil && !ok {
-		return nil, smartcard.Error(err)
+		return nil, fmt.Errorf("context err = %w, %w", err, smartcard.ErrComm)
 	}
 
 	c, err := r.Context.Connect(r.ReaderName, scard.ShareExclusive, scard.ProtocolT1)
@@ -141,7 +143,7 @@ func (r *reader) connectCard() (*card, error) {
 
 func (r *reader) ConnectDirect() (Card, error) {
 	if ok, err := r.Context.IsValid(); err != nil && !ok {
-		return nil, smartcard.Error(err)
+		return nil, fmt.Errorf("context err = %w, %w", err, smartcard.ErrComm)
 	}
 
 	c, err := r.Context.Connect(r.ReaderName, scard.ShareDirect, scard.ProtocolUndefined)
