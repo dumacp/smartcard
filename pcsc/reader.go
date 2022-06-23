@@ -10,6 +10,7 @@ projects on which it is based:
 package pcsc
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/dumacp/smartcard"
@@ -111,7 +112,11 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 
 	c, err := r.Context.Connect(r.ReaderName, scard.ShareExclusive, scard.ProtocolT1)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, scard.ErrNoSmartcard) {
+			return nil, err
+		} else {
+			return nil, fmt.Errorf("connect card err = %s, %w", err, smartcard.ErrComm)
+		}
 	}
 	cardS := &card{
 		CONNECTED,
