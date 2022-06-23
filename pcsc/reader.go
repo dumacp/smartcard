@@ -107,7 +107,7 @@ func (r *reader) ConnectCardPCSC_T0() (Card, error) {
 //Create New Card interface
 func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	if ok, err := r.Context.IsValid(); err != nil && !ok {
-		return nil, fmt.Errorf("context err = %w, %w", err, smartcard.ErrComm)
+		return nil, fmt.Errorf("context err = %s, %w", err, smartcard.ErrComm)
 	}
 
 	c, err := r.Context.Connect(r.ReaderName, scard.ShareExclusive, scard.ProtocolT1)
