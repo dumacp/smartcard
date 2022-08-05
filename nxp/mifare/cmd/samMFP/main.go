@@ -3,15 +3,17 @@ package main
 import (
 	"encoding/hex"
 	"log"
-	"time"
+	"strings"
 
-	"github.com/dumacp/smartcard/multiiso"
+	"github.com/dumacp/smartcard/nxp/mifare"
+	"github.com/dumacp/smartcard/nxp/mifare/samav2"
 	"github.com/dumacp/smartcard/nxp/mifare/samav3"
+	"github.com/dumacp/smartcard/pcsc"
 )
 
 func main() {
 
-	/**
+	/**/
 	ctx, err := pcsc.NewContext()
 	if err != nil {
 		log.Fatal(err)
@@ -25,7 +27,7 @@ func main() {
 	var reader pcsc.Reader
 	for i, r := range readers {
 
-		if strings.Contains(r, "01") {
+		if strings.Contains(r, "PICC") {
 			log.Printf("reader PICC%q: %s", i, r)
 			reader = pcsc.NewReader(ctx, r)
 			break
@@ -35,11 +37,15 @@ func main() {
 	var readerSAM pcsc.Reader
 	for i, r := range readers {
 
-		if strings.Contains(r, "00") {
+		if strings.Contains(r, "SAM") {
 			log.Printf("reader SAM %q: %s", i, r)
 			readerSAM = pcsc.NewReader(ctx, r)
 			break
 		}
+	}
+	if readerSAM == nil || reader == nil {
+
+		log.Fatal("reader not found")
 	}
 
 	direct, err := reader.ConnectDirect()
@@ -68,7 +74,7 @@ func main() {
 
 	// sam, err := samav3.ConnectSam(readerSAM)
 
-	/**/
+	/**
 	dev, err := multiiso.NewDevice("/dev/ttyUSB0", 115200, 300*time.Millisecond)
 	if err != nil {
 		log.Fatalln(err)
@@ -93,11 +99,13 @@ func main() {
 		log.Printf("Auth SAM resp: [% X]", resp)
 	}
 
-	/**
+	/**/
 	cardp, err := reader.ConnectCardPCSC()
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	log.Println("1")
 
 	cardo := mifare.Mplus(cardp)
 	// cardm := mifareplus.NewCard(cardo, sam)
@@ -107,24 +115,37 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Printf("ATR: [% X], %s", atr, atr)
-	respuid, err := cardo.UID()
+	cuid, err := cardo.UID()
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("UID: [% X]", respuid)
+	log.Printf("UID: [% X]", cuid)
 
-	uid := make([]byte, len(respuid[:len(respuid)-2]))
-	copy(uid, respuid)
-
-	div := make([]byte, 0)
-	div = append(div, 0x01)
-	div = append(div, uid...)
-
-	for i := 0; i < len(uid); i++ {
-		div = append(div, uid[len(uid)-1-i])
+	keyAuth, _ := hex.DecodeString("4F8DF779A7809E97F362C5C376176CD7")
+	sam, err := samav3.ConnectSam(readerSAM)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	log.Printf("==== dataDiv: [% X]", div)
+	respAuth, err := sam.AuthHostAV2(keyAuth, 100, 0, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("UID: [% X]", respAuth)
+
+	bytesUid := make([]byte, len(cuid))
+	copy(bytesUid, cuid)
+
+	divData := make([]byte, 0)
+	divData = append(divData, 0x01)
+
+	divData = append(divData, bytesUid...)
+	for i := 0; i < len(bytesUid); i++ {
+		divData = append(divData, bytesUid[len(bytesUid)-1-i])
+		// divData = append(divData, 0x00)
+	}
+
+	log.Printf("==== dataDiv: [% X]", divData)
 
 	/**
 	keyDiv, err := sam.DumpSecretKey(102, 0, div)
@@ -133,16 +154,18 @@ func main() {
 	}
 	log.Printf("keyDiv: [% #X]", keyDiv)
 
-	/**
+	/**/
 
-	for _, i := range []int{1, 2, 3, 4, 5, 6, 7} {
-		resp, err := cardo.FirstAuthf1(0x4000 + 2*i + 1)
+	// for _, i := range []int{1, 2, 3, 4, 5, 6, 7} {
+	for _, i := range []int{2} {
+		// resp, err := cardo.FirstAuthf1(0x4000 + 2*i + 1)
+		resp, err := cardo.FirstAuthf1(0x4000 + 2*i + 0)
 		if err != nil {
 			log.Fatalf("Error: %s\n", err)
 		}
 		log.Printf("Auth f1: %X\n", resp)
 
-		apdu1, err := sam.NonXauthMFPf1(true, 3, 11, 0x00, resp, div)
+		apdu1, err := sam.NonXauthMFPf1(true, 3, 9, 0x00, resp, nil)
 		if err != nil {
 			log.Fatalf("Error: %s\n", err)
 		}
@@ -171,14 +194,14 @@ func main() {
 	}
 	log.Printf("keyDiv: [% #X]", keyDiv)
 
-	/**
-	if _, err := sam.ActivateOfflineKey(101, 0, div); err != nil {
+	/**/
+	if _, err := sam.ActivateOfflineKey(27, 0, divData); err != nil {
 		log.Fatalln(err)
 	}
 
 	payload := make([]byte, 0)
 	payload = append(payload, 0x01)
-	payload = append(payload, div...)
+	payload = append(payload, divData...)
 	// payload = append(payload, 0x80)
 	// payload[len(payload)-1] |= 0x40
 	// payload = append(payload, make([]byte, 32-len(payload))...)

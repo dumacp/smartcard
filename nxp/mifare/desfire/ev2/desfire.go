@@ -87,3 +87,7 @@ func VerifyResponse(resp []byte) error {
 	}
 	return fmt.Errorf("error in response:, code error: %X, response: [% X]", resp[0], resp)
 }
+
+func (d *Desfire) GetModeEV() EVmode {
+	return d.evMode
+}

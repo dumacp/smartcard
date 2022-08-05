@@ -12,7 +12,7 @@ import (
 
 var keyS string
 
-// var keyNbr int
+//var keyNbr int
 
 func init() {
 	flag.StringVar(&keyS, "key", "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", "key aes128")
