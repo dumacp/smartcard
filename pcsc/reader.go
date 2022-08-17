@@ -118,6 +118,8 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	if err != nil {
 		if errors.Is(err, scard.ErrNoSmartcard) {
 			return nil, smartcard.ErrNoSmartcard
+		} else if errors.Is(err, scard.ErrRemovedCard) {
+			return nil, smartcard.ErrNoSmartcard
 		} else {
 			return nil, fmt.Errorf("connect card err = %s, %w", err, smartcard.ErrComm)
 		}
