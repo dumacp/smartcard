@@ -2,7 +2,6 @@ package ev2
 
 import (
 	"errors"
-	"log"
 )
 
 // ChangeKey depensing on the currently selectd AID, this command
@@ -43,7 +42,7 @@ func (d *Desfire) ChangeKey(keyNo, keyVersion int,
 		if err != nil {
 			return err
 		}
-		log.Printf("cryptograma: [% X], len: %d", cryptograma, len(cryptograma))
+		// log.Printf("cryptograma: [% X], len: %d", cryptograma, len(cryptograma))
 		d.iv = cryptograma[len(cryptograma)-d.block.BlockSize()-1:]
 	default:
 		return errors.New("only EV1 and Ev2 support")
