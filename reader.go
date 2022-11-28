@@ -4,7 +4,7 @@ package to handle the communication of smartcard devices under the PCSC implemen
 projects on which it is based:
 
 	https://github.com/LudovicRousseau/PCSC
-	github.com/ebfe/scard
+	https://github.com/ebfe/scard
 
 /**/
 package smartcard
@@ -12,4 +12,5 @@ package smartcard
 //IReader Interface to Reader device
 type IReader interface {
 	ConnectCard() (ICard, error)
+	ConnectSamCard() (ICard, error)
 }

@@ -10,9 +10,6 @@ projects on which it is based:
 package multiiso
 
 import (
-	"errors"
-	"fmt"
-
 	"github.com/dumacp/smartcard"
 )
 
@@ -30,11 +27,21 @@ const (
 	DISCONNECTED
 )
 
+type SendMode int
+
+const (
+	APDU1443_4      SendMode = 0
+	T1TransactionV2 SendMode = 1
+	// T0TransactionV2 SendMode = 2
+)
+
 type card struct {
 	uuid []byte
 	ats  []byte
+	sak  byte
 	State
-	reader Reader
+	reader   Reader
+	modeSend SendMode
 }
 
 func (c *card) DisconnectCard() error {
@@ -45,15 +52,28 @@ func (c *card) DisconnectCard() error {
 //Primitive channel to send command
 func (c *card) Apdu(apdu []byte) ([]byte, error) {
 	if c.State != CONNECTED {
-		return nil, fmt.Errorf("Don't Connect to Card")
+		return nil, smartcard.Error(smartcard.ErrComm)
 	}
-	return c.reader.TransmitBinary([]byte{}, apdu)
+	switch c.modeSend {
+	case APDU1443_4:
+		return c.reader.SendAPDU1443_4(apdu)
+	case T1TransactionV2:
+		return c.reader.T1TransactionV2(apdu)
+		// case T0TransactionV2:
+		// 	return c.reader.T0TransactionV2(apdu)
+	}
+	response, err := c.reader.TransmitBinary([]byte{}, apdu)
+	if err != nil {
+		return response, err
+	}
+	return response[:], nil
+
 }
 
 //Get ATR of Card
 func (c *card) ATR() ([]byte, error) {
 	if c.State != CONNECTED {
-		return nil, errors.New("Don't Connect to Card")
+		return nil, smartcard.Error(smartcard.ErrComm)
 	}
 	return nil, nil
 }
@@ -72,6 +92,7 @@ func (c *card) ATS() ([]byte, error) {
 
 func (c *card) Switch1444_4() ([]byte, error) {
 	//apdu := []byte{0xff, 0xc2, 0x00, 0x02, 0x04, 0x8F, 0x02, 0x00, 0x04}
+
 	return nil, nil
 }
 

@@ -4,12 +4,15 @@ package to handle the communication of smartcard devices under the PCSC implemen
 projects on which it is based:
 
 	https://github.com/LudovicRousseau/PCSC
-	github.com/ebfe/scard
+	https://github.com/ebfe/scard
 
 /**/
 package pcsc
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/dumacp/smartcard"
 	"github.com/ebfe/scard"
 )
@@ -23,6 +26,7 @@ type Reader interface {
 	smartcard.IReader
 	ConnectDirect() (Card, error)
 	ConnectCardPCSC() (Card, error)
+	ConnectCardPCSC_T0() (Card, error)
 }
 
 type reader struct {
@@ -34,7 +38,7 @@ type reader struct {
 func NewContext() (*Context, error) {
 	ctx, err := scard.EstablishContext()
 	if err != nil {
-		return nil, err
+		return nil, smartcard.Error(err)
 	}
 	context := &Context{ctx}
 	return context, nil
@@ -42,7 +46,11 @@ func NewContext() (*Context, error) {
 
 //List Readers in a Context
 func ListReaders(ctx *Context) ([]string, error) {
-	return ctx.ListReaders()
+	rs, err := ctx.ListReaders()
+	if err != nil {
+		return nil, smartcard.Error(err)
+	}
+	return rs, nil
 }
 
 //Create New Reader interface
@@ -65,10 +73,31 @@ func newReader(ctx *Context, readerName string) *reader {
 //ConnectCardPCSC Create New Card interface
 func (r *reader) ConnectCardPCSC() (Card, error) {
 	if ok, err := r.Context.IsValid(); err != nil && !ok {
-		return nil, err
+		return nil, fmt.Errorf("context err = %w, %w", err, smartcard.ErrComm)
 	}
 
 	c, err := r.Context.Connect(r.ReaderName, scard.ShareExclusive, scard.ProtocolT1)
+	if err != nil {
+		if errors.Is(err, scard.ErrNoSmartcard) {
+			return nil, smartcard.ErrNoSmartcard
+		} else {
+			return nil, fmt.Errorf("connect card err = %s, %w", err, smartcard.ErrComm)
+		}
+	}
+	cardS := &card{
+		CONNECTED,
+		c,
+	}
+	return cardS, nil
+}
+
+//ConnectCardPCSCT0 Create New Card interface
+func (r *reader) ConnectCardPCSC_T0() (Card, error) {
+	if ok, err := r.Context.IsValid(); err != nil && !ok {
+		return nil, fmt.Errorf("context err = %s, %w", err, smartcard.ErrComm)
+	}
+
+	c, err := r.Context.Connect(r.ReaderName, scard.ShareExclusive, scard.ProtocolT0)
 	if err != nil {
 		return nil, err
 	}
@@ -82,12 +111,18 @@ func (r *reader) ConnectCardPCSC() (Card, error) {
 //Create New Card interface
 func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	if ok, err := r.Context.IsValid(); err != nil && !ok {
-		return nil, err
+		return nil, fmt.Errorf("context err = %s, %w", err, smartcard.ErrComm)
 	}
 
 	c, err := r.Context.Connect(r.ReaderName, scard.ShareExclusive, scard.ProtocolT1)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, scard.ErrNoSmartcard) {
+			return nil, smartcard.ErrNoSmartcard
+		} else if errors.Is(err, scard.ErrRemovedCard) {
+			return nil, smartcard.ErrNoSmartcard
+		} else {
+			return nil, fmt.Errorf("connect card err = %s, %w", err, smartcard.ErrComm)
+		}
 	}
 	cardS := &card{
 		CONNECTED,
@@ -96,9 +131,14 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	return cardS, nil
 }
 
+//Create New Card interface
+func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
+	return r.ConnectCardPCSC()
+}
+
 func (r *reader) connectCard() (*card, error) {
 	if ok, err := r.Context.IsValid(); err != nil && !ok {
-		return nil, err
+		return nil, fmt.Errorf("context err = %w, %w", err, smartcard.ErrComm)
 	}
 
 	c, err := r.Context.Connect(r.ReaderName, scard.ShareExclusive, scard.ProtocolT1)
@@ -114,7 +154,7 @@ func (r *reader) connectCard() (*card, error) {
 
 func (r *reader) ConnectDirect() (Card, error) {
 	if ok, err := r.Context.IsValid(); err != nil && !ok {
-		return nil, err
+		return nil, fmt.Errorf("context err = %w, %w", err, smartcard.ErrComm)
 	}
 
 	c, err := r.Context.Connect(r.ReaderName, scard.ShareDirect, scard.ProtocolUndefined)
@@ -130,5 +170,6 @@ func (r *reader) ConnectDirect() (Card, error) {
 
 //Release Context in pcscd
 func (c *Context) Release() error {
-	return c.Context.Release()
+	err := c.Context.Release()
+	return err
 }

@@ -10,14 +10,19 @@ import (
 	"time"
 
 	"github.com/dumacp/smartcard/nxp/mifare"
+	"github.com/dumacp/smartcard/nxp/mifare/samav2"
 	"github.com/dumacp/smartcard/pcsc"
 )
 
-type SamDevice mifare.SamAv2
+type SamDevice samav2.SamAv2
 
 type Context struct {
 	*pcsc.Context
 }
+
+var (
+	regexReader = []string{"SAM", "00 00"}
+)
 
 func NewContext() (*Context, error) {
 	ctx, err := pcsc.NewContext()
@@ -36,27 +41,36 @@ func GetSamDevices(ctx *Context) (map[uint64]SamDevice, error) {
 
 	samReaders := make(map[uint64]SamDevice)
 	for _, r := range readers {
-		if strings.Contains(strings.ToUpper(r), "SAM") {
-			reader := pcsc.NewReader(ctx.Context, r)
-			sam, err := mifare.ConnectSamAv2(reader)
-			if err != nil {
-				//log.Println(err)
-				continue
+		for _, regx := range regexReader {
+			if strings.Contains(strings.ToUpper(r), regx) {
+				reader := pcsc.NewReader(ctx.Context, r)
+
+				sam, err := samav2.ConnectSamAv2(reader)
+				if err != nil {
+					log.Println(err)
+					break
+				}
+				atr, _ := sam.ATR()
+				log.Printf("sam ATR: %q", atr)
+
+				samVersion, err := sam.GetVersion()
+				log.Printf("sam Version: [% X]", samVersion)
+				if err != nil || len(samVersion) < 20 {
+					break
+				}
+
+				serialBytes := []byte{0, 0}
+				serialBytes = append(serialBytes, samVersion[14:20]...)
+				serial := binary.BigEndian.Uint64(serialBytes)
+				samReaders[serial] = sam
+				break
 			}
-			samVersion, err := sam.GetVersion()
-			if err != nil || len(samVersion) < 20 {
-				continue
-			}
-			serialBytes := []byte{0, 0}
-			serialBytes = append(serialBytes, samVersion[14:20]...)
-			serial := binary.BigEndian.Uint64(serialBytes)
-			samReaders[serial] = sam
 		}
 	}
 	return samReaders, nil
 }
 
-func ReaderChannel(sam mifare.SamAv2, input, output chan []byte) {
+func ReaderChannel(sam samav2.SamAv2, input, output chan []byte) {
 	//	log.Printf("readerChannel: in => %v, out => %v\n", input, output)
 	defer func() {
 		close(output)
@@ -144,7 +158,7 @@ func ReaderChannel(sam mifare.SamAv2, input, output chan []byte) {
 				}
 			case <-time.After(time.Millisecond * time.Duration(timeout)):
 				//				log.Println("channel free!!!")
-				sam.Apdu(mifare.ApduSamKillAuthPICC())
+				sam.Apdu(samav2.ApduSamKillAuthPICC())
 				continue
 			}
 		}

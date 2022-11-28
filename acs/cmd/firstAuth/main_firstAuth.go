@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/dumacp/smartcard/nxp/mifare"
+	"github.com/dumacp/smartcard/nxp/mifare/samav2"
 	"github.com/dumacp/smartcard/pcsc"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
@@ -113,9 +114,10 @@ func main() {
 			log.Fatalf("Error: %s\n", err)
 		}
 		log.Printf("Auth f1: %X\n", resp)
-		dataDiv := make([]byte, 4)
-		dataDiv = append(dataDiv, uid[0:4]...)
-		apdu1 := mifare.ApduNonXauthMFPf1(true, 3, 0x02, 0x00, resp, dataDiv)
+		// dataDiv := make([]byte, 4)
+		// dataDiv = append(dataDiv, uid[0:4]...)
+		var dataDiv []byte
+		apdu1 := samav2.ApduNonXauthMFPf1(true, 3, 11, 0x00, resp, dataDiv)
 		log.Printf("SEND TOPIC: %s\n", fmt.Sprintf("SAMFARM/ASYN/123/%X", uid[0:4]))
 		token := c.Publish(fmt.Sprintf("SAMFARM/ASYN/123/%X", uid[0:4]), 0, false, apdu1)
 		token.Wait()
@@ -129,7 +131,7 @@ func main() {
 			log.Fatalf("Error: %s\n", err)
 		}
 		log.Printf("FirstAuth Resp: %X\n", resp2)
-		apdu2 := mifare.ApduNonXauthMFPf2(resp2)
+		apdu2 := samav2.ApduNonXauthMFPf2(resp2)
 		log.Printf("SEND TOPIC: %s\n", fmt.Sprintf("SAMFARM/SYN/%X/123", respSam12.channel))
 		token = c.Publish(fmt.Sprintf("SAMFARM/SYN/%X/123", respSam12.channel), 0, false, apdu2)
 		token.Wait()

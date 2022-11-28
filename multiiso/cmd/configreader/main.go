@@ -37,7 +37,7 @@ func main() {
 	}
 
 	if !strings.Contains(string(resp1), "ISO") {
-		log.Fatalln("already conf reader")
+		log.Println("already conf reader")
 	}
 
 	resp2, err := reader.GetRegister(0x0B)
@@ -51,8 +51,16 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	resp2, err = reader.GetRegister(0x1B)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	fmt.Printf("0x1B: [% X]\n", resp2)
+	err = reader.SetRegister(0x1B, []byte{0x80})
+
 	fmt.Printf("0x0C: [% X]\n", resp2)
-	err = reader.SetRegister(0x0C, []byte{0x06})
+	err = reader.SetRegister(0x0C, []byte{0x04})
 
 	resp2, err = reader.GetRegister(0x11)
 	if err != nil {
