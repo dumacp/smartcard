@@ -1,11 +1,13 @@
-/**
+/*
+*
 package to handle the communication of "omnikey/multi-iso" reader
 
 projects on which it is based:
 
 	https://github.com/dumacp/smartcard
 
-/**/
+/*
+*/
 package multiiso
 
 import (
@@ -18,7 +20,7 @@ import (
 	"github.com/dumacp/smartcard/nxp/mifare"
 )
 
-//Reader implement IReader interface
+// Reader implement IReader interface
 type Reader interface {
 	smartcard.IReader
 	mifare.IReaderClassic
@@ -103,7 +105,7 @@ type reader struct {
 	blocknumber byte
 }
 
-//NewReader Create New Reader interface
+// NewReader Create New Reader interface
 func NewReader(dev *Device, readerName string, idx int) Reader {
 	r := &reader{
 		device:     dev,
@@ -125,7 +127,7 @@ func checksum(data []byte) byte {
 
 type transmitfunc func([]byte, []byte) ([]byte, error)
 
-//SetModeProtocol set mode protocol to communication (0: binary, 1: ascii)
+// SetModeProtocol set mode protocol to communication (0: binary, 1: ascii)
 func (r *reader) SetModeProtocol(mode int) {
 	if mode == BinaryMode {
 		r.transmit = r.TransmitBinary
@@ -142,12 +144,12 @@ func (r *reader) SetModeProtocol(mode int) {
 // 	r.transmitProto = transmitProto
 // }
 
-//Transmit send data byte to reader in actual mode
+// Transmit send data byte to reader in actual mode
 func (r *reader) Transmit(cmd, data []byte) ([]byte, error) {
 	return r.transmit(cmd, data)
 }
 
-//TransmitAscii send in ascii protocol mode
+// TransmitAscii send in ascii protocol mode
 func (r *reader) TransmitAscii(cmd, data []byte) ([]byte, error) {
 	apdu := make([]byte, 0)
 	apdu = append(apdu, cmd...)
@@ -164,7 +166,7 @@ func (r *reader) TransmitAscii(cmd, data []byte) ([]byte, error) {
 	return resp1, nil
 }
 
-//TransmitBinary send in binary protocol mode
+// TransmitBinary send in binary protocol mode
 func (r *reader) TransmitBinary(cmd, data []byte) ([]byte, error) {
 	apdu := make([]byte, 0)
 	apdu = append(apdu, 0x02)
@@ -204,7 +206,7 @@ func verifyresponse(data []byte) error {
 	return nil
 }
 
-//SendDataFrameTransfer send in format Data Frame Transfer
+// SendDataFrameTransfer send in format Data Frame Transfer
 func (r *reader) SendDataFrameTransfer(data []byte) ([]byte, error) {
 	cmd := make([]byte, 0)
 	cmd = append(cmd, []byte(datatransfer)...)
@@ -217,7 +219,7 @@ func (r *reader) SendDataFrameTransfer(data []byte) ([]byte, error) {
 	return resp1, nil
 }
 
-//SendAPDU1443_4 send in format Data Frame Transfer
+// SendAPDU1443_4 send in format Data Frame Transfer
 func (r *reader) SendAPDU1443_4(data []byte) ([]byte, error) {
 	cmd := make([]byte, 0)
 	cmd = append(cmd, byte(len(data)+1))
@@ -253,7 +255,7 @@ func (r *reader) SendAPDU1443_4(data []byte) ([]byte, error) {
 	return response[2:], nil
 }
 
-//SendSAMDataFrameTransfer send APDU to SAM device in special socket ("e" command)
+// SendSAMDataFrameTransfer send APDU to SAM device in special socket ("e" command)
 func (r *reader) SendSAMDataFrameTransfer(data []byte) ([]byte, error) {
 	innerData := make([]byte, 0)
 
@@ -278,7 +280,7 @@ func (r *reader) SendSAMDataFrameTransfer(data []byte) ([]byte, error) {
 	return response[3:], nil
 }
 
-//T1TransactionV2 function to send wrapped frames T1 to SAM device through "e" command
+// T1TransactionV2 function to send wrapped frames T1 to SAM device through "e" command
 func (r *reader) T1TransactionV2(data []byte) ([]byte, error) {
 	trama := make([]byte, 0)
 
@@ -295,7 +297,7 @@ func (r *reader) T1TransactionV2(data []byte) ([]byte, error) {
 
 }
 
-//GetRegister send in format Data Frame Transfer
+// GetRegister send in format Data Frame Transfer
 func (r *reader) GetRegister(register byte) ([]byte, error) {
 	cmd := []byte(readEEPROMregister)
 	apdu := make([]byte, 0)
@@ -304,7 +306,7 @@ func (r *reader) GetRegister(register byte) ([]byte, error) {
 	return r.transmit(cmd, apdu)
 }
 
-//SetRegister send in format Data Frame Transfer
+// SetRegister send in format Data Frame Transfer
 func (r *reader) SetRegister(register byte, data []byte) error {
 	cmd := []byte(writeEEPROMregister)
 	apdu := make([]byte, 0)
@@ -318,7 +320,7 @@ func (r *reader) SetRegister(register byte, data []byte) error {
 	return nil
 }
 
-//Create New Card interface
+// Create New Card interface
 func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	if !r.device.Ok {
 		return nil, fmt.Errorf("serial device is not ready, %w", smartcard.ErrComm)
@@ -407,7 +409,7 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	return card, nil
 }
 
-//Create New Card interface
+// Create New Card interface
 func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
 	if !r.device.Ok {
 		return nil, fmt.Errorf("serial device is not ready, %w", smartcard.ErrComm)

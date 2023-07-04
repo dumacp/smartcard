@@ -59,6 +59,7 @@ func (dev *Device) Close() bool {
 func (dev *Device) read(contxt context.Context, waitResponse bool) ([]byte, error) {
 
 	countError := 0
+	lastEvent := time.Now()
 	//TODO timeoutRead?
 	funcerr := func(err error) error {
 		if err == nil {
@@ -71,10 +72,14 @@ func (dev *Device) read(contxt context.Context, waitResponse bool) ([]byte, erro
 		case errors.Is(err, io.ErrClosedPipe):
 			return err
 		case errors.Is(err, io.EOF):
-			if countError > 3 {
-				return err
+			if time.Since(lastEvent) < 10*time.Microsecond {
+				if countError > 3 {
+					return err
+				}
+				countError++
 			}
-			countError++
+
+			lastEvent = time.Now()
 		}
 
 		return nil
@@ -84,6 +89,7 @@ func (dev *Device) read(contxt context.Context, waitResponse bool) ([]byte, erro
 	//TODO: limit to read
 	bb := make([]byte, 0)
 	indxb := 0
+	lendata := uint32(0)
 	for {
 
 		select {
@@ -92,7 +98,6 @@ func (dev *Device) read(contxt context.Context, waitResponse bool) ([]byte, erro
 		default:
 		}
 		tempb := make([]byte, 2048)
-		lendata := uint32(0)
 
 		// fmt.Println("execute read")
 
@@ -204,6 +209,7 @@ func (dev *Device) read(contxt context.Context, waitResponse bool) ([]byte, erro
 		// }
 		dest := make([]byte, len(b))
 		copy(dest, b[:])
+		fmt.Printf("recv data: %v, [% X]\n", len(b), b[:])
 		return dest, nil
 
 	}
@@ -228,7 +234,7 @@ func (dev *Device) SendRecv(data []byte, timeout time.Duration) ([]byte, error) 
 	buff := make([]byte, 0)
 	buff = append(buff, data[:]...)
 
-	// fmt.Printf("data send: [% X]\n", data)
+	fmt.Printf("data send: [% X]\n", data)
 	if n, err := dev.port.Write(buff); err != nil {
 		return nil, fmt.Errorf("dont write in SendRecv command err: %s, %w", err, smartcard.ErrComm)
 	} else if n <= 0 {

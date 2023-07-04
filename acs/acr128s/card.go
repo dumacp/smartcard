@@ -27,7 +27,7 @@ func (c *Card) UID() ([]byte, error) {
 }
 
 func (c *Card) ATS() ([]byte, error) {
-	resp, err := c.reader.Transmit([]byte{0x00, 0xCA, 1, 0, 0})
+	resp, err := c.reader.Transmit([]byte{0xFF, 0xCA, 1, 0, 0})
 	if err != nil {
 		return nil, err
 	}
