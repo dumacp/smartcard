@@ -30,6 +30,7 @@ var rf_power = []byte{0x2A}
 var request = []byte{'@'}
 var anticoll = []byte{'A'}
 var rats = []byte{'C'}
+var resetSam = []byte{'R'}
 var sendTypeA = []byte{'A'}
 
 func buildFrame(header, data []byte) []byte {
@@ -47,13 +48,13 @@ func buildFrame(header, data []byte) []byte {
 	return frame
 }
 
-func ReadVersion() []byte {
+func BuildFrame_ReadVersion() []byte {
 	return buildFrame(read_version, nil)
 }
 func SetBaudrate(baudrate BaudType) []byte {
 	return buildFrame(baud_rate, []byte{byte(baudrate)})
 }
-func RFPower(on bool) []byte {
+func BuildFrame_RFPower(on bool) []byte {
 	return buildFrame(rf_power, func(on bool) []byte {
 		if on {
 			return []byte{0x01}
@@ -62,8 +63,24 @@ func RFPower(on bool) []byte {
 	}(on))
 }
 
-func SendTypeA(apdu []byte) []byte {
+func BuildFrame_SendTypeA(apdu []byte) []byte {
 	return buildFrame(sendTypeA, apdu)
+}
+
+func BuildFrame_Anticoll() []byte {
+	return buildFrame(anticoll, nil)
+}
+
+func BuildFrame_Request() []byte {
+	return buildFrame(request, nil)
+}
+
+func BuildFrame_RATS() []byte {
+	return buildFrame(rats, nil)
+}
+
+func BuildFrame_ResetSAM() []byte {
+	return buildFrame(resetSam, nil)
 }
 
 func VerifyReponse(frame []byte) ([]byte, error) {
