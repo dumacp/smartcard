@@ -30,6 +30,7 @@ var rf_power = []byte{0x2A}
 var request = []byte{'@'}
 var anticoll = []byte{'A'}
 var rats = []byte{'C'}
+var sendTypeA = []byte{'A'}
 
 func buildFrame(header, data []byte) []byte {
 
@@ -61,99 +62,30 @@ func RFPower(on bool) []byte {
 	}(on))
 }
 
-func VerifyStatusReponse(statusFrame []byte) error {
+func SendTypeA(apdu []byte) []byte {
+	return buildFrame(sendTypeA, apdu)
+}
 
-	if len(statusFrame) < 4 {
-		return fmt.Errorf("length status is wrong, frame: [% X]", statusFrame)
+func VerifyReponse(frame []byte) ([]byte, error) {
+
+	if len(frame) < 5 {
+		return nil, fmt.Errorf("length status is wrong, frame: [% X]", frame)
 	}
-	if statusFrame[0] != 0x02 || statusFrame[len(statusFrame)-1] != 0x03 {
-		return fmt.Errorf("bad status frame: [% X]", statusFrame)
+	if frame[0] != 0x02 {
+		return nil, fmt.Errorf("bad frame: [% X]", frame)
 	}
-	if statusFrame[2] != statusFrame[1] {
-		return fmt.Errorf("bad status chacksum frame: [% X]", statusFrame)
+	if frame[len(frame)-1] != Checksum(frame[1:len(frame)-1]) {
+		return nil, fmt.Errorf("bad chacksum frame: [% X]", frame)
 	}
 
 	switch {
-	case statusFrame[1] == 0x00 && statusFrame[2] == 0x00:
-		return nil
-	case statusFrame[1] == 0xFF && statusFrame[2] == 0xFF:
-		return fmt.Errorf("checksum error frame: [% X]", statusFrame)
-	case statusFrame[1] == 0xFE && statusFrame[2] == 0xFE:
-		return fmt.Errorf("length error frame: [% X]", statusFrame)
-	case statusFrame[1] == 0xFD && statusFrame[2] == 0xFD:
-		return fmt.Errorf("ETX error frame: [% X]", statusFrame)
-	case statusFrame[1] == 0x99 && statusFrame[2] == 0x99:
-		return fmt.Errorf("timeout error frame: [% X]", statusFrame)
-	}
-
-	return fmt.Errorf("unkown error frame: [% X]", statusFrame)
-}
-
-func GetResponse__RDR_to_PC_DataBlock(frame []byte) ([]byte, error) {
-
-	if len(frame) < 13 {
-		return nil, fmt.Errorf("wrong len frame: [% X]", frame)
-	}
-	if frame[0] != 0x02 && frame[len(frame)-1] != 0x3 {
-		return nil, fmt.Errorf("bad RDR_to_PC_DataBlock frame: [% X]", frame)
-	}
-	if Checksum(frame[1:len(frame)-2]) != frame[len(frame)-2] {
-		return nil, fmt.Errorf("checksum error frame: [% X]", frame)
-	}
-
-	if len(frame) <= 13 {
+	case frame[2] == 0x01 && frame[3] == 0x00:
 		return nil, nil
+	case frame[2] > 0x01 && len(frame[3:len(frame)-1]) == int(frame[2]):
+		response := make([]byte, 0)
+		response = append(response, frame[3:len(frame)-1]...)
+		return response, nil
 	}
 
-	dest := make([]byte, len(frame)-13)
-
-	copy(dest, frame[11:len(frame)-2])
-
-	return dest, nil
-}
-
-func GetResponse__RDR_to_PC_Escape(frame []byte) ([]byte, error) {
-
-	if len(frame) < 13 {
-		return nil, fmt.Errorf("wrong len frame: [% X]", frame)
-	}
-	if frame[0] != 0x02 && frame[len(frame)-1] != 0x3 {
-		return nil, fmt.Errorf("bad RDR_to_PC_Escape frame: [% X]", frame)
-	}
-	if Checksum(frame[1:len(frame)-2]) != frame[len(frame)-2] {
-		return nil, fmt.Errorf("checksum error frame: [% X]", frame)
-	}
-
-	if len(frame) <= 13 {
-		return nil, nil
-	}
-
-	dest := make([]byte, len(frame)-13)
-
-	copy(dest, frame[11:len(frame)-2])
-
-	return dest, nil
-}
-
-func GetResponse__RDR_to_PC_SlotStatus(frame []byte) ([]byte, error) {
-
-	if len(frame) < 13 {
-		return nil, fmt.Errorf("wrong len frame: [% X]", frame)
-	}
-	if frame[0] != 0x02 && frame[len(frame)-1] != 0x3 {
-		return nil, fmt.Errorf("bad RDR_to_PC_SlotStatus frame: [% X]", frame)
-	}
-	if Checksum(frame[1:len(frame)-2]) != frame[len(frame)-2] {
-		return nil, fmt.Errorf("checksum error frame: [% X]", frame)
-	}
-
-	if len(frame) <= 13 {
-		return nil, nil
-	}
-
-	dest := make([]byte, len(frame)-13)
-
-	copy(dest, frame[11:len(frame)-2])
-
-	return dest, nil
+	return nil, fmt.Errorf("unkown error frame: [% X]", frame)
 }
