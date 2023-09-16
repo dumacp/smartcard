@@ -5,14 +5,14 @@ import (
 	"github.com/dumacp/smartcard/nxp/mifare"
 )
 
-//commands
+// commands
 const (
 	authentication string = "l"
 	readblock      string = "rb"
 	writeblock     string = "wb"
 )
 
-//response
+// response
 const (
 	Loginsucess          byte = 'L'
 	Authenticationfailed byte = 'X'
@@ -37,7 +37,7 @@ func NewMifareClassicReader(dev *Device, readerName string, idx int) Reader {
 	return r
 }
 
-//MifareClassic Create Mifare Plus Interface
+// MifareClassic Create Mifare Plus Interface
 func MifareClassic(c smartcard.ICard) (mifare.Classic, error) {
 
 	mc := &mifareClassic{
@@ -46,7 +46,7 @@ func MifareClassic(c smartcard.ICard) (mifare.Classic, error) {
 	return mc, nil
 }
 
-//NewMClassic Create Mifare Plus Interface
+// NewMClassic Create Mifare Plus Interface
 func (r *reader) ConnectMifareClassic() (mifare.Classic, error) {
 
 	// c, err := r.ConnectCard()
@@ -59,7 +59,17 @@ func (r *reader) ConnectMifareClassic() (mifare.Classic, error) {
 	return nil, nil
 }
 
-/**/
+func (mc *mifareClassic) Inc(bNr int, data []byte) error {
+	panic("not implemented") // TODO: Implement
+}
+
+func (mc *mifareClassic) Dec(bNr int, data []byte) error {
+	panic("not implemented") // TODO: Implement
+}
+
+func (mc *mifareClassic) Copy(bNr int, dstBnr int) error {
+	panic("not implemented") // TODO: Implement
+}
 
 func (mc *mifareClassic) Auth(bNr, keyType int, key []byte) ([]byte, error) {
 	// fmt.Printf("reader: %s\n", mc.reader)

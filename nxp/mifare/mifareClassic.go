@@ -4,12 +4,15 @@ import (
 	"github.com/dumacp/smartcard"
 )
 
-//Classic Mifare Plus Interface
+// Classic Mifare Plus Interface
 type Classic interface {
 	smartcard.ICard
 	Auth(bNr, keyType int, key []byte) ([]byte, error)
 	ReadBlocks(bNr, ext int) ([]byte, error)
 	WriteBlock(bNr int, data []byte) ([]byte, error)
+	Inc(bNr int, data []byte) error
+	Dec(bNr int, data []byte) error
+	Copy(bNr, dstBnr int) error
 }
 
 type IReaderClassic interface {
@@ -18,7 +21,7 @@ type IReaderClassic interface {
 
 type classic struct{}
 
-//ConnectMclassic Create Mifare Plus Interface
+// ConnectMclassic Create Mifare Plus Interface
 func ConnectMclassic(r IReaderClassic) (Classic, error) {
 
 	c, err := r.ConnectMifareClassic()

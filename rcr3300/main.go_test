@@ -1,0 +1,293 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/tarm/serial"
+)
+
+func main() {
+
+	c := &serial.Config{
+		Name: "/dev/ttyUSB0",
+		// Baud: 9600,
+		Baud:        115200,
+		ReadTimeout: 1000 * time.Millisecond,
+	}
+
+	s, err := serial.OpenPort(c)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	data := []byte{0x02, 0x00, 0x01, 0x21}
+
+	data = append(data, checksum(data[1:]))
+
+	nw, err := s.Write(data)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	fmt.Printf("write n: %d, % X\n", nw, data)
+
+	buff := make([]byte, 1024)
+	nr := 0
+	for nr <= 0 {
+		nr, err = s.Read(buff)
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}
+
+	fmt.Printf("read version response: % X, %q\n", buff[:nr], buff[:nr])
+
+	// // Set baudRate
+
+	// data = []byte{0x02, 0x00, 0x02, '#', 0x04}
+
+	// data = append(data, checksum(data[1:]))
+
+	// nw, err = s.Write(data)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+	// fmt.Printf("write n: %d\n", nw)
+
+	// buff = make([]byte, 1024)
+	// nr, err = s.Read(buff)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+	// fmt.Printf("set BaudRate response: % X, %q\n", buff[:nr], buff[:nr])
+
+	// SET RF on
+	data = []byte{0x02, 0x00, 0x02, 0x2A, 0x01}
+
+	data = append(data, checksum(data[1:]))
+
+	nw, err = s.Write(data)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	fmt.Printf("write n: %d, % X\n", nw, data)
+
+	buff = make([]byte, 1024)
+	nr, err = s.Read(buff)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	fmt.Printf("RF on response: % X, %q\n", buff[:nr], buff[:nr])
+
+	// Request
+
+	data = []byte{0x02, 0x00, 0x01, '@'}
+
+	data = append(data, checksum(data[1:]))
+
+	nw, err = s.Write(data)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	fmt.Printf("write n: %d, % X\n", nw, data)
+
+	nr, err = s.Read(buff)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	fmt.Printf("read Request response: % X, %q\n", buff[:nr], buff[:nr])
+
+	// Anticoll
+	data = []byte{0x02, 0x00, 0x01, 'A'}
+
+	data = append(data, checksum(data[1:]))
+
+	nw, err = s.Write(data)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	fmt.Printf("write n: %d, % X\n", nw, data)
+
+	nr, err = s.Read(buff)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	fmt.Printf("read Anticoll response: % X, %q\n", buff[:nr], buff[:nr])
+
+	// RATS
+	data = []byte{0x02, 0x00, 0x01, 'C'}
+
+	data = append(data, checksum(data[1:]))
+
+	nw, err = s.Write(data)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	fmt.Printf("write n: %d, % X\n", nw, data)
+
+	nr, err = s.Read(buff)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	fmt.Printf("read RATS response: % X, %q\n", buff[:nr], buff[:nr])
+
+	// // if nr <= 0 || buff[3] != 0x00 {
+	// // 	log.Fatalf("error response: % X", buff[:nr])
+	// // }
+
+	// // uid := make([]byte, buff[2]-1)
+
+	// // copy(uid, buff[4:nr])
+
+	// // fmt.Printf("UID card: % X\n", uid)
+
+	// // // Select
+
+	// // apdu := []byte{0x33, 0x93}
+	// // apdu = append(apdu, uid...)
+	// // data = []byte{0x02, 0x00, byte(len(apdu))}
+	// // data = append(data, apdu...)
+
+	// // data = append(data, checksum(data[1:]))
+
+	// // nw, err = s.Write(data)
+	// // if err != nil {
+	// // 	log.Fatalln(err)
+	// // }
+
+	// // fmt.Printf("write n: %d, data: %X\n", nw, data)
+
+	// // nr, err = s.Read(buff)
+	// // if err != nil {
+	// // 	log.Fatalln(err)
+	// // }
+
+	// // fmt.Printf("read Select response: % X, %q\n", buff[:nr], buff[:nr])
+
+	// // Auth MF plus
+
+	// apdu := []byte{'E', 0x70, 0x01, 0x40, 0x00}
+	// data = []byte{0x02, 0x00, byte(len(apdu))}
+	// data = append(data, apdu...)
+
+	// data = append(data, checksum(data[1:]))
+
+	// nw, err = s.Write(data)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+	// fmt.Printf("write n: %d, data: %X\n", nw, data)
+
+	// nr, err = s.Read(buff)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+	// fmt.Printf("read Auth response: % X, %q\n", buff[:nr], buff[:nr])
+
+	// apdu = []byte{'E', 0x72}
+	// apdu = append(apdu, buff[5:nr-1]...)
+	// apdu = append(apdu, buff[5:nr-1]...)
+	// data = []byte{0x02, 0x00, byte(len(apdu))}
+	// data = append(data, apdu...)
+
+	// data = append(data, checksum(data[1:]))
+
+	// nw, err = s.Write(data)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+	// fmt.Printf("write n: %d, data: %X\n", nw, data)
+
+	// nr, err = s.Read(buff)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+	// fmt.Printf("read Auth response: % X, %q\n", buff[:nr], buff[:nr])
+
+	// // SAM
+
+	// apdu := []byte{'p'}
+	// data = []byte{0x02, 0x00, byte(len(apdu))}
+	// data = append(data, apdu...)
+
+	// data = append(data, checksum(data[1:]))
+
+	// nw, err = s.Write(data)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+	// fmt.Printf("write n: %d, data: %X\n", nw, data)
+
+	// nr = 0
+	// for nr <= 0 {
+	// 	nr, err = s.Read(buff)
+	// 	if err != nil {
+	// 		log.Fatalln(err)
+	// 	}
+	// }
+
+	// fmt.Printf("read SAM Reset response: % X, %q\n", buff[:nr], buff[:nr])
+
+	// time.Sleep(5 * time.Second)
+
+	// for range []int{1, 2, 3, 4} {
+
+	// 	t0 := time.Now()
+
+	// 	// SAM GetChallenge
+
+	// 	// apdu = []byte{'q', 0x00, 0x84, 0x00, 0x00, 0x08}
+	// 	apdu = []byte{'q', 0x80, 0x60, 0x00, 0x00, 0x00}
+	// 	data = []byte{0x02, 0x00, byte(len(apdu))}
+	// 	data = append(data, apdu...)
+
+	// 	fmt.Printf("data: %X\n", data[1:])
+
+	// 	data = append(data, checksum(data[1:]))
+
+	// 	nw, err = s.Write(data)
+	// 	if err != nil {
+	// 		log.Fatalln(err)
+	// 	}
+
+	// 	fmt.Printf("write n: %d, data: %X\n", nw, data)
+
+	// 	nr = 0
+	// 	for {
+	// 		nr, err = s.Read(buff)
+	// 		if err != nil {
+	// 			log.Fatalln(err)
+	// 		}
+
+	// 		if nr > 0 {
+	// 			if bytes.Equal(buff[:nr], []byte("\x02\x00\x03\x00\x00\x00\x03")) {
+	// 				fmt.Printf("ACK response: %X\n", buff[:nr])
+	// 				continue
+	// 			}
+	// 			break
+	// 		}
+	// 	}
+
+	// 	tdiff := time.Since(t0)
+
+	// 	fmt.Printf("(timeout: %s) read SAM GetChallenge response (len: %d): % X, %q\n", tdiff, nr, buff[:nr], buff[:nr])
+	// }
+
+}
