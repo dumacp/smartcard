@@ -1,6 +1,7 @@
-package acr128s
+package rcr3300
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/dumacp/smartcard"
@@ -12,7 +13,6 @@ type Reader struct {
 	mifare.IReaderClassic
 	dev        *Device
 	readerName string
-	seq        int
 }
 
 // NewReader Create New Reader interface
@@ -28,7 +28,14 @@ func (r *Reader) TransmitA(apdu []byte) ([]byte, error) {
 
 	data := BuildFrame_SendTypeA(apdu)
 
-	response, err := r.dev.SendRecv(data, 100*time.Millisecond)
+	timeout := func() time.Duration {
+		if r.dev.timeout <= 100*time.Millisecond {
+			return 100 * time.Millisecond
+		}
+		return r.dev.timeout
+	}
+
+	response, err := r.dev.SendRecv(data, timeout())
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +52,38 @@ func (r *Reader) TransmitB(apdu []byte) ([]byte, error) {
 
 	data := BuildFrame_SendTypeA(apdu)
 
-	response, err := r.dev.SendRecv(data, 100*time.Millisecond)
+	timeout := func() time.Duration {
+		if r.dev.timeout <= 100*time.Millisecond {
+			return 100 * time.Millisecond
+		}
+		return r.dev.timeout
+	}
+
+	response, err := r.dev.SendRecv(data, timeout())
+	if err != nil {
+		return nil, err
+	}
+
+	dataResponse, err := VerifyReponse(response)
+	if err != nil {
+		return nil, err
+	}
+
+	return dataResponse, nil
+}
+
+func (r *Reader) TransmitSAM_T1(apdu []byte) ([]byte, error) {
+
+	data := BuildFrame_SendSAM(apdu)
+
+	timeout := func() time.Duration {
+		if r.dev.timeout <= 100*time.Millisecond {
+			return 100 * time.Millisecond
+		}
+		return r.dev.timeout
+	}
+
+	response, err := r.dev.SendRecv(data, timeout())
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +100,14 @@ func (r *Reader) RFPower(on bool) ([]byte, error) {
 
 	data := BuildFrame_RFPower(on)
 
-	response, err := r.dev.SendRecv(data, 100*time.Millisecond)
+	timeout := func() time.Duration {
+		if r.dev.timeout <= 100*time.Millisecond {
+			return 100 * time.Millisecond
+		}
+		return r.dev.timeout
+	}
+
+	response, err := r.dev.SendRecv(data, timeout())
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +123,14 @@ func (r *Reader) Request() ([]byte, error) {
 
 	data := BuildFrame_Request()
 
-	response, err := r.dev.SendRecv(data, 100*time.Millisecond)
+	timeout := func() time.Duration {
+		if r.dev.timeout <= 100*time.Millisecond {
+			return 100 * time.Millisecond
+		}
+		return r.dev.timeout
+	}
+
+	response, err := r.dev.SendRecv(data, timeout())
 	if err != nil {
 		return nil, err
 	}
@@ -93,8 +145,14 @@ func (r *Reader) Request() ([]byte, error) {
 func (r *Reader) Anticoll() ([]byte, error) {
 
 	data := BuildFrame_Anticoll()
+	timeout := func() time.Duration {
+		if r.dev.timeout <= 100*time.Millisecond {
+			return 100 * time.Millisecond
+		}
+		return r.dev.timeout
+	}
 
-	response, err := r.dev.SendRecv(data, 100*time.Millisecond)
+	response, err := r.dev.SendRecv(data, timeout())
 	if err != nil {
 		return nil, err
 	}
@@ -109,8 +167,14 @@ func (r *Reader) Anticoll() ([]byte, error) {
 func (r *Reader) RATS() ([]byte, error) {
 
 	data := BuildFrame_RATS()
+	timeout := func() time.Duration {
+		if r.dev.timeout <= 100*time.Millisecond {
+			return 100 * time.Millisecond
+		}
+		return r.dev.timeout
+	}
 
-	response, err := r.dev.SendRecv(data, 100*time.Millisecond)
+	response, err := r.dev.SendRecv(data, timeout())
 	if err != nil {
 		return nil, err
 	}
@@ -125,8 +189,14 @@ func (r *Reader) RATS() ([]byte, error) {
 func (r *Reader) ResetSAM() ([]byte, error) {
 
 	data := BuildFrame_ResetSAM()
+	timeout := func() time.Duration {
+		if r.dev.timeout <= 100*time.Millisecond {
+			return 100 * time.Millisecond
+		}
+		return r.dev.timeout
+	}
 
-	response, err := r.dev.SendRecv(data, 100*time.Millisecond)
+	response, err := r.dev.SendRecv(data, timeout())
 	if err != nil {
 		return nil, err
 	}
@@ -135,19 +205,68 @@ func (r *Reader) ResetSAM() ([]byte, error) {
 		return nil, err
 	}
 
+	pps := []byte{0xFF, 0x11, 0x01, 0xEF}
+	ppsResponse, err := r.dev.SendRecv(BuildFrame_SendSAM(pps), timeout())
+	if err != nil {
+		return nil, err
+	}
+	_, err = VerifyReponse(ppsResponse)
+	if err != nil {
+		return nil, err
+	}
+
 	return dataResponse, nil
 }
 
-// Create New Card interface
+// Create New Card typeA interface
 func (r *Reader) ConnectCard() (smartcard.ICard, error) {
 
-	r.Request()
-	r.Anticoll()
-	uid, _ := r.RATS()
+	// r.Request()
+	uid, err := r.Anticoll()
+	if err != nil {
+		return nil, err
+	}
+	ats, err := r.RATS()
+	if err != nil {
+		return nil, err
+	}
 	cardS := &Card{
-		uid:     uid,
+		uid: func(uid []byte) []byte {
+			if len(uid) >= 8 {
+				fmt.Printf("long UID: % X\n", uid)
+				return uid[len(uid)-7:]
+			}
+			return uid
+		}(uid),
+		ats:     ats,
 		reader:  r,
 		typeTag: TAG_TYPEA,
+	}
+	return cardS, nil
+}
+
+// Create New Card typeB interface
+func (r *Reader) ConnectCardB() (smartcard.ICard, error) {
+
+	// r.Request()
+	uid, err := r.Anticoll()
+	if err != nil {
+		return nil, err
+	}
+	ats, err := r.RATS()
+	if err != nil {
+		return nil, err
+	}
+	cardS := &Card{
+		uid: func(uid []byte) []byte {
+			if len(uid) >= 8 {
+				return uid[1:]
+			}
+			return uid
+		}(uid),
+		ats:     ats,
+		reader:  r,
+		typeTag: TAG_TYPEB,
 	}
 	return cardS, nil
 }
@@ -157,8 +276,9 @@ func (r *Reader) ConnectSamCard() (smartcard.ICard, error) {
 
 	atr, _ := r.ResetSAM()
 	cardS := &Card{
-		atr:    atr,
-		reader: r,
+		atr:     atr,
+		reader:  r,
+		typeTag: SAM_T1,
 	}
 	return cardS, nil
 }

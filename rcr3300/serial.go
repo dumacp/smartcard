@@ -1,4 +1,4 @@
-package acr128s
+package rcr3300
 
 import (
 	"bytes"
@@ -64,14 +64,14 @@ func (dev *Device) read(contxt context.Context, waitResponse bool) ([]byte, erro
 		if err == nil {
 			return nil
 		}
-		log.Printf("funcread err: %s", err)
+		fmt.Printf("funcread err: %s\n", err)
 		switch {
 		case errors.Is(err, os.ErrClosed):
 			return err
 		case errors.Is(err, io.ErrClosedPipe):
 			return err
 		case errors.Is(err, io.EOF):
-			if time.Since(lastEvent) < 10*time.Microsecond {
+			if time.Since(lastEvent) < dev.timeout/10 {
 				if countError > 3 {
 					return err
 				}
@@ -93,7 +93,7 @@ func (dev *Device) read(contxt context.Context, waitResponse bool) ([]byte, erro
 
 		select {
 		case <-contxt.Done():
-			return nil, fmt.Errorf("timeout error, %w", smartcard.ErrComm)
+			return nil, fmt.Errorf("timeout error")
 		default:
 		}
 		tempb := make([]byte, 2048)
@@ -104,7 +104,7 @@ func (dev *Device) read(contxt context.Context, waitResponse bool) ([]byte, erro
 		if err != nil && n <= 0 {
 			if err := funcerr(err); err != nil {
 				// log.Printf("0, err: %s", err)
-				return nil, err
+				return nil, fmt.Errorf("error comm: %s, %w", err, smartcard.ErrComm)
 			}
 			continue
 		}

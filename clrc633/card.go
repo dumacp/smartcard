@@ -1,6 +1,8 @@
-package rcr3300
+package clrc633
 
 import (
+	"bytes"
+
 	"github.com/dumacp/smartcard"
 )
 
@@ -18,18 +20,13 @@ type Card struct {
 	ats     []byte
 	uid     []byte
 	atr     []byte
+	key     []byte
+	sak     byte
 	typeTag TagType
 }
 
 func (c *Card) Apdu(apdu []byte) ([]byte, error) {
-	switch c.typeTag {
-	case TAG_TYPEB:
-		return c.reader.TransmitB(apdu)
-	case SAM_T1:
-		return c.reader.TransmitSAM_T1(apdu)
-	default:
-		return c.reader.TransmitA(apdu)
-	}
+	return c.reader.Transceive(apdu)
 }
 
 func (c *Card) ATR() ([]byte, error) {
@@ -47,4 +44,17 @@ func (c *Card) ATS() ([]byte, error) {
 
 func (c *Card) DisconnectCard() error {
 	return nil
+}
+
+func (c *Card) MFLoadKey(key []byte) error {
+
+	if len(c.key) > 0 && bytes.Equal(c.key, key) {
+		return nil
+	}
+	c.key = key
+	return c.reader.LoadKey(key)
+}
+
+func (c *Card) MFAuthent(keyType, block int) error {
+	return c.reader.Auth(keyType, block, c.uid)
 }

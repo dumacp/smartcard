@@ -19,7 +19,7 @@ type mifareClassic struct {
 	pcsc.Card
 }
 
-//ConnectMclassic Create Mifare Plus Interface
+// ConnectMclassic Create Mifare Plus Interface
 func ConnectMclassic(r pcsc.Reader) (mifare.Classic, error) {
 
 	c, err := r.ConnectCardPCSC()
@@ -32,13 +32,29 @@ func ConnectMclassic(r pcsc.Reader) (mifare.Classic, error) {
 	return mc, nil
 }
 
-//MClassic Create Mifare Plus Interface
+// MClassic Create Mifare Plus Interface
 func MClassic(c pcsc.Card) (mifare.Classic, error) {
 
 	mc := &mifareClassic{
 		Card: c,
 	}
 	return mc, nil
+}
+
+func (mc *mifareClassic) Apdu(apdu []byte) ([]byte, error) {
+	panic("not implemented") // TODO: Implement
+}
+
+func (mc *mifareClassic) Inc(bNr int, data []byte) error {
+	panic("not implemented") // TODO: Implement
+}
+
+func (mc *mifareClassic) Dec(bNr int, data []byte) error {
+	panic("not implemented") // TODO: Implement
+}
+
+func (mc *mifareClassic) Copy(bNr int, dstBnr int) error {
+	panic("not implemented") // TODO: Implement
 }
 
 /**/

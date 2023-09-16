@@ -1,7 +1,9 @@
-package acr128s
+package rcr3300
 
 import (
 	"fmt"
+
+	"github.com/dumacp/smartcard"
 )
 
 type BaudType int
@@ -30,8 +32,9 @@ var rf_power = []byte{0x2A}
 var request = []byte{'@'}
 var anticoll = []byte{'A'}
 var rats = []byte{'C'}
-var resetSam = []byte{'R'}
-var sendTypeA = []byte{'A'}
+var resetSam = []byte{'p'}
+var sendTypeA = []byte{'E'}
+var sendSAM = []byte{'q'}
 
 func buildFrame(header, data []byte) []byte {
 
@@ -66,6 +69,9 @@ func BuildFrame_RFPower(on bool) []byte {
 func BuildFrame_SendTypeA(apdu []byte) []byte {
 	return buildFrame(sendTypeA, apdu)
 }
+func BuildFrame_SendSAM(apdu []byte) []byte {
+	return buildFrame(sendSAM, apdu)
+}
 
 func BuildFrame_Anticoll() []byte {
 	return buildFrame(anticoll, nil)
@@ -98,9 +104,35 @@ func VerifyReponse(frame []byte) ([]byte, error) {
 	switch {
 	case frame[2] == 0x01 && frame[3] == 0x00:
 		return nil, nil
-	case frame[2] > 0x01 && len(frame[3:len(frame)-1]) == int(frame[2]):
+	case frame[2] == 0x01:
+		switch frame[3] {
+		case 0x01:
+			return nil, fmt.Errorf("no card: [% X], %w", frame, smartcard.ErrNoSmartcard)
+		case 0x02:
+			return nil, fmt.Errorf("anticoll error: [% X]", frame)
+		case 0x03:
+			return nil, fmt.Errorf("bit counter error: [% X]", frame)
+		case 0x04:
+			return nil, fmt.Errorf(": [% X]", frame)
+		case 0x05:
+			return nil, fmt.Errorf("no card: [% X]", frame)
+		case 0x0d:
+			return nil, fmt.Errorf("no card: [% X]", frame)
+		case 0x0e:
+			return nil, fmt.Errorf("no card: [% X]", frame)
+		case 0x0f:
+			return nil, fmt.Errorf("no card: [% X]", frame)
+		case 0x10:
+			return nil, fmt.Errorf("no card: [% X]", frame)
+		case 0x11:
+			return nil, fmt.Errorf("no card: [% X]", frame)
+		default:
+			return nil, fmt.Errorf("unkown error frame: [% X]", frame)
+		}
+
+	case frame[2] > 0x01 && frame[3] == 0x00 && len(frame[3:len(frame)-1]) == int(frame[2]):
 		response := make([]byte, 0)
-		response = append(response, frame[3:len(frame)-1]...)
+		response = append(response, frame[4:len(frame)-1]...)
 		return response, nil
 	}
 
