@@ -177,8 +177,15 @@ func (r *Reader) ConnectCard() (smartcard.ICard, error) {
 		return nil, fmt.Errorf("without card")
 	}
 
-	if err := mifare.VerifyResponseIso7816(respGetData); err != nil {
-		return nil, err
+	respGetData2, err := r.Transmit([]byte{0xFF, 0xCA, 0, 2, 0})
+	if err != nil {
+		return nil, fmt.Errorf("without card")
+	}
+	sak := byte(0xFF)
+	if err := mifare.VerifyResponseIso7816(respGetData2); err == nil {
+		if len(respGetData2) > 2 {
+			sak := respGetData2[len(respGetData2)-3]
+		}
 	}
 
 	uid := respGetData[:len(respGetData)-2]
@@ -188,6 +195,7 @@ func (r *Reader) ConnectCard() (smartcard.ICard, error) {
 	cardS := &Card{
 		uid:    uid,
 		reader: r,
+		sak:    sak,
 	}
 	return cardS, nil
 }

@@ -86,6 +86,10 @@ func (c *card) UID() ([]byte, error) {
 	return uuid, nil
 }
 
+func (c *card) SAK() byte {
+	return c.sak
+}
+
 // Get Data 0x01
 func (c *card) ATS() ([]byte, error) {
 	ats := c.ats

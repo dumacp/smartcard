@@ -38,6 +38,10 @@ func (c *Card) UID() ([]byte, error) {
 	return c.uid, nil
 }
 
+func (c *Card) SAK() byte {
+	return c.sak
+}
+
 func (c *Card) ATS() ([]byte, error) {
 	return c.ats, nil
 }

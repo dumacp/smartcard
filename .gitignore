@@ -1,3 +1,5 @@
 go.mod
 go.sum
 */cmd
+*/*/cmd
+*/*/*/cmd

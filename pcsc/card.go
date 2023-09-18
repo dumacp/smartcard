@@ -9,7 +9,7 @@ import (
 	"github.com/ebfe/scard"
 )
 
-//Card Interface
+// Card Interface
 type Card interface {
 	smartcard.ICard
 	ControlApdu(ioctl uint32, apdu []byte) ([]byte, error)
@@ -35,33 +35,34 @@ const (
 type card struct {
 	State State
 	*scard.Card
+	sak byte
 }
 
-//DisconnectCard disconnect card from reader
+// DisconnectCard disconnect card from reader
 func (c *card) DisconnectCard() error {
 	c.State = DISCONNECTED
 	return c.Disconnect(0x00)
 }
 
-//DiconnectResetCard disconnect card from reader and reset reader
+// DiconnectResetCard disconnect card from reader and reset reader
 func (c *card) DiconnectResetCard() error {
 	c.State = DISCONNECTED
 	return c.Disconnect(0x01)
 }
 
-//DisconnectUnpowerCard disconnect card from reader
+// DisconnectUnpowerCard disconnect card from reader
 func (c *card) DisconnectUnpowerCard() error {
 	c.State = DISCONNECTED
 	return c.Disconnect(0x02)
 }
 
-//DisconnectEjectCard disconnect card from reader
+// DisconnectEjectCard disconnect card from reader
 func (c *card) DisconnectEjectCard() error {
 	c.State = DISCONNECTED
 	return c.Disconnect(0x03)
 }
 
-//Primitive channel to send command
+// Primitive channel to send command
 func (c *card) Apdu(apdu []byte) ([]byte, error) {
 	if c.State != CONNECTED {
 		return nil, fmt.Errorf("don't Connect to Card, %w", smartcard.ErrComm)
@@ -77,7 +78,7 @@ func (c *card) Apdu(apdu []byte) ([]byte, error) {
 	return result, nil
 }
 
-//Primitive channel to send command
+// Primitive channel to send command
 func (c *card) ControlApdu(ioctl uint32, apdu []byte) ([]byte, error) {
 	if c.State != CONNECTEDDirect {
 		return nil, fmt.Errorf("don't Connect to Card, %w", smartcard.ErrComm)
@@ -91,7 +92,7 @@ func (c *card) ControlApdu(ioctl uint32, apdu []byte) ([]byte, error) {
 	return result, nil
 }
 
-//Get ATR of Card
+// Get ATR of Card
 func (c *card) ATR() ([]byte, error) {
 	if c.State != CONNECTED {
 		return nil, fmt.Errorf("don't Connect to Card, %w", smartcard.ErrComm)
@@ -103,7 +104,7 @@ func (c *card) ATR() ([]byte, error) {
 	return status.Atr, nil
 }
 
-//Get Data 0x00
+// Get Data 0x00
 func (c *card) UID() ([]byte, error) {
 	aid := []byte{0xFF, 0xCA, 0x00, 0x00, 0x00}
 	uid, err := c.Apdu(aid)
@@ -113,13 +114,17 @@ func (c *card) UID() ([]byte, error) {
 	return uid[:len(uid)-2], nil
 }
 
-//Get Data 0x01
+// Get Data 0x01
 func (c *card) ATS() ([]byte, error) {
 	aid := []byte{0xFF, 0xCA, 0x01, 0x00, 0x00}
 	return c.Apdu(aid)
 }
 
-//Transparent Session (PCSC)
+func (c *card) SAK() byte {
+	return c.sak
+}
+
+// Transparent Session (PCSC)
 func (c *card) TransparentSessionStart() ([]byte, error) {
 	apdu := []byte{0xFF, 0xC2, 0x00, 0x00, 0x04, 0x81, 0x00, 0x84, 0x00}
 	resp, err := c.Transmit(apdu)
@@ -129,7 +134,7 @@ func (c *card) TransparentSessionStart() ([]byte, error) {
 	return resp, nil
 }
 
-//TransparentSessionStartOnly start transparent session to send APDU
+// TransparentSessionStartOnly start transparent session to send APDU
 func (c *card) TransparentSessionStartOnly() ([]byte, error) {
 	apdu := []byte{0xFF, 0xC2, 0x00, 0x00, 0x02, 0x81, 0x00}
 	resp, err := c.Transmit(apdu)
@@ -139,7 +144,7 @@ func (c *card) TransparentSessionStartOnly() ([]byte, error) {
 	return resp, nil
 }
 
-//TransparentSessionResetRF start transparent session to send APDU
+// TransparentSessionResetRF start transparent session to send APDU
 func (c *card) TransparentSessionResetRF() ([]byte, error) {
 	apdu1 := []byte{0xFF, 0xC2, 0x00, 0x00, 0x02, 0x83, 0x00}
 	resp, err := c.Transmit(apdu1)
@@ -154,7 +159,7 @@ func (c *card) TransparentSessionResetRF() ([]byte, error) {
 	return resp2, nil
 }
 
-//TransparentSessionEnd finish transparent session
+// TransparentSessionEnd finish transparent session
 func (c *card) TransparentSessionEnd() ([]byte, error) {
 	apdu := []byte{0xFF, 0xC2, 0x00, 0x00, 0x02, 0x82, 0x00, 0x00}
 	resp, err := c.Transmit(apdu)
@@ -164,7 +169,7 @@ func (c *card) TransparentSessionEnd() ([]byte, error) {
 	return resp, nil
 }
 
-//Switch1444_4 switch channel reader to send ISO 1444-4 APDU
+// Switch1444_4 switch channel reader to send ISO 1444-4 APDU
 func (c *card) Switch1444_4() ([]byte, error) {
 	apdu := []byte{0xff, 0xc2, 0x00, 0x02, 0x04, 0x8F, 0x02, 0x00, 0x04}
 	resp, err := c.Transmit(apdu)
@@ -174,7 +179,7 @@ func (c *card) Switch1444_4() ([]byte, error) {
 	return resp, nil
 }
 
-//Switch1444_4 switch channel reader to send ISO 1444-3 APDU
+// Switch1444_4 switch channel reader to send ISO 1444-3 APDU
 func (c *card) Switch1444_3() ([]byte, error) {
 	apdu := []byte{0xff, 0xc2, 0x00, 0x02, 0x04, 0x8f, 0x02, 0x00, 0x03}
 	resp, err := c.Transmit(apdu)

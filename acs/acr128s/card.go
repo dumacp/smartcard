@@ -11,6 +11,7 @@ type Card struct {
 	ats    []byte
 	uid    []byte
 	atr    []byte
+	sak    byte
 }
 
 func (c *Card) Apdu(apdu []byte) ([]byte, error) {
