@@ -21,7 +21,7 @@ type ICard interface {
 	ATR() ([]byte, error)
 	UID() ([]byte, error)
 	ATS() ([]byte, error)
-	SAK() int
+	SAK() byte
 	DisconnectCard() error
 }
 

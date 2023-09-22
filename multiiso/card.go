@@ -51,6 +51,11 @@ func (c *card) DisconnectCard() error {
 	return err
 }
 
+func (c *card) DisconnectResetCard() error {
+	_, err := c.Apdu([]byte("q"))
+	return err
+}
+
 // Primitive channel to send command
 func (c *card) Apdu(apdu []byte) ([]byte, error) {
 	if c.State != CONNECTED {

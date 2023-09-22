@@ -90,6 +90,10 @@ func (mc *MifareClassic) UID() ([]byte, error) {
 	return mc.card.UID()
 }
 
+func (mc *MifareClassic) SAK() byte {
+	return mc.card.SAK()
+}
+
 func (mc *MifareClassic) ATS() ([]byte, error) {
 	return mc.card.ATS()
 }
@@ -98,11 +102,19 @@ func (mc *MifareClassic) DisconnectCard() error {
 	return mc.card.DisconnectCard()
 }
 
+func (mc *MifareClassic) DisconnectResetCard() error {
+	return mc.card.DisconnectCard()
+}
+
 func (mc *MifareClassic) Auth(bNr, keyType int, key []byte) ([]byte, error) {
 	if err := mc.card.MFLoadKey(key); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load key %d error: %w", bNr, err)
 	}
-	return nil, mc.card.MFAuthent(keyType, bNr)
+	if err := mc.card.MFAuthent(keyType, bNr); err != nil {
+		return nil, fmt.Errorf("auth key %d error: %w", bNr, err)
+	}
+
+	return nil, nil
 }
 
 func (mc *MifareClassic) ReadBlocks(bNr, ext int) ([]byte, error) {
@@ -116,7 +128,7 @@ func (mc *MifareClassic) ReadBlocks(bNr, ext int) ([]byte, error) {
 		aid := []byte{0x30, byte(bNr + i)}
 		response, err := mc.Apdu(aid)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("read block %d error: %w", bNr, err)
 		}
 		if len(response) < 16 {
 			if len(response) == 1 {
@@ -133,7 +145,7 @@ func (mc *MifareClassic) ReadBlocks(bNr, ext int) ([]byte, error) {
 func (mc *MifareClassic) WriteBlock(bNr int, data []byte) ([]byte, error) {
 	aid := []byte{0xA0, byte(bNr)}
 	if resp, err := mc.Apdu(aid); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("write block %d error: %w", bNr, err)
 	} else if len(resp) > 0 && resp[0] != 0x0A {
 		return nil, fmt.Errorf("no Ack, code: [%X]", resp[0])
 	}

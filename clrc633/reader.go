@@ -62,8 +62,12 @@ func (r *Reader) RATS() ([]byte, error) {
 	return r.dev.Transceive(apdu, 100*time.Millisecond)
 }
 
+func (r *Reader) ConnectCard() (smartcard.ICard, error) {
+	return r.ConnectLegacyCard()
+}
+
 // Create New Card typeA interface
-func (r *Reader) ConnectCard() (*Card, error) {
+func (r *Reader) ConnectLegacyCard() (*Card, error) {
 
 	if _, err := r.Request(); err != nil {
 		return nil, err

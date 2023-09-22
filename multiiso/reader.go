@@ -410,6 +410,16 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 }
 
 // Create New Card interface
+func (r *reader) ConnectSamCard_T0() (smartcard.ICard, error) {
+	return nil, fmt.Errorf("not supported")
+}
+
+// Create New Card interface
+func (r *reader) ConnectSamCard_Tany() (smartcard.ICard, error) {
+	return nil, fmt.Errorf("not supported")
+}
+
+// Create New Card interface
 func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
 	if !r.device.Ok {
 		return nil, fmt.Errorf("serial device is not ready, %w", smartcard.ErrComm)

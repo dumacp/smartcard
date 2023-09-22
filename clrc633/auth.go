@@ -166,7 +166,7 @@ func auth(c spi.Conn, keyType, block byte, uid []byte, timeout time.Duration) er
 	defer func() { fmt.Printf("time auth: %v\n", time.Since(tSelect)) }()
 	// IRQ1 register
 	if err := waitIdleIRQ(c, 0x02, timeout+30*time.Millisecond); err != nil {
-		return fmt.Errorf("auth failed, err: %w", err)
+		return ErrorAuth
 	}
 
 	// irqstatus, err := statusIRQ(c)

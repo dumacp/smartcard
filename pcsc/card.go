@@ -13,7 +13,9 @@ import (
 type Card interface {
 	smartcard.ICard
 	ControlApdu(ioctl uint32, apdu []byte) ([]byte, error)
-	DiconnectResetCard() error
+	EndTransaction() error
+	EndTransactionResetCard() error
+	DisconnectResetCard() error
 	DisconnectUnpowerCard() error
 	DisconnectEjectCard() error
 	TransparentSessionStart() ([]byte, error)
@@ -38,6 +40,16 @@ type card struct {
 	sak byte
 }
 
+func (c *card) EndTransaction() error {
+	c.State = DISCONNECTED
+	return c.Card.EndTransaction(scard.LeaveCard)
+}
+
+func (c *card) EndTransactionResetCard() error {
+	c.State = DISCONNECTED
+	return c.Card.EndTransaction(scard.ResetCard)
+}
+
 // DisconnectCard disconnect card from reader
 func (c *card) DisconnectCard() error {
 	c.State = DISCONNECTED
@@ -45,7 +57,7 @@ func (c *card) DisconnectCard() error {
 }
 
 // DiconnectResetCard disconnect card from reader and reset reader
-func (c *card) DiconnectResetCard() error {
+func (c *card) DisconnectResetCard() error {
 	c.State = DISCONNECTED
 	return c.Disconnect(0x01)
 }

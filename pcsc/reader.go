@@ -29,6 +29,7 @@ type Reader interface {
 	ConnectDirect() (Card, error)
 	ConnectCardPCSC() (Card, error)
 	ConnectCardPCSC_T0() (Card, error)
+	ConnectCardPCSC_Tany() (Card, error)
 }
 
 type reader struct {
@@ -114,6 +115,25 @@ func (r *reader) ConnectCardPCSC_T0() (Card, error) {
 	return cardS, nil
 }
 
+// ConnectCardPCSCT0 Create New Card interface
+func (r *reader) ConnectCardPCSC_Tany() (Card, error) {
+	if ok, err := r.Context.IsValid(); err != nil && !ok {
+		return nil, fmt.Errorf("context err = %s, %w", err, smartcard.ErrComm)
+	}
+
+	c, err := r.Context.Connect(r.ReaderName, scard.ShareShared, scard.ProtocolAny)
+	if err != nil {
+		return nil, err
+	}
+	sak := byte(0xFF)
+	cardS := &card{
+		CONNECTED,
+		c,
+		sak,
+	}
+	return cardS, nil
+}
+
 // Create New Card interface
 func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	if ok, err := r.Context.IsValid(); err != nil && !ok {
@@ -142,6 +162,12 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 // Create New Card interface
 func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
 	return r.ConnectCardPCSC()
+}
+func (r *reader) ConnectSamCard_T0() (smartcard.ICard, error) {
+	return r.ConnectCardPCSC_T0()
+}
+func (r *reader) ConnectSamCard_Tany() (smartcard.ICard, error) {
+	return r.ConnectCardPCSC_Tany()
 }
 
 func (r *reader) connectCard() (*card, error) {
