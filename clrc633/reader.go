@@ -9,7 +9,6 @@ import (
 )
 
 type Reader struct {
-	smartcard.IReader
 	dev        *Device
 	readerName string
 }
@@ -62,6 +61,17 @@ func (r *Reader) RATS() ([]byte, error) {
 	return r.dev.Transceive(apdu, 100*time.Millisecond)
 }
 
+// ConnectSamCard_T0 ConnectCard connect card with protocol T=1.
+func (r *Reader) ConnectSamCard_T0() (smartcard.ICard, error) {
+	panic("not implemented") // TODO: Implement
+}
+
+// ConnectSamCard_Tany ConnectCard connect card with protocol T=any.
+func (r *Reader) ConnectSamCard_Tany() (smartcard.ICard, error) {
+	panic("not implemented") // TODO: Implement
+}
+
+// ConnectCard ConnectCard connect card with protocol T=1.
 func (r *Reader) ConnectCard() (smartcard.ICard, error) {
 	return r.ConnectLegacyCard()
 }
@@ -163,7 +173,7 @@ func (r *Reader) ConnectCardB() (smartcard.ICard, error) {
 	return cardS, nil
 }
 
-// Create New Card interface
+// ConnectSamCard ConnectSamCard connect card with protocol T=1.
 func (r *Reader) ConnectSamCard() (smartcard.ICard, error) {
 	return nil, ErrorUnsupported
 }

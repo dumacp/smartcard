@@ -1,6 +1,6 @@
 package smartcard
 
-//ISO7816cmd command ISO7816
+// ISO7816cmd command ISO7816
 type ISO7816cmd struct {
 	CLA byte
 	INS byte
@@ -9,6 +9,7 @@ type ISO7816cmd struct {
 	Le  bool
 }
 
+// PrefixApdu build prefix apdu from ISO7816cmd
 func (cmd *ISO7816cmd) PrefixApdu() []byte {
 	apdu := make([]byte, 0)
 	apdu = append(apdu, cmd.CLA)

@@ -1,13 +1,11 @@
 /*
-*
 package to handle the communication of smartcard devices under the PCSC implementation
 
 projects on which it is based:
 
-	        https://github.com/LudovicRousseau/PCSC
+	    https://github.com/LudovicRousseau/PCSC
 		https://github.com/ebfe/scard
 
-/*
 */
 package smartcard
 
@@ -40,10 +38,3 @@ func Error(e error) error {
 func (e *SmartcardError) Error() string {
 	return e.Err.Error()
 }
-
-//func (e *SmartcardError) Unwrap() error {
-//if errors.Is(e.Err, ErrComm) {
-//	return ErrComm
-//}
-//	return ErrTransmit
-//}
