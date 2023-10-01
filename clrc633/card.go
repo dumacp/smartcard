@@ -29,6 +29,10 @@ func (c *Card) Apdu(apdu []byte) ([]byte, error) {
 	return c.reader.Transceive(apdu)
 }
 
+func (c *Card) ApduWithoutResponse(apdu []byte) ([]byte, error) {
+	return c.reader.Transmit(apdu)
+}
+
 func (c *Card) ATR() ([]byte, error) {
 
 	return c.atr, nil

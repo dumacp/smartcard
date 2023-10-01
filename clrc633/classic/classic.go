@@ -37,7 +37,7 @@ func (mc *MifareClassic) Inc(bNr int, data []byte) error {
 		return fmt.Errorf("no Ack, code: [%X]", resp[0])
 	}
 
-	if resp, err := mc.card.Apdu(data); err != nil {
+	if resp, err := mc.card.ApduWithoutResponse(data); err != nil {
 		return err
 	} else if len(resp) > 0 && resp[0] != 0x0A {
 		return fmt.Errorf("no Ack, code: [%X]", resp[0])
@@ -53,7 +53,7 @@ func (mc *MifareClassic) Dec(bNr int, data []byte) error {
 		return fmt.Errorf("no Ack, code: [%X]", resp[0])
 	}
 
-	if resp, err := mc.card.Apdu(data); err != nil {
+	if resp, err := mc.card.ApduWithoutResponse(data); err != nil {
 		return err
 	} else if len(resp) > 0 && resp[0] != 0x0A {
 		return fmt.Errorf("no Ack, code: [%X]", resp[0])
@@ -70,7 +70,7 @@ func (mc *MifareClassic) Copy(bNr int, dstBnr int) error {
 		return fmt.Errorf("no Ack, code: [%X]", resp[0])
 	}
 
-	if resp, err := mc.card.Apdu(make([]byte, 4)); err != nil {
+	if resp, err := mc.card.ApduWithoutResponse(make([]byte, 4)); err != nil {
 		return err
 	} else if len(resp) > 0 && resp[0] != 0x0A {
 		return fmt.Errorf("no Ack, code: [%X]", resp[0])

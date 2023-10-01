@@ -27,6 +27,11 @@ func (r *Reader) Transceive(apdu []byte) ([]byte, error) {
 	return r.dev.Transceive(apdu, 300*time.Millisecond)
 }
 
+func (r *Reader) Transmit(apdu []byte) ([]byte, error) {
+
+	return r.dev.Transceive(apdu, 0)
+}
+
 func (r *Reader) Request() (byte, error) {
 
 	return r.dev.Request(0x52, 60*time.Millisecond)

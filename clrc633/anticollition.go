@@ -58,7 +58,7 @@ func anticoll(c spi.Conn, timeout time.Duration) ([]byte, error) {
 		return nil, err
 	}
 	// FIFOControl (flush)
-	if err := write(c, 0x02, []byte{0x10}); err != nil {
+	if err := setmask(c, 0x02, 0x10); err != nil {
 		return nil, err
 	}
 
