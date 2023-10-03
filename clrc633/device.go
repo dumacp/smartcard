@@ -19,9 +19,9 @@ func NewDevice(path string) (*Device, error) {
 		return nil, err
 	}
 
-	// if err := reset(conn); err != nil {
-	// 	return nil, err
-	// }
+	if err := reset(conn); err != nil {
+		return nil, err
+	}
 
 	if err := init_iso14443_Dev(conn); err != nil {
 		return nil, err

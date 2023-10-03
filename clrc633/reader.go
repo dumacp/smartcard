@@ -62,7 +62,7 @@ func (r *Reader) Auth(keyType, block int, uid []byte) error {
 }
 
 func (r *Reader) RATS() ([]byte, error) {
-	apdu := []byte{0xE8, 0x80}
+	apdu := []byte{0xE0, 0x80}
 	return r.dev.Transceive(apdu, 100*time.Millisecond)
 }
 
@@ -137,6 +137,7 @@ func (r *Reader) ConnectLegacyCard() (*Card, error) {
 		if err != nil {
 			return nil, err
 		}
+		cardS.typeTag = TAG_TCL
 		cardS.ats = ats
 		cardS.sak = sak2
 	}
