@@ -1,7 +1,6 @@
 package clrc633
 
 import (
-	"fmt"
 	"time"
 
 	"periph.io/x/conn/v3/spi"
@@ -58,12 +57,12 @@ func (d *Device) Select2(data []byte, timeout time.Duration) (byte, error) {
 }
 
 func (d *Device) Transceive(data []byte, timeout time.Duration) ([]byte, error) {
-	fmt.Printf("send apdu: [% X]\n", data)
+	// fmt.Printf("send apdu: [% X]\n", data)
 	resp, err := sendApdu(d.conn, data, timeout)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("response sw: [% X]\n", resp)
+	// fmt.Printf("response sw: [% X]\n", resp)
 	return resp, nil
 }
 

@@ -102,8 +102,8 @@ func (r *Reader) ConnectLegacyCard() (*Card, error) {
 	uid := make([]byte, 0)
 	uid = append(uid, respAnticoll[:len(respAnticoll)-1]...)
 
-	tSelect := time.Now()
-	defer func() { fmt.Printf("time select: %v\n", time.Since(tSelect)) }()
+	// tSelect := time.Now()
+	// defer func() { fmt.Printf("time select: %v\n", time.Since(tSelect)) }()
 	sak, err := r.Select(respAnticoll)
 	if err != nil {
 		return nil, err

@@ -160,11 +160,11 @@ func waitIRQ(c spi.Conn, addrIrq, value byte, timeout time.Duration) error {
 		select {
 		case <-t2.C:
 			if value == (resp[0] & value) {
-				fmt.Printf("read byte IRQ (0x%02X): 0x%02X\n", addrIrq, resp[0])
+				// fmt.Printf("read byte IRQ (0x%02X): 0x%02X\n", addrIrq, resp[0])
 				return nil
 			}
 		case <-t1.C:
-			fmt.Printf("read byte IRQ (0x%02X): 0x%02X\n", addrIrq, resp[0])
+			// fmt.Printf("read byte IRQ (0x%02X): 0x%02X\n", addrIrq, resp[0])
 			return ErrorReadTimeout
 		}
 	}
@@ -225,7 +225,7 @@ func waitRxIRQ(c spi.Conn, timerId byte, timeout time.Duration) error {
 				}
 			}
 		case <-t1.C:
-			fmt.Printf("final status irq: %+v\n", statusIrq)
+			// fmt.Printf("final status irq: %+v\n", statusIrq)
 			// fmt.Printf("read byte IRQ (0x%02X): 0x%02X\n", addrIrq, resp[0])
 			return ErrorReadTimeout
 		}
@@ -287,7 +287,7 @@ func waitTxIRQ(c spi.Conn, timerId byte, timeout time.Duration) error {
 			}
 		case <-t1.C:
 			// fmt.Printf("read byte IRQ (0x%02X): 0x%02X\n", addrIrq, resp[0])
-			fmt.Printf("final status irq: %+v\n", statusIrq)
+			// fmt.Printf("final status irq: %+v\n", statusIrq)
 			return ErrorReadTimeout
 		}
 	}
@@ -322,7 +322,7 @@ func waitIdleIRQ(c spi.Conn, timerId byte, timeout time.Duration) error {
 					// fmt.Printf("status irq: %+v\n", statusIrq)
 					return nil
 				} else {
-					fmt.Printf("status irq: %+v\n", statusIrq)
+					// fmt.Printf("status irq: %+v\n", statusIrq)
 					switch timerId {
 					case 0x01:
 						if statusIrq.Time0IRQ {
@@ -348,7 +348,7 @@ func waitIdleIRQ(c spi.Conn, timerId byte, timeout time.Duration) error {
 				}
 			}
 		case <-t1.C:
-			fmt.Printf("final status irq: %+v\n", statusIrq)
+			// fmt.Printf("final status irq: %+v\n", statusIrq)
 			// fmt.Printf("read byte IRQ (0x%02X): 0x%02X\n", addrIrq, resp[0])
 			return ErrorReadTimeout
 		}

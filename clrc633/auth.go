@@ -103,7 +103,7 @@ func auth(c spi.Conn, keyType, block byte, uid []byte, timeout time.Duration) er
 
 	bufftime := make([]byte, 4)
 	binary.LittleEndian.PutUint32(bufftime, uint32(convertTime&0x00FFFF))
-	fmt.Printf("bufferTime: [% X]\n", bufftime)
+	// fmt.Printf("bufferTime: [% X]\n", bufftime)
 
 	if err := write(c, 0x15, []byte{bufftime[1]}); err != nil {
 		return err
@@ -143,7 +143,7 @@ func auth(c spi.Conn, keyType, block byte, uid []byte, timeout time.Duration) er
 	frame = append(frame, block)
 	frame = append(frame, uid...)
 
-	fmt.Printf("send auth frame: [% X]\n", frame)
+	// fmt.Printf("send auth frame: [% X]\n", frame)
 	if _, err := writeFifo(c, frame); err != nil {
 		return err
 	}

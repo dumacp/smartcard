@@ -77,11 +77,11 @@ func sendApdu(c spi.Conn, apdu []byte, timeout time.Duration) ([]byte, error) {
 	if err := write(c, 0x00, []byte{0x07}); err != nil {
 		return nil, err
 	}
-	tt := time.Now()
-	defer func() { fmt.Printf("time transceive: %v\n", time.Since(tt)) }()
+	// tt := time.Now()
+	// defer func() { fmt.Printf("time transceive: %v\n", time.Since(tt)) }()
 	// IRQ1 register
 	if timeout == 0 {
-		fmt.Println("transmit without response")
+		// fmt.Println("transmit without response")
 		if err := waitTxIRQ(c, 0x02, 30*time.Millisecond); err != nil {
 			return nil, err
 		}
@@ -95,11 +95,11 @@ func sendApdu(c spi.Conn, apdu []byte, timeout time.Duration) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	json.Marshal(irqstatus)
-	fmt.Printf("IRQ status: %s\n", func() []byte {
-		v, _ := json.MarshalIndent(irqstatus, "", "\t")
-		return v
-	}())
+	// json.Marshal(irqstatus)
+	// fmt.Printf("IRQ status: %s\n", func() []byte {
+	// 	v, _ := json.MarshalIndent(irqstatus, "", "\t")
+	// 	return v
+	// }())
 
 	if irqstatus.ErrIRQ {
 		// Error
@@ -110,12 +110,11 @@ func sendApdu(c spi.Conn, apdu []byte, timeout time.Duration) ([]byte, error) {
 		}
 	}
 
-	if resp, err := read(c, []byte{0x07}); err != nil {
+	if _, err := read(c, []byte{0x07}); err != nil {
 		return nil, err
-	} else if resp[0]&0x02 != 0x00 {
+	} /** else if resp[0]&0x02 != 0x00 {
 		fmt.Printf("read IRQ1 register: 0x%02X\n", resp[0])
-		// return nil, errors.New("without response Timer1IRQ")
-	}
+	} //**/
 
 	// FIFOLength register
 	length := 0x00
@@ -123,10 +122,10 @@ func sendApdu(c spi.Conn, apdu []byte, timeout time.Duration) ([]byte, error) {
 		return nil, err
 	} else if resp[0] == 0 {
 		// return nil, fmt.Errorf("length response is zero (%d)", resp[0])
-		fmt.Printf("length response is zero (%d)\n", resp[0])
+		// fmt.Printf("length response is zero (%d)\n", resp[0])
 		return nil, nil
 	} else {
-		fmt.Printf("length response is: %d\n", resp[0])
+		// fmt.Printf("length response is: %d\n", resp[0])
 		length = int(resp[0])
 	}
 

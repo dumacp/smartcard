@@ -64,11 +64,11 @@ func anticoll(c spi.Conn, timeout time.Duration) ([]byte, error) {
 
 	apdu := []byte{0x93, 0x20}
 
-	if n, err := writeFifo(c, apdu); err != nil {
+	if _, err := writeFifo(c, apdu); err != nil {
 		return nil, err
-	} else {
+	} /** else {
 		fmt.Printf("write %d bytes\n", n)
-	}
+	} /**/
 
 	if err := resetIRQ(c); err != nil {
 		return nil, err
@@ -114,12 +114,12 @@ func anticoll(c spi.Conn, timeout time.Duration) ([]byte, error) {
 	// 	}
 	// }
 
-	if resp, err := read(c, []byte{0x07}); err != nil {
+	if _, err := read(c, []byte{0x07}); err != nil {
 		return nil, err
-	} else if resp[0]&0x02 != 0x00 {
+	} /** else if resp[0]&0x02 != 0x00 {
 		fmt.Printf("read IRQ1 register: 0x%02X\n", resp[0])
 		// return nil, errors.New("without response Timer1IRQ")
-	}
+	} /**/
 
 	// FIFOLength register
 	length := 0
