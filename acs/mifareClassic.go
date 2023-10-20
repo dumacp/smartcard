@@ -1,6 +1,7 @@
 package acs
 
 import (
+	"fmt"
 	_ "fmt"
 
 	"github.com/dumacp/smartcard/nxp/mifare"
@@ -42,7 +43,7 @@ func MClassic(c pcsc.Card) (mifare.Classic, error) {
 }
 
 func (mc *mifareClassic) Apdu(apdu []byte) ([]byte, error) {
-	panic("not implemented") // TODO: Implement
+	return mc.Card.Apdu(apdu)
 }
 
 func (mc *mifareClassic) Inc(bNr int, data []byte) error {
@@ -63,6 +64,8 @@ func (mc *mifareClassic) Auth(bNr, keyType int, key []byte) ([]byte, error) {
 	aid := []byte{0xFF, 0x82, 0x00, 0x00, 0x06}
 	aid = append(aid, key...)
 
+	fmt.Printf("auth apdu: %X\n", aid)
+
 	response, err := mc.Apdu(aid)
 	if err != nil {
 		return nil, err
@@ -70,11 +73,19 @@ func (mc *mifareClassic) Auth(bNr, keyType int, key []byte) ([]byte, error) {
 	if err := mifare.VerifyResponseIso7816(response); err != nil {
 		return nil, err
 	}
+	// if keyType == 0 {
+	// 	aid = []byte{0xFF, 0x88, 0x00, byte(bNr), 0x60, 0x00}
+	// } else {
+	// 	aid = []byte{0xFF, 0x88, 0x00, byte(bNr), 0x61, 0x00}
+	// }
+
 	if keyType == 0 {
-		aid = []byte{0xFF, 0x88, 0x00, byte(bNr), 0x60, 0x00}
+		aid = []byte{0xFF, 0x86, 0x00, 0x00, 0x05, 0x01, 0x00, byte(bNr), 0x60, 0x00}
 	} else {
-		aid = []byte{0xFF, 0x88, 0x00, byte(bNr), 0x61, 0x00}
+		aid = []byte{0xFF, 0x86, 0x00, 0x00, 0x05, 0x01, 0x00, byte(bNr), 0x61, 0x00}
 	}
+
+	fmt.Printf("auth apdu: %X\n", aid)
 
 	response, err = mc.Apdu(aid)
 	if err != nil {

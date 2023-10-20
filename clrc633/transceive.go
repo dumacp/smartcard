@@ -227,12 +227,12 @@ func sendApduWithoutResponse(c spi.Conn, apdu []byte) ([]byte, error) {
 		}
 	}
 
-	if resp, err := read(c, []byte{0x07}); err != nil {
+	if _, err := read(c, []byte{0x07}); err != nil {
 		return nil, err
-	} else if resp[0]&0x02 != 0x00 {
+	} /** else if resp[0]&0x02 != 0x00 {
 		fmt.Printf("read IRQ1 register: 0x%02X\n", resp[0])
 		// return nil, errors.New("without response Timer1IRQ")
-	}
+	} /**/
 
 	// FIFOLength register
 	length := 0x00
@@ -240,10 +240,10 @@ func sendApduWithoutResponse(c spi.Conn, apdu []byte) ([]byte, error) {
 		return nil, err
 	} else if resp[0] == 0 {
 		// return nil, fmt.Errorf("length response is zero (%d)", resp[0])
-		fmt.Printf("length response is zero (%d)\n", resp[0])
+		// fmt.Printf("length response is zero (%d)\n", resp[0])
 		length = 0x10
 	} else {
-		fmt.Printf("length response is: %d\n", resp[0])
+		// fmt.Printf("length response is: %d\n", resp[0])
 		length = int(resp[0])
 	}
 

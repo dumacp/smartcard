@@ -197,11 +197,11 @@ func anticoll2(c spi.Conn, timeout time.Duration) ([]byte, error) {
 
 	apdu := []byte{0x95, 0x20}
 
-	if n, err := writeFifo(c, apdu); err != nil {
+	if _, err := writeFifo(c, apdu); err != nil {
 		return nil, err
-	} else {
+	} /** else {
 		fmt.Printf("write %d bytes\n", n)
-	}
+	} /**/
 
 	if err := resetIRQ(c); err != nil {
 		return nil, err

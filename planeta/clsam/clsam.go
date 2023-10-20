@@ -2,7 +2,6 @@ package clsam
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/dumacp/smartcard"
 	"github.com/dumacp/smartcard/nxp/mifare"
@@ -37,13 +36,13 @@ func (s *ClSam) UID() ([]byte, error) {
 }
 
 func (s *ClSam) Apdu(data []byte) ([]byte, error) {
-	t0 := time.Now()
-	fmt.Printf("sam apdu: [% X]\n", data)
+	// t0 := time.Now()
+	// fmt.Printf("sam apdu: [% X]\n", data)
 	resp, err := s.ICard.Apdu(data)
 	if err != nil {
 		return resp, err
 	}
-	fmt.Printf("sam sw (%s): [% X]\n", time.Since(t0), resp)
+	// fmt.Printf("sam sw (%s): [% X]\n", time.Since(t0), resp)
 
 	return resp, nil
 }
