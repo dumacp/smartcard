@@ -398,7 +398,7 @@ func (sam *samAv2) SwitchToAV2(key []byte, keyNr, keyVr int) ([]byte, error) {
 	return sam.LockUnlock(key, make([]byte, 3), keyNr, keyVr, 0, 0, 0x03)
 }
 
-// AuthHostAV2 SAM_AuthenticationHost AV2 mode
+// AuthHostAV2 SAM_AuthenticationHost AV2 modeAuthHostAV2
 func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte, error) {
 	rand.Seed(time.Now().UnixNano())
 	iv := make([]byte, 16)

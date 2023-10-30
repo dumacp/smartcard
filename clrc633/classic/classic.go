@@ -21,10 +21,10 @@ func NewMifareClassic(card *clrc633.Card) mifare.Classic {
 
 func (mc *MifareClassic) transfer(bNr int) error {
 	cmd := []byte{0xB0, byte(bNr)}
-	if resp, err := mc.card.Apdu(cmd); err != nil {
+	if _, err := mc.card.Apdu(cmd); err != nil {
 		return err
-	} else if len(resp) > 0 && resp[0] != 0x0A {
-		return fmt.Errorf("no Ack, code: [%X]", resp[0])
+		// } else if len(resp) > 0 && resp[0] != 0x0A {
+		// 	return fmt.Errorf("no Ack, code: [%X]", resp[0])
 	}
 	return nil
 }
@@ -37,10 +37,10 @@ func (mc *MifareClassic) Inc(bNr int, data []byte) error {
 		return fmt.Errorf("no Ack, code: [%X]", resp[0])
 	}
 
-	if resp, err := mc.card.ApduWithoutResponse(data); err != nil {
+	if _, err := mc.card.ApduWithoutResponse(data); err != nil {
 		return err
-	} else if len(resp) > 0 && resp[0] != 0x0A {
-		return fmt.Errorf("no Ack, code: [%X]", resp[0])
+		// } else if len(resp) > 0 && resp[0] != 0x0A {
+		// 	return fmt.Errorf("no Ack, code: [%X]", resp[0])
 	}
 	return mc.transfer(bNr)
 }
@@ -53,10 +53,10 @@ func (mc *MifareClassic) Dec(bNr int, data []byte) error {
 		return fmt.Errorf("no Ack, code: [%X]", resp[0])
 	}
 
-	if resp, err := mc.card.ApduWithoutResponse(data); err != nil {
+	if _, err := mc.card.ApduWithoutResponse(data); err != nil {
 		return err
-	} else if len(resp) > 0 && resp[0] != 0x0A {
-		return fmt.Errorf("no Ack, code: [%X]", resp[0])
+		// } else if len(resp) > 0 && resp[0] != 0x0A {
+		// 	return fmt.Errorf("no Ack, code: [%X]", resp[0])
 	}
 
 	return mc.transfer(bNr)
@@ -70,10 +70,10 @@ func (mc *MifareClassic) Copy(bNr int, dstBnr int) error {
 		return fmt.Errorf("no Ack, code: [%X]", resp[0])
 	}
 
-	if resp, err := mc.card.ApduWithoutResponse(make([]byte, 4)); err != nil {
+	if _, err := mc.card.ApduWithoutResponse(make([]byte, 4)); err != nil {
 		return err
-	} else if len(resp) > 0 && resp[0] != 0x0A {
-		return fmt.Errorf("no Ack, code: [%X]", resp[0])
+		// } else if len(resp) > 0 && resp[0] != 0x0A {
+		// 	return fmt.Errorf("no Ack, code: [%X]", resp[0])
 	}
 	return mc.transfer(dstBnr)
 }

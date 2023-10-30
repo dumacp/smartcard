@@ -67,9 +67,11 @@ func (d *Device) Transceive(data []byte, timeout time.Duration) ([]byte, error) 
 }
 
 func (d *Device) LoadKey(key []byte, timeout time.Duration) error {
+	// fmt.Printf("load key: [% X]\n", key)
 	return loadKey(d.conn, key, timeout)
 }
 
 func (d *Device) Auth(keyType int, block int, uid []byte, timeout time.Duration) error {
+	// fmt.Printf("send %q auth (%d) apdu: [% X]\n", keyType, block, uid)
 	return auth(d.conn, byte(keyType), byte(block), uid, timeout)
 }
