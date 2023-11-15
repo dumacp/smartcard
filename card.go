@@ -5,7 +5,6 @@ projects on which it is based:
 
 	    https://github.com/LudovicRousseau/PCSC
 		https://github.com/ebfe/scard
-
 */
 package smartcard
 
@@ -21,6 +20,8 @@ type ICard interface {
 	ATS() ([]byte, error)
 	SAK() byte
 	DisconnectCard() error
+	DisconnectResetCard() error
+	EndTransactionResetCard() error
 }
 
 var ErrComm = Error(errors.New("error communication"))

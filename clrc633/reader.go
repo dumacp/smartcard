@@ -78,7 +78,11 @@ func (r *Reader) ConnectSamCard_Tany() (smartcard.ICard, error) {
 
 // ConnectCard ConnectCard connect card with protocol T=1.
 func (r *Reader) ConnectCard() (smartcard.ICard, error) {
-	return r.ConnectLegacyCard()
+	c, err := r.ConnectLegacyCard()
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
 // Create New Card typeA interface
@@ -91,6 +95,7 @@ func (r *Reader) ConnectLegacyCard() (*Card, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("resp anticoll: [% 02X]\n", respAnticoll)
 	// uid := func(data []byte) []byte {
 	// 	temp := make([]byte, len(data))
 	// 	for i, v := range data[:] {

@@ -322,6 +322,16 @@ func (r *reader) SetRegister(register byte, data []byte) error {
 
 // Create New Card interface
 func (r *reader) ConnectCard() (smartcard.ICard, error) {
+	c, err := r.ConnectLegacyCard()
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
+}
+
+// Create New Card interface
+func (r *reader) ConnectLegacyCard() (*Card, error) {
 	if !r.device.Ok {
 		return nil, fmt.Errorf("serial device is not ready, %w", smartcard.ErrComm)
 	}
@@ -335,6 +345,7 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	}
 	if len(resp2) <= 1 {
 		code := resp2[0]
+		// fmt.Println("sale///////")
 		return nil, ErrorCode(code)
 		// return nil, smartcard.Error(ErrorCode(code))
 	}
@@ -398,7 +409,7 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 		}
 	}
 
-	card := &card{
+	card := &Card{
 		uuid:     uid,
 		ats:      ats,
 		sak:      sak,
@@ -416,7 +427,11 @@ func (r *reader) ConnectSamCard_T0() (smartcard.ICard, error) {
 
 // Create New Card interface
 func (r *reader) ConnectSamCard_Tany() (smartcard.ICard, error) {
-	return nil, fmt.Errorf("not supported")
+	c, err := r.ConnectSamCard()
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
 // Create New Card interface
@@ -450,7 +465,7 @@ func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
 		return nil, err
 	}
 
-	card := &card{
+	card := &Card{
 		reader:   r,
 		modeSend: T1TransactionV2,
 	}

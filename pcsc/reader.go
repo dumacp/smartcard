@@ -26,6 +26,7 @@ type Context struct {
 // Interface to Reader device
 type Reader interface {
 	smartcard.IReader
+	Name() string
 	ConnectDirect() (Card, error)
 	ConnectCardPCSC() (Card, error)
 	ConnectCardPCSC_T0() (Card, error)
@@ -71,6 +72,10 @@ func newReader(ctx *Context, readerName string) *reader {
 		ReaderName: readerName,
 	}
 	return r
+}
+
+func (r *reader) Name() string {
+	return r.ReaderName
 }
 
 // ConnectCardPCSC Create New Card interface

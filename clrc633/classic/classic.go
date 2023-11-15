@@ -10,18 +10,18 @@ import (
 /**/
 
 type MifareClassic struct {
-	card *clrc633.Card
+	*clrc633.Card
 }
 
 func NewMifareClassic(card *clrc633.Card) mifare.Classic {
 	return &MifareClassic{
-		card: card,
+		card,
 	}
 }
 
 func (mc *MifareClassic) transfer(bNr int) error {
 	cmd := []byte{0xB0, byte(bNr)}
-	if _, err := mc.card.Apdu(cmd); err != nil {
+	if _, err := mc.Card.Apdu(cmd); err != nil {
 		return err
 		// } else if len(resp) > 0 && resp[0] != 0x0A {
 		// 	return fmt.Errorf("no Ack, code: [%X]", resp[0])
@@ -31,13 +31,13 @@ func (mc *MifareClassic) transfer(bNr int) error {
 
 func (mc *MifareClassic) Inc(bNr int, data []byte) error {
 	cmd := []byte{0xC1, byte(bNr)}
-	if resp, err := mc.card.Apdu(cmd); err != nil {
+	if resp, err := mc.Apdu(cmd); err != nil {
 		return err
 	} else if len(resp) > 0 && resp[0] != 0x0A {
 		return fmt.Errorf("no Ack, code: [%X]", resp[0])
 	}
 
-	if _, err := mc.card.ApduWithoutResponse(data); err != nil {
+	if _, err := mc.ApduWithoutResponse(data); err != nil {
 		return err
 		// } else if len(resp) > 0 && resp[0] != 0x0A {
 		// 	return fmt.Errorf("no Ack, code: [%X]", resp[0])
@@ -47,13 +47,13 @@ func (mc *MifareClassic) Inc(bNr int, data []byte) error {
 
 func (mc *MifareClassic) Dec(bNr int, data []byte) error {
 	cmd := []byte{0xC0, byte(bNr)}
-	if resp, err := mc.card.Apdu(cmd); err != nil {
+	if resp, err := mc.Apdu(cmd); err != nil {
 		return err
 	} else if len(resp) > 0 && resp[0] != 0x0A {
 		return fmt.Errorf("no Ack, code: [%X]", resp[0])
 	}
 
-	if _, err := mc.card.ApduWithoutResponse(data); err != nil {
+	if _, err := mc.ApduWithoutResponse(data); err != nil {
 		return err
 		// } else if len(resp) > 0 && resp[0] != 0x0A {
 		// 	return fmt.Errorf("no Ack, code: [%X]", resp[0])
@@ -64,13 +64,13 @@ func (mc *MifareClassic) Dec(bNr int, data []byte) error {
 
 func (mc *MifareClassic) Copy(bNr int, dstBnr int) error {
 	cmd := []byte{0xC2, byte(bNr)}
-	if resp, err := mc.card.Apdu(cmd); err != nil {
+	if resp, err := mc.Apdu(cmd); err != nil {
 		return err
 	} else if len(resp) > 0 && resp[0] != 0x0A {
 		return fmt.Errorf("no Ack, code: [%X]", resp[0])
 	}
 
-	if _, err := mc.card.ApduWithoutResponse(make([]byte, 4)); err != nil {
+	if _, err := mc.ApduWithoutResponse(make([]byte, 4)); err != nil {
 		return err
 		// } else if len(resp) > 0 && resp[0] != 0x0A {
 		// 	return fmt.Errorf("no Ack, code: [%X]", resp[0])
@@ -78,7 +78,9 @@ func (mc *MifareClassic) Copy(bNr int, dstBnr int) error {
 	return mc.transfer(dstBnr)
 }
 
+/**
 func (mc *MifareClassic) Apdu(apdu []byte) ([]byte, error) {
+	// fmt.Printf("apdu: [%02X]\n", apdu)
 	return mc.card.Apdu(apdu)
 }
 
@@ -105,12 +107,14 @@ func (mc *MifareClassic) DisconnectCard() error {
 func (mc *MifareClassic) DisconnectResetCard() error {
 	return mc.card.DisconnectCard()
 }
+**/
 
 func (mc *MifareClassic) Auth(bNr, keyType int, key []byte) ([]byte, error) {
-	if err := mc.card.MFLoadKey(key); err != nil {
+	// fmt.Printf("auth -> bloque: %d, keyType: %d, key: [%02X]\n", bNr, keyType, key)
+	if err := mc.MFLoadKey(key); err != nil {
 		return nil, fmt.Errorf("load key %d error: %w", bNr, err)
 	}
-	if err := mc.card.MFAuthent(keyType, bNr); err != nil {
+	if err := mc.MFAuthent(keyType, bNr); err != nil {
 		return nil, fmt.Errorf("auth key %d error: %w", bNr, err)
 	}
 
@@ -118,7 +122,7 @@ func (mc *MifareClassic) Auth(bNr, keyType int, key []byte) ([]byte, error) {
 }
 
 func (mc *MifareClassic) ReadBlocks(bNr, ext int) ([]byte, error) {
-
+	// fmt.Printf("read -> bloque: %d\n", bNr)
 	ext_ := ext
 	if ext < 1 {
 		ext_ = 1
@@ -143,6 +147,7 @@ func (mc *MifareClassic) ReadBlocks(bNr, ext int) ([]byte, error) {
 }
 
 func (mc *MifareClassic) WriteBlock(bNr int, data []byte) ([]byte, error) {
+	// fmt.Printf("write -> bloque: %d, data: [%02X]\n", bNr, data)
 	aid := []byte{0xA0, byte(bNr)}
 	if resp, err := mc.Apdu(aid); err != nil {
 		return nil, fmt.Errorf("write block %d error: %w", bNr, err)

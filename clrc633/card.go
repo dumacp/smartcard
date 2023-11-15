@@ -102,6 +102,14 @@ func (c *Card) DisconnectCard() error {
 	return nil
 }
 
+func (c *Card) DisconnectResetCard() error {
+	return nil
+}
+
+func (c *Card) EndTransactionResetCard() error {
+	return nil
+}
+
 func (c *Card) MFLoadKey(key []byte) error {
 
 	if len(c.key) > 0 && bytes.Equal(c.key, key) {

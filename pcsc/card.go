@@ -4,6 +4,7 @@ import (
 	//"fmt"
 
 	"fmt"
+	"log"
 
 	"github.com/dumacp/smartcard"
 	"github.com/ebfe/scard"
@@ -82,12 +83,12 @@ func (c *card) Apdu(apdu []byte) ([]byte, error) {
 	if c.State != CONNECTED {
 		return nil, fmt.Errorf("don't Connect to Card, %w", smartcard.ErrComm)
 	}
-	//log.Printf("APDU: [% X], len: %d", apdu, len(apdu))
+	log.Printf("APDU: [% X], len: %d", apdu, len(apdu))
 	resp, err := c.Transmit(apdu)
 	if err != nil {
 		return resp, smartcard.Error(err)
 	}
-	//log.Printf("Response: [% X], len: %d", resp, len(resp))
+	log.Printf("Response: [% X], len: %d", resp, len(resp))
 	result := make([]byte, len(resp))
 	copy(result, resp)
 	return result, nil
@@ -146,7 +147,15 @@ func (c *card) ATS() ([]byte, error) {
 }
 
 func (c *card) SAK() byte {
-	return c.sak
+	aid := []byte{0xFF, 0xCA, 0x00, 0x02, 0x00}
+	resp, err := c.Apdu(aid)
+	if err != nil {
+		return 0xFF
+	}
+	if len(resp) < 3 || (resp[len(resp)-2] != 0x90 || resp[len(resp)-1] != 0x00) {
+		return 0xFF
+	}
+	return resp[len(resp)-3]
 }
 
 // Transparent Session (PCSC)

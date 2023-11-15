@@ -1,8 +1,6 @@
 package mifare
 
-import (
-	"github.com/dumacp/smartcard"
-)
+import "github.com/dumacp/smartcard"
 
 // Classic Mifare Plus Interface
 type Classic interface {
