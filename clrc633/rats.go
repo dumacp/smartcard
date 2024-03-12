@@ -8,7 +8,7 @@ import (
 
 func rats(c spi.Conn, timeout time.Duration) ([]byte, error) {
 
-	apdu := []byte{0xE8, 0x80}
+	apdu := []byte{0xE0, 0x80}
 
 	return sendApdu(c, apdu, timeout)
 

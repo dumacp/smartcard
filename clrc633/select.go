@@ -28,7 +28,7 @@ func selectTag(c spi.Conn, data []byte, timeout time.Duration) (byte, error) {
 	}
 	bufftime := make([]byte, 4)
 	binary.LittleEndian.PutUint32(bufftime, uint32(convertTime&0x00FFFF))
-	fmt.Printf("bufferTime: [% X]\n", bufftime)
+	// fmt.Printf("bufferTime: [% X]\n", bufftime)
 
 	if err := write(c, 0x15, []byte{bufftime[1]}); err != nil {
 		return 0x00, err
@@ -51,7 +51,7 @@ func selectTag(c spi.Conn, data []byte, timeout time.Duration) (byte, error) {
 
 	apdu := []byte{0x93, 0x70}
 	apdu = append(apdu, data...)
-	fmt.Printf("select apdu: [% X]\n", apdu)
+	// fmt.Printf("select apdu: [% X]\n", apdu)
 	if _, err := writeFifo(c, apdu); err != nil {
 		return 0x00, err
 	}
@@ -107,7 +107,7 @@ func selectTag(c spi.Conn, data []byte, timeout time.Duration) (byte, error) {
 	} else if resp[0] < 1 {
 		return 0x00, fmt.Errorf("length is different than 1 (%d)", resp[0])
 	} else {
-		fmt.Printf("length select response (%d)\n", resp[0])
+		// fmt.Printf("length select response (%d)\n", resp[0])
 		length = int(resp[0])
 	}
 
@@ -116,7 +116,7 @@ func selectTag(c spi.Conn, data []byte, timeout time.Duration) (byte, error) {
 		return 0x00, err
 	}
 
-	fmt.Printf("select FIFO response: [% X]\n", buff)
+	// fmt.Printf("select FIFO response: [% X]\n", buff)
 
 	// // Error
 	// if resp, err := read(c, []byte{0x0A}); err != nil {
@@ -171,7 +171,7 @@ func select2Tag(c spi.Conn, data []byte, timeout time.Duration) (byte, error) {
 
 	apdu := []byte{0x95, 0x70}
 	apdu = append(apdu, data...)
-	fmt.Printf("select apdu: [% X]\n", apdu)
+	// fmt.Printf("select apdu: [% X]\n", apdu)
 	if _, err := writeFifo(c, apdu); err != nil {
 		return 0x00, err
 	}
@@ -213,12 +213,12 @@ func select2Tag(c spi.Conn, data []byte, timeout time.Duration) (byte, error) {
 	// 	}
 	// }
 
-	if resp, err := read(c, []byte{0x07}); err != nil {
+	if _, err := read(c, []byte{0x07}); err != nil {
 		return 0x00, err
-	} else if resp[0]&0x02 != 0x00 {
+	} /** else if resp[0]&0x02 != 0x00 {
 		fmt.Printf("read IRQ1 register: 0x%02X\n", resp[0])
 		// return nil, errors.New("without response Timer1IRQ")
-	}
+	} /**/
 
 	// FIFOLength register
 	length := 0x00
@@ -227,7 +227,7 @@ func select2Tag(c spi.Conn, data []byte, timeout time.Duration) (byte, error) {
 	} else if resp[0] < 1 {
 		return 0x00, fmt.Errorf("length is different than 1 (%d)", resp[0])
 	} else {
-		fmt.Printf("length select response (%d)\n", resp[0])
+		// fmt.Printf("length select response (%d)\n", resp[0])
 		length = int(resp[0])
 	}
 
@@ -236,7 +236,7 @@ func select2Tag(c spi.Conn, data []byte, timeout time.Duration) (byte, error) {
 		return 0x00, err
 	}
 
-	fmt.Printf("select_2 FIFO response: [% X]\n", buff)
+	// fmt.Printf("select_2 FIFO response: [% X]\n", buff)
 
 	// // Error
 	// if resp, err := read(c, []byte{0x0A}); err != nil {

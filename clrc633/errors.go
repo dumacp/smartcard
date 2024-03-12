@@ -9,6 +9,8 @@ import (
 
 var ErrorReadTimeout = errors.New("timeout reading")
 
+var ErrorAuth = errors.New("auth failed")
+
 var ErrorEEPROM = errors.New("error appeared during the last EEPROM command")
 
 var ErrorFIFOWr = errors.New(`data was written into the FIFO, during a transmission of a possible CRC, during "RxWait", "Wait for data" or "Receiving" state, or during an authentication command`)

@@ -1,7 +1,6 @@
 package clrc633
 
 import (
-	"fmt"
 	"time"
 
 	"periph.io/x/conn/v3/spi"
@@ -19,9 +18,9 @@ func NewDevice(path string) (*Device, error) {
 		return nil, err
 	}
 
-	// if err := reset(conn); err != nil {
-	// 	return nil, err
-	// }
+	if err := reset(conn); err != nil {
+		return nil, err
+	}
 
 	if err := init_iso14443_Dev(conn); err != nil {
 		return nil, err
@@ -58,19 +57,21 @@ func (d *Device) Select2(data []byte, timeout time.Duration) (byte, error) {
 }
 
 func (d *Device) Transceive(data []byte, timeout time.Duration) ([]byte, error) {
-	fmt.Printf("send apdu: [% X]\n", data)
+	// fmt.Printf("send apdu: [% X]\n", data)
 	resp, err := sendApdu(d.conn, data, timeout)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("response sw: [% X]\n", resp)
+	// fmt.Printf("response sw: [% X]\n", resp)
 	return resp, nil
 }
 
 func (d *Device) LoadKey(key []byte, timeout time.Duration) error {
+	// fmt.Printf("load key: [% X]\n", key)
 	return loadKey(d.conn, key, timeout)
 }
 
 func (d *Device) Auth(keyType int, block int, uid []byte, timeout time.Duration) error {
+	// fmt.Printf("send %q auth (%d) apdu: [% X]\n", keyType, block, uid)
 	return auth(d.conn, byte(keyType), byte(block), uid, timeout)
 }

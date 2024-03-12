@@ -10,6 +10,9 @@ const (
 	authentication string = "l"
 	readblock      string = "rb"
 	writeblock     string = "wb"
+	incvalue       string = "+"
+	decvalue       string = "-"
+	copyvalue      string = "="
 )
 
 // response
@@ -38,8 +41,10 @@ func NewMifareClassicReader(dev *Device, readerName string, idx int) Reader {
 }
 
 // MifareClassic Create Mifare Plus Interface
-func MifareClassic(c smartcard.ICard) (mifare.Classic, error) {
+func MifareClassic(c *Card) (mifare.Classic, error) {
 
+	c.reader.SetModeProtocol(BinaryMode)
+	c.modeSend = NA
 	mc := &mifareClassic{
 		ICard: c,
 	}
@@ -60,15 +65,73 @@ func (r *reader) ConnectMifareClassic() (mifare.Classic, error) {
 }
 
 func (mc *mifareClassic) Inc(bNr int, data []byte) error {
-	panic("not implemented") // TODO: Implement
+	cmd := []byte(incvalue)
+
+	dataInv := make([]byte, 0)
+	for i := range data {
+		dataInv = append(dataInv, data[len(data)-1-i])
+	}
+
+	apdu := make([]byte, 0)
+	apdu = append(apdu, cmd...)
+	apdu = append(apdu, byte(bNr))
+	apdu = append(apdu, dataInv...)
+	resp1, err := mc.Apdu(apdu)
+	if err != nil {
+		return err
+	}
+	if len(resp1) < 4 {
+		if len(resp1) > 0 {
+			return ErrorCode(resp1[0])
+		}
+		return NilResponse(0)
+	}
+	return nil
 }
 
 func (mc *mifareClassic) Dec(bNr int, data []byte) error {
-	panic("not implemented") // TODO: Implement
+	cmd := []byte(decvalue)
+
+	dataInv := make([]byte, 0)
+	for i := range data {
+		dataInv = append(dataInv, data[len(data)-1-i])
+	}
+
+	apdu := make([]byte, 0)
+	apdu = append(apdu, cmd...)
+	apdu = append(apdu, byte(bNr))
+	apdu = append(apdu, dataInv...)
+	resp1, err := mc.Apdu(apdu)
+	if err != nil {
+		return err
+	}
+	if len(resp1) < 4 {
+		if len(resp1) > 0 {
+			return ErrorCode(resp1[0])
+		}
+		return NilResponse(0)
+	}
+	return nil
 }
 
 func (mc *mifareClassic) Copy(bNr int, dstBnr int) error {
-	panic("not implemented") // TODO: Implement
+	cmd := []byte(copyvalue)
+
+	apdu := make([]byte, 0)
+	apdu = append(apdu, cmd...)
+	apdu = append(apdu, byte(bNr))
+	apdu = append(apdu, byte(dstBnr))
+	resp1, err := mc.Apdu(apdu)
+	if err != nil {
+		return err
+	}
+	if len(resp1) < 4 {
+		if len(resp1) > 0 {
+			return ErrorCode(resp1[0])
+		}
+		return NilResponse(0)
+	}
+	return nil
 }
 
 func (mc *mifareClassic) Auth(bNr, keyType int, key []byte) ([]byte, error) {
@@ -110,18 +173,22 @@ func verifyblockresponse(resp []byte) error {
 func (mc *mifareClassic) ReadBlocks(bNr, ext int) ([]byte, error) {
 
 	cmd := []byte(readblock)
+	result := make([]byte, 0)
 
-	apdu := make([]byte, 0)
-	apdu = append(apdu, cmd...)
-	apdu = append(apdu, byte(bNr))
-	resp1, err := mc.Apdu(apdu)
-	if err != nil {
-		return nil, err
+	for i := range make([]int, ext) {
+		apdu := make([]byte, 0)
+		apdu = append(apdu, cmd...)
+		apdu = append(apdu, byte(bNr+i))
+		resp1, err := mc.Apdu(apdu)
+		if err != nil {
+			return nil, err
+		}
+		if err := verifyblockresponse(resp1); err != nil {
+			return nil, err
+		}
+		result = append(result, resp1...)
 	}
-	if err := verifyblockresponse(resp1); err != nil {
-		return nil, err
-	}
-	return resp1, nil
+	return result, nil
 }
 
 func (mc *mifareClassic) WriteBlock(bNr int, data []byte) ([]byte, error) {

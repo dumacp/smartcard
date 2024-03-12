@@ -48,3 +48,7 @@ func (c *Card) ATS() ([]byte, error) {
 func (c *Card) DisconnectCard() error {
 	return nil
 }
+
+func (c *Card) DisconnectResetCard() error {
+	return nil
+}

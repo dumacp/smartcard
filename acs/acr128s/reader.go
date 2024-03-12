@@ -9,8 +9,6 @@ import (
 )
 
 type Reader struct {
-	smartcard.IReader
-	mifare.IReaderClassic
 	dev        *Device
 	readerName string
 	slot       Slot
@@ -27,6 +25,7 @@ func NewReader(dev *Device, readerName string, slot Slot) *Reader {
 	return r
 }
 
+// Transmit Primitive function transceive to send apdu
 func (r *Reader) Transmit(apdu []byte) ([]byte, error) {
 
 	header := BuildHeader__PC_to_RDR_XfrBlock(r.seq, r.slot, len(apdu))
@@ -61,6 +60,7 @@ func (r *Reader) Transmit(apdu []byte) ([]byte, error) {
 	return dataResponse, nil
 }
 
+// EscapeCommand Primitive function to send Control commands
 func (r *Reader) EscapeCommand(apdu []byte) ([]byte, error) {
 
 	header := BuildHeader__PC_to_RDR_Escape(r.seq, SLOT_PICC, len(apdu))
@@ -94,6 +94,7 @@ func (r *Reader) EscapeCommand(apdu []byte) ([]byte, error) {
 	return dataResponse, nil
 }
 
+// IccPowerOff Power off contact card
 func (r *Reader) IccPowerOff() ([]byte, error) {
 
 	header := BuildHeader__PC_to_RDR_IccPowerOff(r.seq, r.slot)
@@ -128,6 +129,7 @@ func (r *Reader) IccPowerOff() ([]byte, error) {
 	return dataResponse, nil
 }
 
+// IccPowerOn Power on contact card
 func (r *Reader) IccPowerOn() ([]byte, error) {
 
 	header := BuildHeader__PC_to_RDR_IccPowerOn(r.seq, r.slot)
@@ -162,7 +164,7 @@ func (r *Reader) IccPowerOn() ([]byte, error) {
 	return dataResponse, nil
 }
 
-// Create New Card interface
+// ConnectCard Create New Card interface with T=1
 func (r *Reader) ConnectCard() (smartcard.ICard, error) {
 	respEscape, err := r.EscapeCommand([]byte{0xE0, 0, 0, 0x25, 0})
 	if err != nil {
@@ -177,37 +179,36 @@ func (r *Reader) ConnectCard() (smartcard.ICard, error) {
 		return nil, fmt.Errorf("without card")
 	}
 
-	if err := mifare.VerifyResponseIso7816(respGetData); err != nil {
-		return nil, err
+	respGetData2, err := r.Transmit([]byte{0xFF, 0xCA, 0, 2, 0})
+	if err != nil {
+		return nil, fmt.Errorf("without card")
+	}
+	sak := byte(0xFF)
+	if err := mifare.VerifyResponseIso7816(respGetData2); err == nil {
+		if len(respGetData2) > 2 {
+			sak = respGetData2[len(respGetData2)-3]
+		}
 	}
 
 	uid := respGetData[:len(respGetData)-2]
 
-	// fmt.Printf("getData response: [% X]\n", respGetData)
-
 	cardS := &Card{
 		uid:    uid,
 		reader: r,
+		sak:    sak,
 	}
 	return cardS, nil
 }
 
-// Create New Card interface
+// ConnectSamCard Create New contact Card interface with T=1
 func (r *Reader) ConnectSamCard() (smartcard.ICard, error) {
 	if _, err := r.EscapeCommand([]byte{0xE0, 0, 0, 0x2E, 2, 0, 10}); err != nil {
 		return nil, fmt.Errorf("connect card err = %s, %w", err, smartcard.ErrComm)
 	}
-	// fmt.Printf("readExtraGuardTime response: [% X]\n", respReadExtraGuardTime)
-
 	respIccPowerOn, err := r.IccPowerOn()
 	if err != nil {
 		return nil, fmt.Errorf("connect card err = %s, %w", err, smartcard.ErrComm)
 	}
-	// fmt.Printf("iccPowerOn response: [% X]\n", respIccPowerOn)
-
-	// if err := mifare.VerifyResponseIso7816(respIccPowerOn); err != nil {
-	// 	return nil, err
-	// }
 	if len(respIccPowerOn) < 1 || respIccPowerOn[0] != 0x3B {
 		return nil, fmt.Errorf("bad response: [% X]", respIccPowerOn)
 	}
@@ -219,4 +220,18 @@ func (r *Reader) ConnectSamCard() (smartcard.ICard, error) {
 		reader: r,
 	}
 	return cardS, nil
+}
+
+// ConnectSamCard_T0 ConnectCard connect card with protocol T=1.
+func (r *Reader) ConnectSamCard_T0() (smartcard.ICard, error) {
+	panic("not implemented") // TODO: Implement
+}
+
+// ConnectSamCard_Tany ConnectCard connect card with protocol T=any.
+func (r *Reader) ConnectSamCard_Tany() (smartcard.ICard, error) {
+	panic("not implemented") // TODO: Implement
+}
+
+func (r *Reader) ConnectMifareClassic() (mifare.Classic, error) {
+	panic("not implemented") // TODO: Implement
 }

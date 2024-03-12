@@ -9,7 +9,6 @@ import (
 )
 
 type Reader struct {
-	smartcard.IReader
 	dev        *Device
 	readerName string
 }
@@ -26,6 +25,11 @@ func NewReader(dev *Device, readerName string) *Reader {
 func (r *Reader) Transceive(apdu []byte) ([]byte, error) {
 
 	return r.dev.Transceive(apdu, 300*time.Millisecond)
+}
+
+func (r *Reader) Transmit(apdu []byte) ([]byte, error) {
+
+	return r.dev.Transceive(apdu, 0)
 }
 
 func (r *Reader) Request() (byte, error) {
@@ -58,12 +62,31 @@ func (r *Reader) Auth(keyType, block int, uid []byte) error {
 }
 
 func (r *Reader) RATS() ([]byte, error) {
-	apdu := []byte{0xE8, 0x80}
+	apdu := []byte{0xE0, 0x80}
 	return r.dev.Transceive(apdu, 100*time.Millisecond)
 }
 
+// ConnectSamCard_T0 ConnectCard connect card with protocol T=1.
+func (r *Reader) ConnectSamCard_T0() (smartcard.ICard, error) {
+	panic("not implemented") // TODO: Implement
+}
+
+// ConnectSamCard_Tany ConnectCard connect card with protocol T=any.
+func (r *Reader) ConnectSamCard_Tany() (smartcard.ICard, error) {
+	panic("not implemented") // TODO: Implement
+}
+
+// ConnectCard ConnectCard connect card with protocol T=1.
+func (r *Reader) ConnectCard() (smartcard.ICard, error) {
+	c, err := r.ConnectLegacyCard()
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
 // Create New Card typeA interface
-func (r *Reader) ConnectCard() (*Card, error) {
+func (r *Reader) ConnectLegacyCard() (*Card, error) {
 
 	if _, err := r.Request(); err != nil {
 		return nil, err
@@ -72,6 +95,7 @@ func (r *Reader) ConnectCard() (*Card, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("resp anticoll: [% 02X]\n", respAnticoll)
 	// uid := func(data []byte) []byte {
 	// 	temp := make([]byte, len(data))
 	// 	for i, v := range data[:] {
@@ -83,8 +107,8 @@ func (r *Reader) ConnectCard() (*Card, error) {
 	uid := make([]byte, 0)
 	uid = append(uid, respAnticoll[:len(respAnticoll)-1]...)
 
-	tSelect := time.Now()
-	defer func() { fmt.Printf("time select: %v\n", time.Since(tSelect)) }()
+	// tSelect := time.Now()
+	// defer func() { fmt.Printf("time select: %v\n", time.Since(tSelect)) }()
 	sak, err := r.Select(respAnticoll)
 	if err != nil {
 		return nil, err
@@ -118,6 +142,7 @@ func (r *Reader) ConnectCard() (*Card, error) {
 		if err != nil {
 			return nil, err
 		}
+		cardS.typeTag = TAG_TCL
 		cardS.ats = ats
 		cardS.sak = sak2
 	}
@@ -159,7 +184,7 @@ func (r *Reader) ConnectCardB() (smartcard.ICard, error) {
 	return cardS, nil
 }
 
-// Create New Card interface
+// ConnectSamCard ConnectSamCard connect card with protocol T=1.
 func (r *Reader) ConnectSamCard() (smartcard.ICard, error) {
 	return nil, ErrorUnsupported
 }

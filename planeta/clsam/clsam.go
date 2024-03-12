@@ -31,13 +31,18 @@ func NewClSam(c smartcard.ICard) *ClSam {
 	return sam
 }
 
+func (s *ClSam) UID() ([]byte, error) {
+	return s.Serial()
+}
+
 func (s *ClSam) Apdu(data []byte) ([]byte, error) {
-	fmt.Printf("sam apdu: [% X]\n", data)
+	// t0 := time.Now()
+	// fmt.Printf("sam apdu: [% X]\n", data)
 	resp, err := s.ICard.Apdu(data)
 	if err != nil {
 		return resp, err
 	}
-	fmt.Printf("sam sw: [% X]\n", resp)
+	// fmt.Printf("sam sw (%s): [% X]\n", time.Since(t0), resp)
 
 	return resp, nil
 }
@@ -136,6 +141,23 @@ func (s *ClSam) ResetChannel(data []byte) error {
 	return nil
 }
 
+func (s *ClSam) SelectFile00(fileId []byte) error {
+	cmd := []byte{0x00, 0xA4, 0x00, 0x0C}
+	apdu := make([]byte, 0)
+	apdu = append(apdu, cmd...)
+	apdu = append(apdu, byte(len(fileId)))
+	apdu = append(apdu, fileId...)
+	resp, err := s.Apdu(apdu)
+	if err != nil {
+		return err
+	}
+	if err := mifare.VerifyResponseIso7816(resp); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *ClSam) SelectFile(fileId []byte) error {
 	cmd := []byte{0x03, 0xA4, 0x00, 0x0C}
 	apdu := make([]byte, 0)
@@ -151,6 +173,21 @@ func (s *ClSam) SelectFile(fileId []byte) error {
 	}
 
 	return nil
+}
+
+func (s *ClSam) ReadBinary00(lenData int) ([]byte, error) {
+	cmd := []byte{0x00, 0xB0, 0x00, 0x00}
+	apdu := make([]byte, 0)
+	apdu = append(apdu, cmd...)
+	apdu = append(apdu, byte(lenData))
+	resp, err := s.Apdu(apdu)
+	if err != nil {
+		return nil, err
+	}
+	if err := mifare.VerifyResponseIso7816(resp); err != nil {
+		return nil, err
+	}
+	return resp[:len(resp)-2], nil
 }
 
 func (s *ClSam) ReadBinary(lenData int) ([]byte, error) {
@@ -173,7 +210,7 @@ func (s *ClSam) PutFile(fileId, data []byte) ([]byte, error) {
 	apdu := make([]byte, 0)
 	apdu = append(apdu, cmd...)
 	apdu = append(apdu, fileId...)
-	apdu = append(apdu, byte(len(fileId)+len(data)))
+	apdu = append(apdu, byte(len(data)))
 	apdu = append(apdu, data...)
 	resp, err := s.Apdu(apdu)
 	if err != nil {

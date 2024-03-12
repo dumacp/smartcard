@@ -5,7 +5,7 @@ import (
 	"github.com/dumacp/smartcard/nxp/mifare/samav2"
 )
 
-//SamAv3 Interface
+// SamAv3 Interface
 type SamAv3 interface {
 	samav2.SamAv2
 	// smartcard.ICard
@@ -40,7 +40,7 @@ type samAv3 struct {
 	samav2.SamAv2
 }
 
-//SamAV3 Create SAM from Card
+// SamAV3 Create SAM from Card
 func SamAV3(c smartcard.ICard) SamAv3 {
 	samv2 := samav2.SamAV2(c)
 	sam := new(samAv3)
@@ -48,7 +48,7 @@ func SamAV3(c smartcard.ICard) SamAv3 {
 	return sam
 }
 
-//ConnectSam Create SamAv2 interface
+// ConnectSam Create SamAv2 interface
 func ConnectSam(r smartcard.IReader) (SamAv3, error) {
 
 	// c, err := r.ConnectCard()
@@ -67,7 +67,7 @@ func ConnectSam(r smartcard.IReader) (SamAv3, error) {
 	return sam3, nil
 }
 
-//AuthHost SAM_AuthenticationHost
+// AuthHost SAM_AuthenticationHost
 func (sam *samAv3) AuthHost(key []byte, keyNo, keyVer, hostMode int) ([]byte, error) {
 	return sam.SamAv2.AuthHostAV2(key, keyNo, keyVer, hostMode)
 }

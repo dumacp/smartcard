@@ -14,7 +14,7 @@ import (
 	"github.com/tarm/serial"
 )
 
-//Device struct
+// Device struct
 type Device struct {
 	port    *serial.Port
 	Ok      bool
@@ -25,7 +25,7 @@ type Device struct {
 	mode    int
 }
 
-//NewDevice create new serial device
+// NewDevice create new serial device
 func NewDevice(portName string, baudRate int, timeout time.Duration) (*Device, error) {
 	log.Println("port serial config ...")
 	config := &serial.Config{
@@ -57,7 +57,7 @@ func NewDevice(portName string, baudRate int, timeout time.Duration) (*Device, e
 	return dev, nil
 }
 
-//Close close serial device
+// Close close serial device
 func (dev *Device) Close() bool {
 	dev.Ok = false
 	close(dev.chQuit)
@@ -68,7 +68,7 @@ func (dev *Device) Close() bool {
 	return true
 }
 
-//Read read serial device with a channel
+// Read read serial device with a channel
 func (dev *Device) read() {
 	if !dev.Ok {
 		// log.Printf("Device is closed === %s", dev)
@@ -200,7 +200,7 @@ func (dev *Device) read() {
 	log.Println("reading port")
 }
 
-//Send write data bytes in serial device
+// Send write data bytes in serial device
 func (dev *Device) Send(data []byte) (int, error) {
 	dev.mux.Lock()
 	defer dev.mux.Unlock()
@@ -209,7 +209,7 @@ func (dev *Device) Send(data []byte) (int, error) {
 	return n, err
 }
 
-//SendRecv write daa bytes in serial device and wait by response
+// SendRecv write daa bytes in serial device and wait by response
 func (dev *Device) SendRecv(data []byte) ([]byte, error) {
 	dev.mux.Lock()
 	defer dev.mux.Unlock()
@@ -237,7 +237,7 @@ func (dev *Device) SendRecv(data []byte) ([]byte, error) {
 	}
 }
 
-//Recv read data bytes in serial device
+// Recv read data bytes in serial device
 func (dev *Device) Recv() ([]byte, error) {
 	var recv []byte
 	select {

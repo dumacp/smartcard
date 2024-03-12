@@ -123,11 +123,11 @@ func request(c spi.Conn, tagType byte, timeout time.Duration) (byte, error) {
 		return 0x00, err
 	}
 
-	tt := time.Now()
+	// tt := time.Now()
 	if err := waitRxIRQ(c, TIME1IRQ, (timeout + 30*time.Millisecond)); err != nil {
 		return 0x00, err
 	}
-	fmt.Printf("time elapse request: %s\n", time.Since(tt))
+	// fmt.Printf("time elapse request: %s\n", time.Since(tt))
 
 	// printStatusIRQ(c)
 
@@ -169,7 +169,7 @@ func request(c spi.Conn, tagType byte, timeout time.Duration) (byte, error) {
 		return 0x00, err
 	}
 
-	fmt.Printf("request response: [% X]\n", buff)
+	// fmt.Printf("request response: [% X]\n", buff)
 
 	// // Error
 	// if resp, err := read(c, []byte{0x0A}); err != nil {

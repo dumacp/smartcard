@@ -1,4 +1,5 @@
-/**
+/*
+*
 package to handle the communication of smartcard devices under the PCSC implementation
 
 projects on which it is based:
@@ -6,7 +7,8 @@ projects on which it is based:
 	https://github.com/LudovicRousseau/PCSC
 	https://github.com/ebfe/scard
 
-/**/
+/*
+*/
 package pcsc
 
 import (
@@ -21,12 +23,14 @@ type Context struct {
 	*scard.Context
 }
 
-//Interface to Reader device
+// Interface to Reader device
 type Reader interface {
 	smartcard.IReader
+	Name() string
 	ConnectDirect() (Card, error)
 	ConnectCardPCSC() (Card, error)
 	ConnectCardPCSC_T0() (Card, error)
+	ConnectCardPCSC_Tany() (Card, error)
 }
 
 type reader struct {
@@ -34,7 +38,7 @@ type reader struct {
 	ReaderName string
 }
 
-//Establish Context to Reader in pcscd
+// Establish Context to Reader in pcscd
 func NewContext() (*Context, error) {
 	ctx, err := scard.EstablishContext()
 	if err != nil {
@@ -44,7 +48,7 @@ func NewContext() (*Context, error) {
 	return context, nil
 }
 
-//List Readers in a Context
+// List Readers in a Context
 func ListReaders(ctx *Context) ([]string, error) {
 	rs, err := ctx.ListReaders()
 	if err != nil {
@@ -53,7 +57,7 @@ func ListReaders(ctx *Context) ([]string, error) {
 	return rs, nil
 }
 
-//Create New Reader interface
+// Create New Reader interface
 func NewReader(ctx *Context, readerName string) Reader {
 	r := &reader{
 		Context:    ctx,
@@ -70,7 +74,11 @@ func newReader(ctx *Context, readerName string) *reader {
 	return r
 }
 
-//ConnectCardPCSC Create New Card interface
+func (r *reader) Name() string {
+	return r.ReaderName
+}
+
+// ConnectCardPCSC Create New Card interface
 func (r *reader) ConnectCardPCSC() (Card, error) {
 	if ok, err := r.Context.IsValid(); err != nil && !ok {
 		return nil, fmt.Errorf("context err = %w, %w", err, smartcard.ErrComm)
@@ -84,14 +92,16 @@ func (r *reader) ConnectCardPCSC() (Card, error) {
 			return nil, fmt.Errorf("connect card err = %s, %w", err, smartcard.ErrComm)
 		}
 	}
+	sak := byte(0xFF)
 	cardS := &card{
 		CONNECTED,
 		c,
+		sak,
 	}
 	return cardS, nil
 }
 
-//ConnectCardPCSCT0 Create New Card interface
+// ConnectCardPCSCT0 Create New Card interface
 func (r *reader) ConnectCardPCSC_T0() (Card, error) {
 	if ok, err := r.Context.IsValid(); err != nil && !ok {
 		return nil, fmt.Errorf("context err = %s, %w", err, smartcard.ErrComm)
@@ -101,14 +111,35 @@ func (r *reader) ConnectCardPCSC_T0() (Card, error) {
 	if err != nil {
 		return nil, err
 	}
+	sak := byte(0xFF)
 	cardS := &card{
 		CONNECTED,
 		c,
+		sak,
 	}
 	return cardS, nil
 }
 
-//Create New Card interface
+// ConnectCardPCSCT0 Create New Card interface
+func (r *reader) ConnectCardPCSC_Tany() (Card, error) {
+	if ok, err := r.Context.IsValid(); err != nil && !ok {
+		return nil, fmt.Errorf("context err = %s, %w", err, smartcard.ErrComm)
+	}
+
+	c, err := r.Context.Connect(r.ReaderName, scard.ShareShared, scard.ProtocolAny)
+	if err != nil {
+		return nil, err
+	}
+	sak := byte(0xFF)
+	cardS := &card{
+		CONNECTED,
+		c,
+		sak,
+	}
+	return cardS, nil
+}
+
+// Create New Card interface
 func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	if ok, err := r.Context.IsValid(); err != nil && !ok {
 		return nil, fmt.Errorf("context err = %s, %w", err, smartcard.ErrComm)
@@ -124,16 +155,24 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 			return nil, fmt.Errorf("connect card err = %s, %w", err, smartcard.ErrComm)
 		}
 	}
+	sak := byte(0xFF)
 	cardS := &card{
 		CONNECTED,
 		c,
+		sak,
 	}
 	return cardS, nil
 }
 
-//Create New Card interface
+// Create New Card interface
 func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
 	return r.ConnectCardPCSC()
+}
+func (r *reader) ConnectSamCard_T0() (smartcard.ICard, error) {
+	return r.ConnectCardPCSC_T0()
+}
+func (r *reader) ConnectSamCard_Tany() (smartcard.ICard, error) {
+	return r.ConnectCardPCSC_Tany()
 }
 
 func (r *reader) connectCard() (*card, error) {
@@ -145,9 +184,11 @@ func (r *reader) connectCard() (*card, error) {
 	if err != nil {
 		return nil, err
 	}
+	sak := byte(0xFF)
 	cardS := &card{
 		CONNECTED,
 		c,
+		sak,
 	}
 	return cardS, nil
 }
@@ -161,14 +202,16 @@ func (r *reader) ConnectDirect() (Card, error) {
 	if err != nil {
 		return nil, err
 	}
+	sak := byte(0xFF)
 	cardS := &card{
 		CONNECTEDDirect,
 		c,
+		sak,
 	}
 	return cardS, nil
 }
 
-//Release Context in pcscd
+// Release Context in pcscd
 func (c *Context) Release() error {
 	err := c.Context.Release()
 	return err

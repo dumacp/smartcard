@@ -34,7 +34,7 @@ func loadKey(c spi.Conn, key []byte, timeout time.Duration) error {
 	if err := write(c, 0x00, []byte{0x00}); err != nil {
 		return err
 	}
-	fmt.Printf("send key: [% X]\n", key)
+	// fmt.Printf("send key: [% X]\n", key)
 	if _, err := writeFifo(c, key); err != nil {
 		return err
 	}
@@ -53,8 +53,8 @@ func loadKey(c spi.Conn, key []byte, timeout time.Duration) error {
 		return err
 	}
 
-	tSelect := time.Now()
-	defer func() { fmt.Printf("time loadKey: %v\n", time.Since(tSelect)) }()
+	// tSelect := time.Now()
+	// defer func() { fmt.Printf("time loadKey: %v\n", time.Since(tSelect)) }()
 	// time.Sleep(100 * time.Millisecond)
 	// IRQ1 register
 	if err := waitIdleIRQ(c, TIME1IRQ, timeout+30*time.Millisecond); err != nil {
@@ -103,7 +103,7 @@ func auth(c spi.Conn, keyType, block byte, uid []byte, timeout time.Duration) er
 
 	bufftime := make([]byte, 4)
 	binary.LittleEndian.PutUint32(bufftime, uint32(convertTime&0x00FFFF))
-	fmt.Printf("bufferTime: [% X]\n", bufftime)
+	// fmt.Printf("bufferTime: [% X]\n", bufftime)
 
 	if err := write(c, 0x15, []byte{bufftime[1]}); err != nil {
 		return err
@@ -143,7 +143,7 @@ func auth(c spi.Conn, keyType, block byte, uid []byte, timeout time.Duration) er
 	frame = append(frame, block)
 	frame = append(frame, uid...)
 
-	fmt.Printf("send auth frame: [% X]\n", frame)
+	// fmt.Printf("send auth frame: [% X]\n", frame)
 	if _, err := writeFifo(c, frame); err != nil {
 		return err
 	}
@@ -162,11 +162,11 @@ func auth(c spi.Conn, keyType, block byte, uid []byte, timeout time.Duration) er
 		return err
 	}
 
-	tSelect := time.Now()
-	defer func() { fmt.Printf("time auth: %v\n", time.Since(tSelect)) }()
+	// tSelect := time.Now()
+	// defer func() { fmt.Printf("time auth: %v\n", time.Since(tSelect)) }()
 	// IRQ1 register
 	if err := waitIdleIRQ(c, 0x02, timeout+30*time.Millisecond); err != nil {
-		return fmt.Errorf("auth failed, err: %w", err)
+		return ErrorAuth
 	}
 
 	// irqstatus, err := statusIRQ(c)
