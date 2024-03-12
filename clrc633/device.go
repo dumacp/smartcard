@@ -22,7 +22,7 @@ func NewDevice(path string) (*Device, error) {
 		return nil, err
 	}
 
-	if err := init_iso14443_Dev(conn); err != nil {
+	if err := init_test_Dev(conn); err != nil {
 		return nil, err
 	}
 

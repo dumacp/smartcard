@@ -84,7 +84,7 @@ func (mc *mifareClassic) Auth(bNr, keyType int, key []byte) ([]byte, error) {
 	aid := []byte{0xFF, 0x82, 0x00, 0x00, 0x06}
 	aid = append(aid, key...)
 
-	fmt.Printf("auth apdu: %X\n", aid)
+	fmt.Printf("%X\n", aid)
 
 	response, err := mc.Apdu(aid)
 	if err != nil {
