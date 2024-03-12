@@ -93,7 +93,7 @@ func (r *reader) ConnectCardPCSC() (Card, error) {
 		}
 	}
 	sak := byte(0xFF)
-	cardS := &card{
+	cardS := &Scard{
 		CONNECTED,
 		c,
 		sak,
@@ -112,7 +112,7 @@ func (r *reader) ConnectCardPCSC_T0() (Card, error) {
 		return nil, err
 	}
 	sak := byte(0xFF)
-	cardS := &card{
+	cardS := &Scard{
 		CONNECTED,
 		c,
 		sak,
@@ -131,7 +131,7 @@ func (r *reader) ConnectCardPCSC_Tany() (Card, error) {
 		return nil, err
 	}
 	sak := byte(0xFF)
-	cardS := &card{
+	cardS := &Scard{
 		CONNECTED,
 		c,
 		sak,
@@ -156,7 +156,7 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 		}
 	}
 	sak := byte(0xFF)
-	cardS := &card{
+	cardS := &Scard{
 		CONNECTED,
 		c,
 		sak,
@@ -175,7 +175,7 @@ func (r *reader) ConnectSamCard_Tany() (smartcard.ICard, error) {
 	return r.ConnectCardPCSC_Tany()
 }
 
-func (r *reader) connectCard() (*card, error) {
+func (r *reader) connectCard() (*Scard, error) {
 	if ok, err := r.Context.IsValid(); err != nil && !ok {
 		return nil, fmt.Errorf("context err = %w, %w", err, smartcard.ErrComm)
 	}
@@ -185,7 +185,7 @@ func (r *reader) connectCard() (*card, error) {
 		return nil, err
 	}
 	sak := byte(0xFF)
-	cardS := &card{
+	cardS := &Scard{
 		CONNECTED,
 		c,
 		sak,
@@ -203,7 +203,7 @@ func (r *reader) ConnectDirect() (Card, error) {
 		return nil, err
 	}
 	sak := byte(0xFF)
-	cardS := &card{
+	cardS := &Scard{
 		CONNECTEDDirect,
 		c,
 		sak,
