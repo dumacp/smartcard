@@ -14,7 +14,7 @@ import (
 	"github.com/dumacp/smartcard/nxp/mifare/tools"
 )
 
-//apduChangeKeyEntry create APDU to SAM_ApduChangeKeyEntry
+// apduChangeKeyEntry create APDU to SAM_ApduChangeKeyEntry
 func apduChangeKeyEntryAv1(hostMode, keyNbr, proMax, cmdCtr int,
 	keyVA, keyVB, keyVC []byte,
 	dfKeyNr, ceKNo, ceKV, kuc, verA, verB, verC byte,
@@ -77,7 +77,7 @@ func apduChangeKeyEntryAv1(hostMode, keyNbr, proMax, cmdCtr int,
 	return apdu, nil
 }
 
-//ChangeKeyEntry SAM_ApduChangeKeyEntry command
+// ChangeKeyEntry SAM_ApduChangeKeyEntry command
 func (sam *samAv2) ChangeKeyEntryAv1(keyNbr, proMax int,
 	keyVA, keyVB, keyVC []byte,
 	dfKeyNr, ceKNo, ceKV, kuc, verA, verB, verC byte,
@@ -125,7 +125,7 @@ func newEntryKey(keyVA, keyVB, keyVC []byte,
 	return payload
 }
 
-//ApduChangeKeyEntryOffline create APDU to SAM_ApduChangeKeyEntry
+// ApduChangeKeyEntryOffline create APDU to SAM_ApduChangeKeyEntry
 func ApduChangeKeyEntryOffline(keyNbr, proMax, changeCtr int,
 	keyVA, keyVB, keyVC []byte,
 	dfKeyNr, ceKNo, ceKV, kuc, verA, verB, verC, extSet byte,
@@ -174,7 +174,7 @@ func ApduChangeKeyEntryOffline(keyNbr, proMax, changeCtr int,
 	return apdu, nil
 }
 
-//apduChangeKeyEntry create APDU to SAM_ApduChangeKeyEntry
+// apduChangeKeyEntry create APDU to SAM_ApduChangeKeyEntry
 func apduChangeKeyEntry(hostMode, keyNbr, proMax, cmdCtr int,
 	keyVA, keyVB, keyVC []byte,
 	dfKeyNr, ceKNo, ceKV, kuc, verA, verB, verC, extSet byte,
@@ -234,7 +234,7 @@ func apduChangeKeyEntry(hostMode, keyNbr, proMax, cmdCtr int,
 	return nil, fmt.Errorf("hostMode incorrect")
 }
 
-//ApduChangeKeyEntryPlainMode create APDU to SAM_ApduChangeKeyEntry
+// ApduChangeKeyEntryPlainMode create APDU to SAM_ApduChangeKeyEntry
 func ApduChangeKeyEntryPlainMode(keyNbr, proMax int,
 	keyVA, keyVB, keyVC []byte,
 	dfKeyNr, ceKNo, ceKV, kuc, verA, verB, verC, extSet byte,
@@ -246,7 +246,7 @@ func ApduChangeKeyEntryPlainMode(keyNbr, proMax int,
 		nil, nil)
 }
 
-//ApduChangeKeyEntryMacMode create APDU to SAM_ApduChangeKeyEntry
+// ApduChangeKeyEntryMacMode create APDU to SAM_ApduChangeKeyEntry
 func ApduChangeKeyEntryMacMode(keyNbr, proMax, cmdCtr int,
 	keyVA, keyVB, keyVC []byte,
 	dfKeyNr, ceKNo, ceKV, kuc, verA, verB, verC, extSet byte,
@@ -258,7 +258,7 @@ func ApduChangeKeyEntryMacMode(keyNbr, proMax, cmdCtr int,
 		nil, km)
 }
 
-//ApduChangeKeyEntryFullMode create APDU to SAM_ApduChangeKeyEntry
+// ApduChangeKeyEntryFullMode create APDU to SAM_ApduChangeKeyEntry
 func ApduChangeKeyEntryFullMode(keyNbr, proMax, cmdCtr int,
 	keyVA, keyVB, keyVC []byte,
 	dfKeyNr, ceKNo, ceKV, kuc, verA, verB, verC, extSet byte,
@@ -270,7 +270,7 @@ func ApduChangeKeyEntryFullMode(keyNbr, proMax, cmdCtr int,
 		ke, km)
 }
 
-//ChangeKeyEntry SAM_ApduChangeKeyEntry command
+// ChangeKeyEntry SAM_ApduChangeKeyEntry command
 func (sam *samAv2) ChangeKeyEntry(keyNbr, proMax int,
 	keyVA, keyVB, keyVC []byte,
 	dfKeyNr, ceKNo, ceKV, kuc, verA, verB, verC, extSet byte,
@@ -285,7 +285,7 @@ func (sam *samAv2) ChangeKeyEntry(keyNbr, proMax int,
 		return nil, err
 	}
 	sam.CmdCtr++
-	log.Printf("apud: [ %X ]", apdu)
+	// log.Printf("apud: [ %X ]", apdu)
 
 	response, err := sam.Apdu(apdu)
 	if err != nil {
@@ -297,7 +297,7 @@ func (sam *samAv2) ChangeKeyEntry(keyNbr, proMax int,
 	return response, nil
 }
 
-//ChangeKeyEntryOffline SAM_ApduChangeKeyEntry command
+// ChangeKeyEntryOffline SAM_ApduChangeKeyEntry command
 func (sam *samAv2) ChangeKeyEntryOffline(keyNbr, proMax, changeCtr int,
 	keyVA, keyVB, keyVC []byte,
 	dfKeyNr, ceKNo, ceKV, kuc, verA, verB, verC, extSet byte,
@@ -324,7 +324,7 @@ func (sam *samAv2) ChangeKeyEntryOffline(keyNbr, proMax, changeCtr int,
 	return response, nil
 }
 
-//ApduActivateOfflineKey create apdu for SAM_ActiveOfflineKey command
+// ApduActivateOfflineKey create apdu for SAM_ActiveOfflineKey command
 func ApduActivateOfflineKey(keyNo, keyVer int, divInput []byte,
 ) []byte {
 	cmd := smartcard.ISO7816cmd{
@@ -362,7 +362,7 @@ func ApduActivateOfflineKey(keyNo, keyVer int, divInput []byte,
 	return apdu
 }
 
-//ActiveOfflineKey SAM_ActiveOfflineKey command
+// ActiveOfflineKey SAM_ActiveOfflineKey command
 func (sam *samAv2) ActivateOfflineKey(keyNo, keyVer int,
 	divInput []byte,
 ) ([]byte, error) {
@@ -379,7 +379,7 @@ func (sam *samAv2) ActivateOfflineKey(keyNo, keyVer int,
 	return response, nil
 }
 
-//GetKeyEntry SAM_GetKeyEntry command allows reading the contents of the key entry
+// GetKeyEntry SAM_GetKeyEntry command allows reading the contents of the key entry
 func (sam *samAv2) SAMGetKeyEntry(keyNo int) ([]byte, error) {
 
 	response, err := sam.Apdu(sam.ApduSAMGetKeyEntry(keyNo))
@@ -394,7 +394,7 @@ func (sam *samAv2) SAMGetKeyEntry(keyNo int) ([]byte, error) {
 
 }
 
-//ApduSAMGetKeyEntry ApduSAMGetKeyEntry command allows reading the contents of the key entry
+// ApduSAMGetKeyEntry ApduSAMGetKeyEntry command allows reading the contents of the key entry
 func (sam *samAv2) ApduSAMGetKeyEntry(keyNo int) []byte {
 	cmd := smartcard.ISO7816cmd{
 		CLA: 0x80,

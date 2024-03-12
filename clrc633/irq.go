@@ -164,7 +164,7 @@ func waitIRQ(c spi.Conn, addrIrq, value byte, timeout time.Duration) error {
 				return nil
 			}
 		case <-t1.C:
-			// fmt.Printf("read byte IRQ (0x%02X): 0x%02X\n", addrIrq, resp[0])
+			fmt.Printf("read byte IRQ (0x%02X): 0x%02X, %s\n", addrIrq, resp[0], errorClrc663(resp[0]))
 			return ErrorReadTimeout
 		}
 	}

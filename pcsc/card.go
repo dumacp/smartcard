@@ -36,50 +36,50 @@ const (
 	DISCONNECTED
 )
 
-type card struct {
+type Scard struct {
 	State State
 	*scard.Card
 	sak byte
 }
 
 // EndTransactionn End transaccion with card with disposition type LeaveCard
-func (c *card) EndTransaction() error {
+func (c *Scard) EndTransaction() error {
 	c.State = DISCONNECTED
 	return c.Card.EndTransaction(scard.LeaveCard)
 }
 
 // EndTransactionResetCard End transaccion with card with disposition type ResetCard
-func (c *card) EndTransactionResetCard() error {
+func (c *Scard) EndTransactionResetCard() error {
 	c.State = DISCONNECTED
 	return c.Card.EndTransaction(scard.ResetCard)
 }
 
 // DisconnectCard Disconnect card from context with card with disposition type LeaveCard
-func (c *card) DisconnectCard() error {
+func (c *Scard) DisconnectCard() error {
 	c.State = DISCONNECTED
 	return c.Disconnect(scard.LeaveCard)
 }
 
 // DiconnectResetCard Disconnect card from context with card with disposition type ResetCard
-func (c *card) DisconnectResetCard() error {
+func (c *Scard) DisconnectResetCard() error {
 	c.State = DISCONNECTED
 	return c.Disconnect(scard.ResetCard)
 }
 
 // DisconnectUnpowerCard Disconnect card from context with card with disposition type UnpowerCard
-func (c *card) DisconnectUnpowerCard() error {
+func (c *Scard) DisconnectUnpowerCard() error {
 	c.State = DISCONNECTED
 	return c.Disconnect(scard.UnpowerCard)
 }
 
 // DisconnectEjectCard Disconnect card from context with card with disposition type EjectCard
-func (c *card) DisconnectEjectCard() error {
+func (c *Scard) DisconnectEjectCard() error {
 	c.State = DISCONNECTED
 	return c.Disconnect(scard.EjectCard)
 }
 
 // Apdu Primitive function (SCardTransmit) to send command to card
-func (c *card) Apdu(apdu []byte) ([]byte, error) {
+func (c *Scard) Apdu(apdu []byte) ([]byte, error) {
 	if c.State != CONNECTED {
 		return nil, fmt.Errorf("don't Connect to Card, %w", smartcard.ErrComm)
 	}
@@ -95,7 +95,7 @@ func (c *card) Apdu(apdu []byte) ([]byte, error) {
 }
 
 // ControlApdu Primitive function (SCardControl) to send command to card
-func (c *card) ControlApdu(ioctl uint32, apdu []byte) ([]byte, error) {
+func (c *Scard) ControlApdu(ioctl uint32, apdu []byte) ([]byte, error) {
 	if c.State != CONNECTEDDirect {
 		return nil, fmt.Errorf("don't Connect to Card, %w", smartcard.ErrComm)
 	}
@@ -109,7 +109,7 @@ func (c *card) ControlApdu(ioctl uint32, apdu []byte) ([]byte, error) {
 }
 
 // ATR Get ATR from Card
-func (c *card) ATR() ([]byte, error) {
+func (c *Scard) ATR() ([]byte, error) {
 	if c.State != CONNECTED {
 		return nil, fmt.Errorf("don't Connect to Card, %w", smartcard.ErrComm)
 	}
@@ -121,7 +121,7 @@ func (c *card) ATR() ([]byte, error) {
 }
 
 // GetData GetData with param INS
-func (c *card) GetData(ins byte) ([]byte, error) {
+func (c *Scard) GetData(ins byte) ([]byte, error) {
 	aid := []byte{0xFF, 0xCA, ins, 0x00, 0x00}
 	uid, err := c.Apdu(aid)
 	if err != nil {
@@ -131,7 +131,7 @@ func (c *card) GetData(ins byte) ([]byte, error) {
 }
 
 // UID GetData with INS = 0x00
-func (c *card) UID() ([]byte, error) {
+func (c *Scard) UID() ([]byte, error) {
 	aid := []byte{0xFF, 0xCA, 0x00, 0x00, 0x00}
 	uid, err := c.Apdu(aid)
 	if err != nil {
@@ -141,27 +141,32 @@ func (c *card) UID() ([]byte, error) {
 }
 
 // ATS GetData with INS = 0x01
-func (c *card) ATS() ([]byte, error) {
+func (c *Scard) ATS() ([]byte, error) {
 	aid := []byte{0xFF, 0xCA, 0x01, 0x00, 0x00}
 	return c.Apdu(aid)
 }
 
-func (c *card) SAK() byte {
+func (c *Scard) SAK() byte {
 	aid := []byte{0xFF, 0xCA, 0x00, 0x02, 0x00}
 	resp, err := c.Apdu(aid)
 	if err != nil {
 		return 0xFF
 	}
 	if len(resp) < 3 || (resp[len(resp)-2] != 0x90 || resp[len(resp)-1] != 0x00) {
+		if resp, err := c.ATR(); err == nil {
+			if len(resp) > 14 {
+				return resp[14]
+			}
+		}
 		return 0xFF
 	}
 	return resp[len(resp)-3]
 }
 
 // Transparent Session (PCSC)
-func (c *card) TransparentSessionStart() ([]byte, error) {
+func (c *Scard) TransparentSessionStart() ([]byte, error) {
 	apdu := []byte{0xFF, 0xC2, 0x00, 0x00, 0x04, 0x81, 0x00, 0x84, 0x00}
-	resp, err := c.Transmit(apdu)
+	resp, err := c.Apdu(apdu)
 	if err != nil {
 		return resp, smartcard.Error(err)
 	}
@@ -169,9 +174,9 @@ func (c *card) TransparentSessionStart() ([]byte, error) {
 }
 
 // TransparentSessionStartOnly start transparent session to send APDU
-func (c *card) TransparentSessionStartOnly() ([]byte, error) {
+func (c *Scard) TransparentSessionStartOnly() ([]byte, error) {
 	apdu := []byte{0xFF, 0xC2, 0x00, 0x00, 0x02, 0x81, 0x00}
-	resp, err := c.Transmit(apdu)
+	resp, err := c.Apdu(apdu)
 	if err != nil {
 		return resp, smartcard.Error(err)
 	}
@@ -179,14 +184,14 @@ func (c *card) TransparentSessionStartOnly() ([]byte, error) {
 }
 
 // TransparentSessionResetRF start transparent session to send APDU
-func (c *card) TransparentSessionResetRF() ([]byte, error) {
+func (c *Scard) TransparentSessionResetRF() ([]byte, error) {
 	apdu1 := []byte{0xFF, 0xC2, 0x00, 0x00, 0x02, 0x83, 0x00}
-	resp, err := c.Transmit(apdu1)
+	resp, err := c.Apdu(apdu1)
 	if err != nil {
 		return resp, smartcard.Error(err)
 	}
 	apdu2 := []byte{0xFF, 0xC2, 0x00, 0x00, 0x02, 0x84, 0x00}
-	resp2, err := c.Transmit(apdu2)
+	resp2, err := c.Apdu(apdu2)
 	if err != nil {
 		return resp2, smartcard.Error(err)
 	}
@@ -194,9 +199,9 @@ func (c *card) TransparentSessionResetRF() ([]byte, error) {
 }
 
 // TransparentSessionEnd finish transparent session
-func (c *card) TransparentSessionEnd() ([]byte, error) {
+func (c *Scard) TransparentSessionEnd() ([]byte, error) {
 	apdu := []byte{0xFF, 0xC2, 0x00, 0x00, 0x02, 0x82, 0x00, 0x00}
-	resp, err := c.Transmit(apdu)
+	resp, err := c.Apdu(apdu)
 	if err != nil {
 		return resp, smartcard.Error(err)
 	}
@@ -204,9 +209,9 @@ func (c *card) TransparentSessionEnd() ([]byte, error) {
 }
 
 // Switch1444_4 switch channel reader to send ISO 1444-4 APDU
-func (c *card) Switch1444_4() ([]byte, error) {
+func (c *Scard) Switch1444_4() ([]byte, error) {
 	apdu := []byte{0xff, 0xc2, 0x00, 0x02, 0x04, 0x8F, 0x02, 0x00, 0x04}
-	resp, err := c.Transmit(apdu)
+	resp, err := c.Apdu(apdu)
 	if err != nil {
 		return resp, smartcard.Error(err)
 	}
@@ -214,9 +219,9 @@ func (c *card) Switch1444_4() ([]byte, error) {
 }
 
 // Switch1444_4 switch channel reader to send ISO 1444-3 APDU
-func (c *card) Switch1444_3() ([]byte, error) {
+func (c *Scard) Switch1444_3() ([]byte, error) {
 	apdu := []byte{0xff, 0xc2, 0x00, 0x02, 0x04, 0x8f, 0x02, 0x00, 0x03}
-	resp, err := c.Transmit(apdu)
+	resp, err := c.Apdu(apdu)
 	if err != nil {
 		return resp, smartcard.Error(err)
 	}

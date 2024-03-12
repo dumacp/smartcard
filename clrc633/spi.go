@@ -28,7 +28,7 @@ func connect(devicePath string) (spi.PortCloser, spi.Conn, error) {
 	fmt.Printf("device: %v\n", p)
 
 	// Convert the spi.Port into a spi.Conn so it can be used for communication.
-	c, err := p.Connect(physic.MegaHertz, spi.Mode0, 8)
+	c, err := p.Connect(physic.GigaHertz, spi.Mode0, 8)
 	// c, err := p.Connect(0x40046b04, spi.Mode3, 8)
 	if err != nil {
 		return nil, nil, err

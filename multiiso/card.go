@@ -70,18 +70,30 @@ func (c *Card) Apdu(apdu []byte) ([]byte, error) {
 	if c.State != CONNECTED {
 		return nil, smartcard.Error(smartcard.ErrComm)
 	}
+	//fmt.Printf("APDU: [% 02X]\n", apdu)
+	var response []byte
+	var err error
 	switch c.modeSend {
 	case APDU1443_4:
-		return c.reader.SendAPDU1443_4(apdu)
+		response, err = c.reader.SendAPDU1443_4(apdu)
+		if err != nil {
+			return response, err
+		}
 	case T1TransactionV2:
-		return c.reader.T1TransactionV2(apdu)
+		response, err = c.reader.T1TransactionV2(apdu)
+		if err != nil {
+			return response, err
+		}
 		// case T0TransactionV2:
 		// 	return c.reader.T0TransactionV2(apdu)
+
+	default:
+		response, err := c.reader.TransmitBinary([]byte{}, apdu)
+		if err != nil {
+			return response, err
+		}
 	}
-	response, err := c.reader.TransmitBinary([]byte{}, apdu)
-	if err != nil {
-		return response, err
-	}
+	//fmt.Printf("RESP: [% 02X]\n", response[:])
 	return response[:], nil
 
 }
