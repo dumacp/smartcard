@@ -447,6 +447,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 	// rnd1, _ = hex.DecodeString("A408BEB67688B37328DDBF82")
 
 	/**
+	fmt.Printf("var1: [% X]\n", var1)
 	fmt.Printf("cmacS: [% X]\n", cmacS)
 	fmt.Printf("cmac2: [% X]\n", cmac2)
 	fmt.Printf("rnd1: [% X]\n", rnd1)
