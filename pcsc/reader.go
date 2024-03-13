@@ -97,6 +97,7 @@ func (r *reader) ConnectCardPCSC() (Card, error) {
 		CONNECTED,
 		c,
 		sak,
+		nil,
 	}
 	return cardS, nil
 }
@@ -116,6 +117,7 @@ func (r *reader) ConnectCardPCSC_T0() (Card, error) {
 		CONNECTED,
 		c,
 		sak,
+		nil,
 	}
 	return cardS, nil
 }
@@ -135,6 +137,7 @@ func (r *reader) ConnectCardPCSC_Tany() (Card, error) {
 		CONNECTED,
 		c,
 		sak,
+		nil,
 	}
 	return cardS, nil
 }
@@ -160,6 +163,7 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 		CONNECTED,
 		c,
 		sak,
+		nil,
 	}
 	return cardS, nil
 }
@@ -189,6 +193,7 @@ func (r *reader) connectCard() (*Scard, error) {
 		CONNECTED,
 		c,
 		sak,
+		nil,
 	}
 	return cardS, nil
 }
@@ -207,6 +212,7 @@ func (r *reader) ConnectDirect() (Card, error) {
 		CONNECTEDDirect,
 		c,
 		sak,
+		nil,
 	}
 	return cardS, nil
 }

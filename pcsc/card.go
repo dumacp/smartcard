@@ -40,6 +40,7 @@ type Scard struct {
 	State State
 	*scard.Card
 	sak byte
+	atr []byte
 }
 
 // EndTransactionn End transaccion with card with disposition type LeaveCard
@@ -117,7 +118,9 @@ func (c *Scard) ATR() ([]byte, error) {
 	if err != nil {
 		return nil, smartcard.Error(err)
 	}
-	return status.Atr, nil
+	c.atr = make([]byte, len(status.Atr))
+	copy(c.atr, status.Atr)
+	return c.atr, nil
 }
 
 // GetData GetData with param INS
@@ -147,17 +150,22 @@ func (c *Scard) ATS() ([]byte, error) {
 }
 
 func (c *Scard) SAK() byte {
+	if len(c.atr) > 14 {
+		return c.atr[14]
+	}
 	aid := []byte{0xFF, 0xCA, 0x00, 0x02, 0x00}
 	resp, err := c.Apdu(aid)
 	if err != nil {
 		return 0xFF
 	}
 	if len(resp) < 3 || (resp[len(resp)-2] != 0x90 || resp[len(resp)-1] != 0x00) {
-		if resp, err := c.ATR(); err == nil {
-			if len(resp) > 14 {
-				return resp[14]
+		/**
+			if resp, err := c.ATR(); err == nil {
+				if len(resp) > 14 {
+					return resp[14]
+				}
 			}
-		}
+		/**/
 		return 0xFF
 	}
 	return resp[len(resp)-3]
