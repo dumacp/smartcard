@@ -16,6 +16,7 @@ import (
 type ICard interface {
 	Apdu(apdu []byte) ([]byte, error)
 	ATR() ([]byte, error)
+	GetData(byte) ([]byte, error)
 	UID() ([]byte, error)
 	ATS() ([]byte, error)
 	SAK() byte

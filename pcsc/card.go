@@ -84,12 +84,12 @@ func (c *Scard) Apdu(apdu []byte) ([]byte, error) {
 	if c.State != CONNECTED {
 		return nil, fmt.Errorf("don't Connect to Card, %w", smartcard.ErrComm)
 	}
-	log.Printf("APDU: [% X], len: %d", apdu, len(apdu))
+	//log.Printf("APDU: [% X], len: %d", apdu, len(apdu))
 	resp, err := c.Transmit(apdu)
 	if err != nil {
 		return resp, smartcard.Error(err)
 	}
-	log.Printf("Response: [% X], len: %d", resp, len(resp))
+	//log.Printf("Response: [% X], len: %d", resp, len(resp))
 	result := make([]byte, len(resp))
 	copy(result, resp)
 	return result, nil
@@ -100,10 +100,12 @@ func (c *Scard) ControlApdu(ioctl uint32, apdu []byte) ([]byte, error) {
 	if c.State != CONNECTEDDirect {
 		return nil, fmt.Errorf("don't Connect to Card, %w", smartcard.ErrComm)
 	}
+	log.Printf("control APDU: [% X], len: %d", apdu, len(apdu))
 	resp, err := c.Control(ioctl, apdu)
 	if err != nil {
 		return resp, smartcard.Error(err)
 	}
+	log.Printf("Response: [% X], len: %d", resp, len(resp))
 	result := make([]byte, len(resp))
 	copy(result, resp)
 	return result, nil

@@ -17,28 +17,27 @@ import (
 	"time"
 
 	"github.com/dumacp/smartcard"
-	"github.com/dumacp/smartcard/nxp/mifare"
 )
 
-// Reader implement IReader interface
-type Reader interface {
-	smartcard.IReader
-	mifare.IReaderClassic
+// // Reader implement IReader interface
+// type Reader interface {
+// 	smartcard.IReader
+// 	mifare.IReaderClassic
 
-	Transmit([]byte, []byte) ([]byte, error)
-	TransmitAscii([]byte, []byte) ([]byte, error)
-	TransmitBinary([]byte, []byte) ([]byte, error)
-	SendDataFrameTransfer([]byte) ([]byte, error)
-	SetRegister(register byte, data []byte) error
-	GetRegister(register byte) ([]byte, error)
-	SetModeProtocol(mode int)
-	// SetTransmitProtocol(transmitProto TransmitProto)
-	SendAPDU1443_4(data []byte) ([]byte, error)
-	SendSAMDataFrameTransfer(data []byte) ([]byte, error)
-	T1TransactionV2(data []byte) ([]byte, error)
-	// T0TransactionV2(data []byte) ([]byte, error)
-	SetChainning(chainning bool)
-}
+// 	Transmit([]byte, []byte) ([]byte, error)
+// 	TransmitAscii([]byte, []byte) ([]byte, error)
+// 	TransmitBinary([]byte, []byte) ([]byte, error)
+// 	SendDataFrameTransfer([]byte) ([]byte, error)
+// 	SetRegister(register byte, data []byte) error
+// 	GetRegister(register byte) ([]byte, error)
+// 	SetModeProtocol(mode int)
+// 	// SetTransmitProtocol(transmitProto TransmitProto)
+// 	SendAPDU1443_4(data []byte) ([]byte, error)
+// 	SendSAMDataFrameTransfer(data []byte) ([]byte, error)
+// 	T1TransactionV2(data []byte) ([]byte, error)
+// 	// T0TransactionV2(data []byte) ([]byte, error)
+// 	SetChainning(chainning bool)
+// }
 
 const (
 	//BinaryMode protocol binary mode
@@ -83,6 +82,9 @@ type NilResponse int
 func (e ErrorCode) Error() string {
 	return fmt.Sprintf("code error: %X", byte(e))
 }
+func (e ErrorCode) Code() byte {
+	return byte(e)
+}
 func (e BadResponse) Error() string {
 	return fmt.Sprintf("bad response: [% X]", []byte(e))
 }
@@ -94,7 +96,7 @@ func (e NilResponse) Error() string {
 	return "nil response"
 }
 
-type reader struct {
+type Reader struct {
 	device       *Device
 	readerName   string
 	idx          int
@@ -106,8 +108,8 @@ type reader struct {
 }
 
 // NewReader Create New Reader interface
-func NewReader(dev *Device, readerName string, idx int) Reader {
-	r := &reader{
+func NewReader(dev *Device, readerName string, idx int) *Reader {
+	r := &Reader{
 		device:     dev,
 		readerName: readerName,
 		idx:        idx,
@@ -128,7 +130,7 @@ func checksum(data []byte) byte {
 type transmitfunc func([]byte, []byte) ([]byte, error)
 
 // SetModeProtocol set mode protocol to communication (0: binary, 1: ascii)
-func (r *reader) SetModeProtocol(mode int) {
+func (r *Reader) SetModeProtocol(mode int) {
 	if mode == BinaryMode {
 		r.transmit = r.TransmitBinary
 		r.ModeProtocol = BinaryMode
@@ -145,12 +147,12 @@ func (r *reader) SetModeProtocol(mode int) {
 // }
 
 // Transmit send data byte to reader in actual mode
-func (r *reader) Transmit(cmd, data []byte) ([]byte, error) {
+func (r *Reader) Transmit(cmd, data []byte) ([]byte, error) {
 	return r.transmit(cmd, data)
 }
 
 // TransmitAscii send in ascii protocol mode
-func (r *reader) TransmitAscii(cmd, data []byte) ([]byte, error) {
+func (r *Reader) TransmitAscii(cmd, data []byte) ([]byte, error) {
 	apdu := make([]byte, 0)
 	apdu = append(apdu, cmd...)
 	if data != nil {
@@ -167,7 +169,7 @@ func (r *reader) TransmitAscii(cmd, data []byte) ([]byte, error) {
 }
 
 // TransmitBinary send in binary protocol mode
-func (r *reader) TransmitBinary(cmd, data []byte) ([]byte, error) {
+func (r *Reader) TransmitBinary(cmd, data []byte) ([]byte, error) {
 	apdu := make([]byte, 0)
 	apdu = append(apdu, 0x02)
 	apdu = append(apdu, byte(r.idx))
@@ -178,14 +180,18 @@ func (r *reader) TransmitBinary(cmd, data []byte) ([]byte, error) {
 	}
 	apdu = append(apdu, checksum(apdu[1:]))
 	apdu = append(apdu, 0x03)
-	fmt.Printf("apdu TransmitBinary: [% X]\n", apdu)
+	// fmt.Printf("apdu TransmitBinary: [% X]\n", apdu)
 	resp1, err := r.device.SendRecv(apdu)
-	fmt.Printf("resp TransmitBinary: [% X]\n", resp1)
+	// fmt.Printf("resp TransmitBinary: [% X]\n", resp1)
 	if err != nil {
 		return nil, smartcard.Error(err)
 	}
 	if err := verifyresponse(resp1); err != nil {
 		return nil, smartcard.Error(err)
+	}
+
+	if resp1[2] == 0x01 {
+		return []byte{resp1[3]}, nil
 	}
 	return resp1[3 : len(resp1)-2], nil
 }
@@ -207,7 +213,7 @@ func verifyresponse(data []byte) error {
 }
 
 // SendDataFrameTransfer send in format Data Frame Transfer
-func (r *reader) SendDataFrameTransfer(data []byte) ([]byte, error) {
+func (r *Reader) SendDataFrameTransfer(data []byte) ([]byte, error) {
 	cmd := make([]byte, 0)
 	cmd = append(cmd, []byte(datatransfer)...)
 	apdu := make([]byte, 0)
@@ -220,7 +226,7 @@ func (r *reader) SendDataFrameTransfer(data []byte) ([]byte, error) {
 }
 
 // SendAPDU1443_4 send in format Data Frame Transfer
-func (r *reader) SendAPDU1443_4(data []byte) ([]byte, error) {
+func (r *Reader) SendAPDU1443_4(data []byte) ([]byte, error) {
 	cmd := make([]byte, 0)
 	cmd = append(cmd, byte(len(data)+1))
 	cmd = append(cmd, 0x0F)
@@ -256,7 +262,7 @@ func (r *reader) SendAPDU1443_4(data []byte) ([]byte, error) {
 }
 
 // SendSAMDataFrameTransfer send APDU to SAM device in special socket ("e" command)
-func (r *reader) SendSAMDataFrameTransfer(data []byte) ([]byte, error) {
+func (r *Reader) SendSAMDataFrameTransfer(data []byte) ([]byte, error) {
 	innerData := make([]byte, 0)
 
 	// innerData = append(innerData, 0x65)
@@ -281,7 +287,7 @@ func (r *reader) SendSAMDataFrameTransfer(data []byte) ([]byte, error) {
 }
 
 // T1TransactionV2 function to send wrapped frames T1 to SAM device through "e" command
-func (r *reader) T1TransactionV2(data []byte) ([]byte, error) {
+func (r *Reader) T1TransactionV2(data []byte) ([]byte, error) {
 	trama := make([]byte, 0)
 
 	trama = append(trama, byte(len(data)&0xFF))
@@ -298,7 +304,7 @@ func (r *reader) T1TransactionV2(data []byte) ([]byte, error) {
 }
 
 // GetRegister send in format Data Frame Transfer
-func (r *reader) GetRegister(register byte) ([]byte, error) {
+func (r *Reader) GetRegister(register byte) ([]byte, error) {
 	cmd := []byte(readEEPROMregister)
 	apdu := make([]byte, 0)
 
@@ -307,7 +313,7 @@ func (r *reader) GetRegister(register byte) ([]byte, error) {
 }
 
 // SetRegister send in format Data Frame Transfer
-func (r *reader) SetRegister(register byte, data []byte) error {
+func (r *Reader) SetRegister(register byte, data []byte) error {
 	cmd := []byte(writeEEPROMregister)
 	apdu := make([]byte, 0)
 
@@ -321,7 +327,7 @@ func (r *reader) SetRegister(register byte, data []byte) error {
 }
 
 // Create New Card interface
-func (r *reader) ConnectCard() (smartcard.ICard, error) {
+func (r *Reader) ConnectCard() (smartcard.ICard, error) {
 	c, err := r.ConnectLegacyCard()
 	if err != nil {
 		return nil, err
@@ -331,7 +337,7 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 }
 
 // Create New Card interface
-func (r *reader) ConnectLegacyCard() (*Card, error) {
+func (r *Reader) ConnectLegacyCard() (*Card, error) {
 	if !r.device.Ok {
 		return nil, fmt.Errorf("serial device is not ready, %w", smartcard.ErrComm)
 	}
@@ -356,7 +362,7 @@ func (r *reader) ConnectLegacyCard() (*Card, error) {
 
 	var uid []byte
 	var ats []byte
-	var sak byte
+	sak := byte(0xFF)
 
 	switch {
 	case len(resp2) > 9 && resp2[0] == 0x01 && (resp2[8]&0x20 == 0x20):
@@ -406,6 +412,10 @@ func (r *reader) ConnectLegacyCard() (*Card, error) {
 			copy(uid, resp2[1:5])
 			sak = resp2[5]
 			ats = make([]byte, 0)
+		case len(resp2) > 4:
+			uid = make([]byte, 4)
+			copy(uid, resp2[0:4])
+			ats = make([]byte, 0)
 		}
 	}
 
@@ -413,7 +423,7 @@ func (r *reader) ConnectLegacyCard() (*Card, error) {
 		uuid:     uid,
 		ats:      ats,
 		sak:      sak,
-		reader:   r,
+		Reader:   r,
 		modeSend: APDU1443_4,
 	}
 
@@ -421,12 +431,12 @@ func (r *reader) ConnectLegacyCard() (*Card, error) {
 }
 
 // Create New Card interface
-func (r *reader) ConnectSamCard_T0() (smartcard.ICard, error) {
+func (r *Reader) ConnectSamCard_T0() (smartcard.ICard, error) {
 	return nil, fmt.Errorf("not supported")
 }
 
 // Create New Card interface
-func (r *reader) ConnectSamCard_Tany() (smartcard.ICard, error) {
+func (r *Reader) ConnectSamCard_Tany() (smartcard.ICard, error) {
 	c, err := r.ConnectSamCard()
 	if err != nil {
 		return nil, err
@@ -435,7 +445,7 @@ func (r *reader) ConnectSamCard_Tany() (smartcard.ICard, error) {
 }
 
 // Create New Card interface
-func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
+func (r *Reader) ConnectSamCard() (smartcard.ICard, error) {
 	if !r.device.Ok {
 		return nil, fmt.Errorf("serial device is not ready, %w", smartcard.ErrComm)
 	}
@@ -466,18 +476,18 @@ func (r *reader) ConnectSamCard() (smartcard.ICard, error) {
 	}
 
 	card := &Card{
-		reader:   r,
+		Reader:   r,
 		modeSend: T1TransactionV2,
 	}
 
 	return card, nil
 }
 
-func (r *reader) SetChainning(chainning bool) {
+func (r *Reader) SetChainning(chainning bool) {
 	r.chainning = chainning
 }
 
-func (r *reader) blockNumber() byte {
+func (r *Reader) blockNumber() byte {
 	switch {
 	case r.blocknumber&0x03 == 0x03:
 		return 0x02

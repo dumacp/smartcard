@@ -1,6 +1,8 @@
 package multiiso
 
 import (
+	"fmt"
+
 	"github.com/dumacp/smartcard"
 	"github.com/dumacp/smartcard/nxp/mifare"
 )
@@ -9,6 +11,7 @@ import (
 const (
 	authentication string = "l"
 	readblock      string = "rb"
+	readblocks     string = "rd"
 	writeblock     string = "wb"
 	incvalue       string = "+"
 	decvalue       string = "-"
@@ -30,8 +33,8 @@ type mifareClassic struct {
 }
 
 // NewMifareClassicReader Create mifare classic reader
-func NewMifareClassicReader(dev *Device, readerName string, idx int) Reader {
-	r := &reader{
+func NewMifareClassicReader(dev *Device, readerName string, idx int) *Reader {
+	r := &Reader{
 		device:     dev,
 		readerName: readerName,
 		idx:        idx,
@@ -43,7 +46,7 @@ func NewMifareClassicReader(dev *Device, readerName string, idx int) Reader {
 // MifareClassic Create Mifare Plus Interface
 func MifareClassic(c *Card) (mifare.Classic, error) {
 
-	c.reader.SetModeProtocol(BinaryMode)
+	c.Reader.SetModeProtocol(BinaryMode)
 	c.modeSend = NA
 	mc := &mifareClassic{
 		ICard: c,
@@ -52,7 +55,7 @@ func MifareClassic(c *Card) (mifare.Classic, error) {
 }
 
 // NewMClassic Create Mifare Plus Interface
-func (r *reader) ConnectMifareClassic() (mifare.Classic, error) {
+func (r *Reader) ConnectMifareClassic() (mifare.Classic, error) {
 
 	// c, err := r.ConnectCard()
 	// if err != nil {
@@ -154,6 +157,11 @@ func (mc *mifareClassic) Auth(bNr, keyType int, key []byte) ([]byte, error) {
 		return nil, err
 	}
 
+	if len(resp1) <= 0 {
+		fmt.Printf("response: %X\n", resp1)
+		return resp1, NilResponse(0)
+	}
+
 	if resp1[0] == Loginsucess {
 		return resp1, nil
 	}
@@ -172,22 +180,36 @@ func verifyblockresponse(resp []byte) error {
 
 func (mc *mifareClassic) ReadBlocks(bNr, ext int) ([]byte, error) {
 
-	cmd := []byte(readblock)
-	result := make([]byte, 0)
+	cmd := []byte(readblocks)
+	// result := make([]byte, 0)
 
-	for i := range make([]int, ext) {
-		apdu := make([]byte, 0)
-		apdu = append(apdu, cmd...)
-		apdu = append(apdu, byte(bNr+i))
-		resp1, err := mc.Apdu(apdu)
-		if err != nil {
-			return nil, err
-		}
-		if err := verifyblockresponse(resp1); err != nil {
-			return nil, err
-		}
-		result = append(result, resp1...)
+	// for i := range make([]int, ext) {
+	// 	apdu := make([]byte, 0)
+	// 	apdu = append(apdu, cmd...)
+	// 	apdu = append(apdu, byte(bNr+i))
+	// 	resp1, err := mc.Apdu(apdu)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	if err := verifyblockresponse(resp1); err != nil {
+	// 		return nil, err
+	// 	}
+	// 	result = append(result, resp1...)
+	// }
+
+	apdu := make([]byte, 0)
+	apdu = append(apdu, cmd...)
+	apdu = append(apdu, byte(bNr))
+	apdu = append(apdu, byte(ext))
+
+	result, err := mc.Apdu(apdu)
+	if err != nil {
+		return nil, err
 	}
+	if err := verifyblockresponse(result); err != nil {
+		return nil, err
+	}
+
 	return result, nil
 }
 
@@ -205,8 +227,13 @@ func (mc *mifareClassic) WriteBlock(bNr int, data []byte) ([]byte, error) {
 	}
 
 	if len(resp1) < 2 {
-		return resp1, ErrorCode(resp1[0])
+		if len(resp1) > 0 {
+			if resp1[0] == Generalfailure && (bNr+1)%4 == 0 {
+				return nil, nil
+			}
+			return resp1, ErrorCode(resp1[0])
+		}
+		return nil, NilResponse(0)
 	}
-
 	return resp1, nil
 }

@@ -12,6 +12,8 @@ projects on which it is based:
 package multiiso
 
 import (
+	"fmt"
+
 	"github.com/dumacp/smartcard"
 )
 
@@ -43,7 +45,7 @@ type Card struct {
 	ats  []byte
 	sak  byte
 	State
-	reader   Reader
+	Reader   *Reader
 	modeSend SendMode
 }
 
@@ -56,12 +58,22 @@ func (c *Card) DisconnectCard() error {
 }
 
 func (c *Card) DisconnectResetCard() error {
-	_, err := c.Apdu([]byte("q"))
+	// if _, err := c.Apdu([]byte("q")); err != nil {
+	// 	return err
+	// }
+	newcard, err := c.Reader.ConnectLegacyCard()
+	if err != nil {
+		return err
+	}
+	modesend := c.modeSend
+	*c = *newcard
+	c.modeSend = modesend
 	return err
 }
 
 func (c *Card) EndTransactionResetCard() error {
 	_, err := c.Apdu([]byte("q"))
+	c.Reader.ConnectCard()
 	return err
 }
 
@@ -75,12 +87,12 @@ func (c *Card) Apdu(apdu []byte) ([]byte, error) {
 	var err error
 	switch c.modeSend {
 	case APDU1443_4:
-		response, err = c.reader.SendAPDU1443_4(apdu)
+		response, err = c.Reader.SendAPDU1443_4(apdu)
 		if err != nil {
 			return response, err
 		}
 	case T1TransactionV2:
-		response, err = c.reader.T1TransactionV2(apdu)
+		response, err = c.Reader.T1TransactionV2(apdu)
 		if err != nil {
 			return response, err
 		}
@@ -88,12 +100,12 @@ func (c *Card) Apdu(apdu []byte) ([]byte, error) {
 		// 	return c.reader.T0TransactionV2(apdu)
 
 	default:
-		response, err := c.reader.TransmitBinary([]byte{}, apdu)
+		response, err = c.Reader.TransmitBinary([]byte{}, apdu)
 		if err != nil {
 			return response, err
 		}
 	}
-	//fmt.Printf("RESP: [% 02X]\n", response[:])
+	fmt.Printf("RESP: [% 02X]\n", response[:])
 	return response[:], nil
 
 }
@@ -110,6 +122,15 @@ func (c *Card) ATR() ([]byte, error) {
 func (c *Card) UID() ([]byte, error) {
 	uuid := c.uuid
 	return uuid, nil
+}
+
+// Get Data 0x00
+func (c *Card) GetData(data byte) ([]byte, error) {
+	resp, err := c.Reader.Transmit([]byte{0x73}, nil)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 func (c *Card) SAK() byte {

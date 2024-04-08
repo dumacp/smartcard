@@ -49,11 +49,12 @@ func (mc *mifareClassic) Apdu(apdu []byte) ([]byte, error) {
 func (mc *mifareClassic) valueop(valOp, bNr byte, value []byte) error {
 	dataInv := make([]byte, len(value))
 	for i := range value {
-		dataInv[i] = dataInv[len(value)-1-i]
+		dataInv[i] = value[len(value)-1-i]
 	}
 
 	aid := []byte{0xFF, 0xD7, 0x00, byte(bNr), 0x05, byte(valOp)}
 	aid = append(aid, dataInv...)
+	fmt.Printf("apdu: %X, %02X\n", aid, dataInv)
 	response, err := mc.Card.Apdu(aid)
 	if err != nil {
 		return err
@@ -84,7 +85,7 @@ func (mc *mifareClassic) Auth(bNr, keyType int, key []byte) ([]byte, error) {
 	aid := []byte{0xFF, 0x82, 0x00, 0x00, 0x06}
 	aid = append(aid, key...)
 
-	fmt.Printf("%X\n", aid)
+	// fmt.Printf("%X\n", aid)
 
 	response, err := mc.Apdu(aid)
 	if err != nil {
@@ -105,7 +106,7 @@ func (mc *mifareClassic) Auth(bNr, keyType int, key []byte) ([]byte, error) {
 		aid = []byte{0xFF, 0x86, 0x00, 0x00, 0x05, 0x01, 0x00, byte(bNr), 0x61, 0x00}
 	}
 
-	fmt.Printf("auth apdu: %X\n", aid)
+	// fmt.Printf("auth apdu: %X\n", aid)
 
 	response, err = mc.Apdu(aid)
 	if err != nil {
