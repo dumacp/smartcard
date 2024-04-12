@@ -90,6 +90,17 @@ func (c *Card) UID() ([]byte, error) {
 	return c.uid, nil
 }
 
+// Get Data 0x00
+func (c *Card) GetData(data byte) ([]byte, error) {
+	cc, err := c.reader.ConnectLegacyCard()
+	if err != nil {
+		return nil, err
+	}
+	*c = *cc
+	return c.uid, nil
+
+}
+
 func (c *Card) SAK() byte {
 	return c.sak
 }

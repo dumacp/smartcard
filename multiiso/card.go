@@ -82,7 +82,7 @@ func (c *Card) Apdu(apdu []byte) ([]byte, error) {
 	if c.State != CONNECTED {
 		return nil, smartcard.Error(smartcard.ErrComm)
 	}
-	//fmt.Printf("APDU: [% 02X]\n", apdu)
+	fmt.Printf("APDU: [% 02X]\n", apdu)
 	var response []byte
 	var err error
 	switch c.modeSend {

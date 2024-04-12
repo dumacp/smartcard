@@ -8,14 +8,14 @@ import (
 )
 
 type Reader struct {
-	r           pcsc.Reader
+	PcscReader  pcsc.Reader
 	pollManuall bool
 }
 
 func NewReader(ctx *pcsc.Context, readerName string) *Reader {
 
 	r := &Reader{
-		r: pcsc.NewReader(ctx, readerName),
+		PcscReader: pcsc.NewReader(ctx, readerName),
 	}
 	return r
 
@@ -24,7 +24,7 @@ func NewReader(ctx *pcsc.Context, readerName string) *Reader {
 func NewReaderFromPcscReader(r pcsc.Reader) *Reader {
 
 	reader := &Reader{
-		r: r,
+		PcscReader: r,
 	}
 	return reader
 
@@ -32,16 +32,11 @@ func NewReaderFromPcscReader(r pcsc.Reader) *Reader {
 
 func (r *Reader) SetAutomaticPoll(a bool) error {
 
-	p, err := r.r.ConnectDirect()
+	p, err := r.PcscReader.ConnectDirect()
 	if err != nil {
 		return err
 	}
 	defer p.DisconnectCard()
-
-	// TODO why?
-	if _, err := p.ControlApdu(0x42000000+2079, []byte{0x22, 0x01, 0x01}); err != nil {
-		return err
-	}
 
 	resp, err := p.ControlApdu(0x42000000+2079, []byte{0x23, 0x00})
 	if err != nil {
@@ -63,9 +58,59 @@ func (r *Reader) SetAutomaticPoll(a bool) error {
 	return nil
 }
 
+func (r *Reader) SpeedControl(a byte) error {
+
+	p, err := r.PcscReader.ConnectDirect()
+	if err != nil {
+		return err
+	}
+	defer p.DisconnectCard()
+
+	resp, err := p.ControlApdu(0x42000000+2079, []byte{0x09, 0x00})
+	if err != nil {
+		return err
+	}
+	if len(resp) <= 0 {
+		return fmt.Errorf("error in response, nil response")
+	}
+	var apdu1 []byte
+	if resp[len(resp)-1] != a {
+		apdu1 = []byte{0x09, 0x01, a}
+	}
+	if _, err := p.ControlApdu(0x42000000+2079, apdu1); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *Reader) BuzzerControl(a byte) error {
+
+	p, err := r.PcscReader.ConnectDirect()
+	if err != nil {
+		return err
+	}
+	defer p.DisconnectCard()
+
+	resp, err := p.ControlApdu(0x42000000+2079, []byte{0x21, 0x00})
+	if err != nil {
+		return err
+	}
+	if len(resp) <= 0 {
+		return fmt.Errorf("error in response, nil response")
+	}
+	var apdu1 []byte
+	if resp[len(resp)-1] != a {
+		apdu1 = []byte{0x21, 0x01, a}
+	}
+	if _, err := p.ControlApdu(0x42000000+2079, apdu1); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *Reader) SetEnforceISO14443A_4(a bool) error {
 
-	p, err := r.r.ConnectDirect()
+	p, err := r.PcscReader.ConnectDirect()
 	if err != nil {
 		return err
 	}
@@ -95,54 +140,64 @@ func (r *Reader) SetEnforceISO14443A_4(a bool) error {
 func (r *Reader) ConnectCard() (smartcard.ICard, error) {
 
 	if r.pollManuall {
-		p, err := r.r.ConnectDirect()
-		if err != nil {
+		if err := func() error {
+			p, err := r.PcscReader.ConnectDirect()
+			if err != nil {
+				return err
+			}
+			defer p.DisconnectCard()
+			// TODO why?
+			if _, err := p.ControlApdu(0x42000000+2079, []byte{0x22, 0x01, 0x01}); err != nil {
+				// if _, err := p.ControlApdu(0x42000000+2079, []byte{0x22, 0x00}); err != nil {
+				return err
+			}
+			apdu := []byte{0x25, 0x00}
+			if resp, err := p.ControlApdu(0x42000000+2079, apdu); err != nil {
+				return err
+			} else if len(resp) > 0 && resp[len(resp)-1] > 0x01 {
+				return nil
+			}
+			return smartcard.ErrNoSmartcard
+		}(); err != nil {
 			return nil, err
 		}
-		defer p.DisconnectCard()
-		apdu := []byte{0x25, 0x00}
-		if resp, err := p.ControlApdu(0x42000000+2079, apdu); err != nil {
-			return nil, err
-		} else if len(resp) > 0 && resp[len(resp)-1] > 0x01 {
-			return r.r.ConnectCard()
-		}
-		return nil, smartcard.ErrNoSmartcard
 	}
-	return r.r.ConnectCard()
+
+	return r.PcscReader.ConnectCard()
 }
 
 // ConnectCard connect card with protocol T=1.
 // Some readers distinguish between the flow to connect a contact-based smart card and a contactless smart card.
 func (r *Reader) ConnectSamCard() (smartcard.ICard, error) {
-	return r.r.ConnectCard()
+	return r.PcscReader.ConnectCard()
 }
 
 // ConnectSamCard_T0 ConnectCard connect card with protocol T=1.
 func (r *Reader) ConnectSamCard_T0() (smartcard.ICard, error) {
-	return r.r.ConnectSamCard_T0()
+	return r.PcscReader.ConnectSamCard_T0()
 }
 
 // ConnectSamCard_Tany ConnectCard connect card with protocol T=any.
 func (r *Reader) ConnectSamCard_Tany() (smartcard.ICard, error) {
-	return r.r.ConnectSamCard_Tany()
+	return r.PcscReader.ConnectSamCard_Tany()
 }
 
 func (r *Reader) Name() string {
-	return r.r.Name()
+	return r.PcscReader.Name()
 }
 
 func (r *Reader) ConnectDirect() (pcsc.Card, error) {
-	return r.r.ConnectDirect()
+	return r.PcscReader.ConnectDirect()
 }
 
 func (r *Reader) ConnectCardPCSC() (pcsc.Card, error) {
-	return r.r.ConnectCardPCSC()
+	return r.PcscReader.ConnectCardPCSC()
 }
 
 func (r *Reader) ConnectCardPCSC_T0() (pcsc.Card, error) {
-	return r.r.ConnectCardPCSC_T0()
+	return r.PcscReader.ConnectCardPCSC_T0()
 }
 
 func (r *Reader) ConnectCardPCSC_Tany() (pcsc.Card, error) {
-	return r.r.ConnectCardPCSC_Tany()
+	return r.PcscReader.ConnectCardPCSC_Tany()
 }
