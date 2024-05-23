@@ -25,6 +25,20 @@ func Checksum(data []byte) byte {
 
 type BuildHeader func() []byte
 
+func BuildHeader__PC_to_RDR_IccEspecial(seq int, slot Slot, lenApdu int) func() []byte {
+
+	return func() []byte {
+		lenBytes := make([]byte, 4)
+		binary.LittleEndian.PutUint32(lenBytes, uint32(lenApdu))
+		header := []byte{0x61}
+		header = append(header, lenBytes...)
+		header = append(header, byte(int(slot)))
+		header = append(header, byte(0x05))
+		header = append(header, []byte{0x01, 0, 0}...)
+		return header
+	}
+}
+
 func BuildHeader__PC_to_RDR_IccPowerOn(seq int, slot Slot) func() []byte {
 
 	return func() []byte {
@@ -59,8 +73,8 @@ func BuildHeader__PC_to_RDR_XfrBlock(seq int, slot Slot, ledApdu int) func() []b
 		header := []byte{0x6F}
 		header = append(header, lenBytes...)
 		header = append(header, byte(int(slot)))
-		header = append(header, byte(seq))
-		header = append(header, byte(0x30))
+		header = append(header, byte(0x01))
+		header = append(header, byte(0x04))
 		header = append(header, []byte{0, 0}...)
 		return header
 	}

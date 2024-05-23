@@ -1,12 +1,11 @@
 package acr128s
 
 import (
-	"github.com/dumacp/smartcard"
 	"github.com/dumacp/smartcard/nxp/mifare"
 )
 
 type Card struct {
-	smartcard.ICard
+	// smartcard.ICard
 	reader *Reader
 	ats    []byte
 	uid    []byte
@@ -27,6 +26,14 @@ func (c *Card) UID() ([]byte, error) {
 	return c.uid, nil
 }
 
+func (c *Card) SAK() byte {
+	return c.sak
+}
+
+func (c *Card) GetData(data byte) ([]byte, error) {
+	return c.reader.Transmit([]byte{0xFF, 0xCA, 0, data, 0})
+}
+
 func (c *Card) ATS() ([]byte, error) {
 	resp, err := c.reader.Transmit([]byte{0xFF, 0xCA, 1, 0, 0})
 	if err != nil {
@@ -40,5 +47,13 @@ func (c *Card) ATS() ([]byte, error) {
 }
 
 func (c *Card) DisconnectCard() error {
+	return nil
+}
+
+func (c *Card) DisconnectResetCard() error {
+	return nil
+}
+
+func (c *Card) EndTransactionResetCard() error {
 	return nil
 }

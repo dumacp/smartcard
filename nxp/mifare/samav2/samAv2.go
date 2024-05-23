@@ -628,7 +628,7 @@ func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte,
 // ApduNonXauthMFPf1 SAM_AuthenticationMFP (non-X-mode) first part
 func ApduNonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte) []byte {
 	p1 := byte(0x00)
-	if dataDiv != nil {
+	if len(dataDiv) > 0 {
 		p1 = byte(0x01)
 	}
 	if !first {
@@ -647,7 +647,7 @@ func ApduNonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte) 
 	aid1 = append(aid1, byte(keyVer))
 	aid1 = append(aid1, data...)
 
-	if dataDiv != nil {
+	if len(dataDiv) > 0 {
 		aid1 = append(aid1, dataDiv...)
 	}
 

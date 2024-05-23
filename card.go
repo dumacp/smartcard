@@ -28,6 +28,7 @@ type ICard interface {
 var ErrComm = Error(errors.New("error communication"))
 var ErrNoSmartcard = Error(errors.New("error no smartcard"))
 var ErrTransmit = Error(errors.New("error transmit"))
+var ErrSharingViolation = Error(errors.New("error sharing violation"))
 
 type SmartcardError struct {
 	Err error

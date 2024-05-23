@@ -238,7 +238,7 @@ func (r *Reader) SendAPDU1443_4(data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if response == nil || len(response) < 2 {
+	if response == nil || len(response) < 3 {
 		return nil, smartcard.Error(fmt.Errorf("respuesta con error: [% X] ", response))
 	}
 
@@ -251,6 +251,9 @@ func (r *Reader) SendAPDU1443_4(data []byte) ([]byte, error) {
 			response, err = r.SendDataFrameTransfer(frame)
 			if err != nil {
 				return nil, err
+			}
+			if response == nil || len(response) < 3 {
+				return nil, smartcard.Error(fmt.Errorf("respuesta con error: [% X] ", response))
 			}
 			listResponse = append(listResponse, response[2:]...)
 		}

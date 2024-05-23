@@ -86,10 +86,16 @@ func (r *reader) ConnectCardPCSC() (Card, error) {
 
 	c, err := r.Context.Connect(r.ReaderName, scard.ShareExclusive, scard.ProtocolT1)
 	if err != nil {
-		if errors.Is(err, scard.ErrNoSmartcard) {
-			return nil, smartcard.ErrNoSmartcard
-		} else {
-			return nil, fmt.Errorf("connect card err = %s, %w", err, smartcard.ErrComm)
+		if err != nil {
+			switch {
+			case errors.Is(err, scard.ErrNoSmartcard):
+			case errors.Is(err, scard.ErrRemovedCard):
+			case errors.Is(err, scard.ErrUnsupportedCard):
+			case errors.Is(err, scard.ErrProtoMismatch):
+			default:
+				return nil, fmt.Errorf("connect card err = %s, %w", err, smartcard.ErrComm)
+			}
+			return nil, fmt.Errorf("connect card err = %s, %w", err, smartcard.ErrNoSmartcard)
 		}
 	}
 	sak := byte(0xFF)
@@ -150,13 +156,15 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 
 	c, err := r.Context.Connect(r.ReaderName, scard.ShareExclusive, scard.ProtocolT1)
 	if err != nil {
-		if errors.Is(err, scard.ErrNoSmartcard) {
-			return nil, smartcard.ErrNoSmartcard
-		} else if errors.Is(err, scard.ErrRemovedCard) {
-			return nil, smartcard.ErrNoSmartcard
-		} else {
+		switch {
+		case errors.Is(err, scard.ErrNoSmartcard):
+		case errors.Is(err, scard.ErrRemovedCard):
+		case errors.Is(err, scard.ErrUnsupportedCard):
+		case errors.Is(err, scard.ErrProtoMismatch):
+		default:
 			return nil, fmt.Errorf("connect card err = %s, %w", err, smartcard.ErrComm)
 		}
+		return nil, fmt.Errorf("connect card err = %s, %w", err, smartcard.ErrNoSmartcard)
 	}
 	sak := byte(0xFF)
 	cardS := &Scard{

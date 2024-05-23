@@ -37,7 +37,7 @@ func (r *Reader) Transmit(apdu []byte) ([]byte, error) {
 	}
 	r.seq += 1
 
-	response, err := r.dev.SendRecv(data, 100*time.Millisecond)
+	response, err := r.dev.SendRecv(data, 3000*time.Millisecond)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (r *Reader) Transmit(apdu []byte) ([]byte, error) {
 		if err := VerifyStatusReponse(response); err != nil {
 			return nil, err
 		}
-		response, err = r.dev.SendRecv(FRAME_NACK, 100*time.Millisecond)
+		response, err = r.dev.SendRecv(FRAME_NACK, 1200*time.Millisecond)
 		if err != nil {
 			return nil, err
 		}
@@ -94,6 +94,43 @@ func (r *Reader) EscapeCommand(apdu []byte) ([]byte, error) {
 	return dataResponse, nil
 }
 
+// Especial
+func (r *Reader) IccEspecial() ([]byte, error) {
+
+	apdu := []byte{0x18, 0x10, 0xFF, 0x43, 0x00, 0xFE, 0x00}
+	// apdu := []byte{0xFF, 0x11, 0x01, 0xFE}
+	header := BuildHeader__PC_to_RDR_IccEspecial(r.seq, r.slot, len(apdu))
+
+	data, err := BuildFrame(header, apdu)
+
+	if err != nil {
+		return nil, err
+	}
+	r.seq += 1
+
+	response, err := r.dev.SendRecv(data, 100*time.Millisecond)
+	if err != nil {
+		return nil, err
+	}
+	if len(response) <= 4 {
+
+		if err := VerifyStatusReponse(response); err != nil {
+			return nil, err
+		}
+		response, err = r.dev.SendRecv(FRAME_NACK, 100*time.Millisecond)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	dataResponse, err := GetResponse__RDR_to_PC_SlotStatus(response)
+	if err != nil {
+		return nil, err
+	}
+
+	return dataResponse, nil
+}
+
 // IccPowerOff Power off contact card
 func (r *Reader) IccPowerOff() ([]byte, error) {
 
@@ -131,6 +168,8 @@ func (r *Reader) IccPowerOff() ([]byte, error) {
 
 // IccPowerOn Power on contact card
 func (r *Reader) IccPowerOn() ([]byte, error) {
+
+	r.seq = 0
 
 	header := BuildHeader__PC_to_RDR_IccPowerOn(r.seq, r.slot)
 
@@ -202,9 +241,9 @@ func (r *Reader) ConnectCard() (smartcard.ICard, error) {
 
 // ConnectSamCard Create New contact Card interface with T=1
 func (r *Reader) ConnectSamCard() (smartcard.ICard, error) {
-	if _, err := r.EscapeCommand([]byte{0xE0, 0, 0, 0x2E, 2, 0, 10}); err != nil {
-		return nil, fmt.Errorf("connect card err = %s, %w", err, smartcard.ErrComm)
-	}
+	// if _, err := r.EscapeCommand([]byte{0xE0, 0, 0, 0x2E, 2, 0, 10}); err != nil {
+	// 	return nil, fmt.Errorf("connect card err = %s, %w", err, smartcard.ErrComm)
+	// }
 	respIccPowerOn, err := r.IccPowerOn()
 	if err != nil {
 		return nil, fmt.Errorf("connect card err = %s, %w", err, smartcard.ErrComm)
@@ -219,6 +258,14 @@ func (r *Reader) ConnectSamCard() (smartcard.ICard, error) {
 		atr:    atr,
 		reader: r,
 	}
+
+	r.IccEspecial()
+
+	// trama2 := []byte{0xFF, 0x11, 0x01, 0xFE}
+	// if _, err := r.Transmit(trama2); err != nil {
+	// 	return nil, err
+	// }
+
 	return cardS, nil
 }
 

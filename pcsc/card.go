@@ -3,6 +3,7 @@ package pcsc
 import (
 	//"fmt"
 
+	"errors"
 	"fmt"
 
 	"github.com/dumacp/smartcard"
@@ -86,6 +87,16 @@ func (c *Scard) Apdu(apdu []byte) ([]byte, error) {
 	fmt.Printf("APDU: [% X], len: %d\n", apdu, len(apdu))
 	resp, err := c.Transmit(apdu)
 	if err != nil {
+		switch {
+		case errors.Is(err, scard.ErrNoSmartcard):
+		case errors.Is(err, scard.ErrCardUnsupported):
+		case errors.Is(err, scard.ErrRemovedCard):
+		case errors.Is(err, scard.ErrUnsupportedCard):
+		case errors.Is(err, scard.ErrResetCard):
+		case errors.Is(err, scard.ErrNotTransacted):
+		default:
+			return resp, smartcard.Error(fmt.Errorf("%s, %w", err, smartcard.ErrComm))
+		}
 		return resp, smartcard.Error(err)
 	}
 	fmt.Printf("Response: [% X], len: %d\n", resp, len(resp))
@@ -102,7 +113,7 @@ func (c *Scard) ControlApdu(ioctl uint32, apdu []byte) ([]byte, error) {
 	fmt.Printf("control APDU: [% X], len: %d\n", apdu, len(apdu))
 	resp, err := c.Control(ioctl, apdu)
 	if err != nil {
-		return resp, smartcard.Error(err)
+		return resp, smartcard.Error(fmt.Errorf("%s, %w", err, smartcard.ErrComm))
 	}
 	fmt.Printf("Response: [% X], len: %d\n", resp, len(resp))
 	result := make([]byte, len(resp))
