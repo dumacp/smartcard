@@ -5,6 +5,7 @@ import (
 
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/dumacp/smartcard"
 	"github.com/ebfe/scard"
@@ -85,24 +86,49 @@ func (c *Scard) Apdu(apdu []byte) ([]byte, error) {
 		return nil, fmt.Errorf("don't Connect to Card, %w", smartcard.ErrComm)
 	}
 	fmt.Printf("APDU: [% X], len: %d\n", apdu, len(apdu))
-	resp, err := c.Transmit(apdu)
-	if err != nil {
-		switch {
-		case errors.Is(err, scard.ErrNoSmartcard):
-		case errors.Is(err, scard.ErrCardUnsupported):
-		case errors.Is(err, scard.ErrRemovedCard):
-		case errors.Is(err, scard.ErrUnsupportedCard):
-		case errors.Is(err, scard.ErrResetCard):
-		case errors.Is(err, scard.ErrNotTransacted):
-		default:
-			return resp, smartcard.Error(fmt.Errorf("%s, %w", err, smartcard.ErrComm))
+	ch := make(chan []byte)
+	chErr := make(chan error)
+
+	go func() {
+		defer close(ch)
+		defer close(chErr)
+
+		resp, err := c.Transmit(apdu)
+		if err != nil {
+			chErr <- err
+			return
 		}
-		return resp, smartcard.Error(err)
+		ch <- resp
+	}()
+
+	select {
+	case resp := <-ch:
+		fmt.Printf("Response: [% X], len: %d\n", resp, len(resp))
+		result := make([]byte, len(resp))
+		copy(result, resp)
+		return result, nil
+	case err := <-chErr:
+		if err != nil {
+			switch {
+			case errors.Is(err, scard.ErrNoSmartcard):
+			case errors.Is(err, scard.ErrCardUnsupported):
+			case errors.Is(err, scard.ErrRemovedCard):
+			case errors.Is(err, scard.ErrUnsupportedCard):
+			case errors.Is(err, scard.ErrResetCard):
+			case errors.Is(err, scard.ErrNotTransacted):
+			default:
+				return nil, smartcard.Error(fmt.Errorf("%s, %w", err, smartcard.ErrComm))
+			}
+			return nil, smartcard.Error(err)
+		}
+	case <-time.After(5 * time.Second):
+		return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
 	}
-	fmt.Printf("Response: [% X], len: %d\n", resp, len(resp))
-	result := make([]byte, len(resp))
-	copy(result, resp)
-	return result, nil
+	return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
+	// fmt.Printf("Response: [% X], len: %d\n", resp, len(resp))
+	// result := make([]byte, len(resp))
+	// copy(result, resp)
+	// return result, nil
 }
 
 // ControlApdu Primitive function (SCardControl) to send command to card
@@ -111,14 +137,45 @@ func (c *Scard) ControlApdu(ioctl uint32, apdu []byte) ([]byte, error) {
 		return nil, fmt.Errorf("don't Connect to Card, %w", smartcard.ErrComm)
 	}
 	fmt.Printf("control APDU: [% X], len: %d\n", apdu, len(apdu))
-	resp, err := c.Control(ioctl, apdu)
-	if err != nil {
-		return resp, smartcard.Error(fmt.Errorf("%s, %w", err, smartcard.ErrComm))
+
+	ch := make(chan []byte)
+	chErr := make(chan error)
+
+	go func() {
+		defer close(ch)
+		defer close(chErr)
+
+		resp, err := c.Control(ioctl, apdu)
+		if err != nil {
+			chErr <- err
+			return
+		}
+		ch <- resp
+	}()
+
+	select {
+	case resp := <-ch:
+		fmt.Printf("Response: [% X], len: %d\n", resp, len(resp))
+		result := make([]byte, len(resp))
+		copy(result, resp)
+		return result, nil
+	case err := <-chErr:
+		if err != nil {
+			return nil, smartcard.Error(fmt.Errorf("%s, %w", err, smartcard.ErrComm))
+		}
+	case <-time.After(5 * time.Second):
+		return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
 	}
-	fmt.Printf("Response: [% X], len: %d\n", resp, len(resp))
-	result := make([]byte, len(resp))
-	copy(result, resp)
-	return result, nil
+	return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
+
+	// resp, err := c.Control(ioctl, apdu)
+	// if err != nil {
+	// 	return resp, smartcard.Error(fmt.Errorf("%s, %w", err, smartcard.ErrComm))
+	// }
+	// fmt.Printf("Response: [% X], len: %d\n", resp, len(resp))
+	// result := make([]byte, len(resp))
+	// copy(result, resp)
+	// return result, nil
 }
 
 // ATR Get ATR from Card

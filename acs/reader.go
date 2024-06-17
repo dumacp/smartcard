@@ -73,12 +73,11 @@ func (r *Reader) SpeedControl(a byte) error {
 	if len(resp) <= 0 {
 		return fmt.Errorf("error in response, nil response")
 	}
-	var apdu1 []byte
 	if resp[len(resp)-1] != a {
-		apdu1 = []byte{0x09, 0x01, a}
-	}
-	if _, err := p.ControlApdu(0x42000000+2079, apdu1); err != nil {
-		return err
+		apdu1 := []byte{0x09, 0x01, a}
+		if _, err := p.ControlApdu(0x42000000+2079, apdu1); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -98,12 +97,12 @@ func (r *Reader) BuzzerControl(a byte) error {
 	if len(resp) <= 0 {
 		return fmt.Errorf("error in response, nil response")
 	}
-	var apdu1 []byte
+	// var apdu1 []byte
 	if resp[len(resp)-1] != a {
-		apdu1 = []byte{0x21, 0x01, a}
-	}
-	if _, err := p.ControlApdu(0x42000000+2079, apdu1); err != nil {
-		return err
+		apdu1 := []byte{0x21, 0x01, a}
+		if _, err := p.ControlApdu(0x42000000+2079, apdu1); err != nil {
+			return err
+		}
 	}
 	return nil
 }

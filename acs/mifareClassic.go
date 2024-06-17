@@ -4,6 +4,7 @@ import (
 	"fmt"
 	_ "fmt"
 
+	"github.com/dumacp/smartcard"
 	"github.com/dumacp/smartcard/nxp/mifare"
 	"github.com/dumacp/smartcard/pcsc"
 )
@@ -60,6 +61,9 @@ func (mc *mifareClassic) valueop(valOp, bNr byte, value []byte) error {
 		return err
 	}
 	if err := mifare.VerifyResponseIso7816(response); err != nil {
+		if len(response) > 2 && response[len(response)-2] == 0x69 && response[len(response)-1] == 0x82 {
+			return fmt.Errorf("%s, %w", err, smartcard.ErrComm)
+		}
 		return err
 	}
 	return nil
