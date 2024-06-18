@@ -45,10 +45,12 @@ func (c *Card) Apdu(apdu []byte) ([]byte, error) {
 
 		cmd = append(cmd, apdu...)
 
+		fmt.Printf("APDU: [% X]\n", apdu)
 		response, err := c.reader.Transceive(cmd)
 		if err != nil {
 			return nil, err
 		}
+		fmt.Printf("RESPONSE: [% X]\n", response)
 		if response == nil || len(response) < 1 {
 			return nil, smartcard.Error(fmt.Errorf("respuesta con error: [% X] ", response))
 		}

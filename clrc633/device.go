@@ -1,6 +1,7 @@
 package clrc633
 
 import (
+	"fmt"
 	"time"
 
 	"periph.io/x/conn/v3/spi"
@@ -18,11 +19,19 @@ func NewDevice(path string) (*Device, error) {
 		return nil, err
 	}
 
+	buffWrite := []byte{0x7F<<1 | 1, 0x00}
+	buffRead := make([]byte, 2)
+	if err := conn.Tx(buffWrite, buffRead); err != nil {
+		return nil, err
+	}
+
 	if err := reset(conn); err != nil {
 		return nil, err
 	}
 
-	if err := init_test_Dev(conn); err != nil {
+	fmt.Printf("read version: %X\n", buffRead)
+
+	if err := init_iso14443_Dev(conn); err != nil {
 		return nil, err
 	}
 

@@ -623,9 +623,9 @@ func init_test_Dev(c spi.Conn) error {
 	} else {
 		fmt.Printf("write [% 02X] in addr: 0x%02X\n", resp, 0x28)
 	}
-	// if err := setmask(c, 0x28, 0x80); err != nil {
-	// 	return err
-	// }
+	if err := setmask(c, 0x28, 0x80); err != nil {
+		return err
+	}
 
 	// TxAmp
 	if err := write(c, 0x29, []byte{0x00}); err != nil {

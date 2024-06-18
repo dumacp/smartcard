@@ -150,7 +150,7 @@ func waitIRQ(c spi.Conn, addrIrq, value byte, timeout time.Duration) error {
 
 	t1 := time.NewTimer(timeout)
 	defer t1.Stop()
-	t2 := time.NewTicker(3 * time.Millisecond)
+	t2 := time.NewTicker(10 * time.Millisecond)
 	defer t2.Stop()
 	for {
 		resp, err := read(c, []byte{addrIrq})
@@ -159,8 +159,9 @@ func waitIRQ(c spi.Conn, addrIrq, value byte, timeout time.Duration) error {
 		}
 		select {
 		case <-t2.C:
+			fmt.Printf("read byte IRQ (0x%02X): 0x%02X\n", addrIrq, resp[0])
 			if value == (resp[0] & value) {
-				// fmt.Printf("read byte IRQ (0x%02X): 0x%02X\n", addrIrq, resp[0])
+				fmt.Printf("read byte IRQ (0x%02X): 0x%02X\n", addrIrq, resp[0])
 				return nil
 			}
 		case <-t1.C:
