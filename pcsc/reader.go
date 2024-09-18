@@ -161,6 +161,7 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 		case errors.Is(err, scard.ErrRemovedCard):
 		case errors.Is(err, scard.ErrUnsupportedCard):
 		case errors.Is(err, scard.ErrProtoMismatch):
+		case errors.Is(err, scard.ErrUnpoweredCard):
 		default:
 			return nil, fmt.Errorf("connect card err = %s, %w", err, smartcard.ErrComm)
 		}

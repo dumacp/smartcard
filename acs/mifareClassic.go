@@ -44,7 +44,17 @@ func MClassic(c pcsc.Card) (mifare.Classic, error) {
 }
 
 func (mc *mifareClassic) Apdu(apdu []byte) ([]byte, error) {
-	return mc.Card.Apdu(apdu)
+	response, err := mc.Card.Apdu(apdu)
+	if err != nil {
+		return nil, err
+	}
+	if err := mifare.VerifyResponseIso7816(response); err != nil {
+		if len(response) >= 2 && response[len(response)-2] == 0x69 && response[len(response)-1] == 0x82 {
+			return response, fmt.Errorf("%s, %w", err, smartcard.ErrSecurity)
+		}
+		return response, err
+	}
+	return response, nil
 }
 
 func (mc *mifareClassic) valueop(valOp, bNr byte, value []byte) error {
@@ -61,9 +71,6 @@ func (mc *mifareClassic) valueop(valOp, bNr byte, value []byte) error {
 		return err
 	}
 	if err := mifare.VerifyResponseIso7816(response); err != nil {
-		if len(response) > 2 && response[len(response)-2] == 0x69 && response[len(response)-1] == 0x82 {
-			return fmt.Errorf("%s, %w", err, smartcard.ErrComm)
-		}
 		return err
 	}
 	return nil

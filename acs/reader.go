@@ -2,21 +2,36 @@ package acs
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/dumacp/smartcard"
 	"github.com/dumacp/smartcard/pcsc"
 )
 
 type Reader struct {
-	PcscReader  pcsc.Reader
-	pollManuall bool
+	PcscReader   pcsc.Reader
+	pollManuall  bool
+	byteControl  byte
+	readerName   string
+	verifyRFPicc bool
 }
 
 func NewReader(ctx *pcsc.Context, readerName string) *Reader {
 
 	r := &Reader{
 		PcscReader: pcsc.NewReader(ctx, readerName),
+		readerName: readerName,
 	}
+	if strings.Contains(strings.ToLower(readerName), "1552") {
+		r.verifyRFPicc = true
+	}
+	resp, err := r.Version()
+	if err != nil {
+		return r
+	}
+
+	fmt.Printf("version: [% 02X], %q\n", resp, resp)
+
 	return r
 
 }
@@ -28,6 +43,25 @@ func NewReaderFromPcscReader(r pcsc.Reader) *Reader {
 	}
 	return reader
 
+}
+
+func (r *Reader) Version() ([]byte, error) {
+
+	p, err := r.PcscReader.ConnectDirect()
+	if err != nil {
+		return nil, err
+	}
+	defer p.DisconnectCard()
+
+	resp, err := p.ControlApdu(0x42000000+2079, []byte{0x18, 0x00})
+	if err != nil {
+		return nil, err
+	}
+	if len(resp) <= 0 {
+		return nil, fmt.Errorf("error in response, nil response")
+	}
+
+	return resp, nil
 }
 
 func (r *Reader) SetAutomaticPoll(a bool) error {
@@ -45,15 +79,21 @@ func (r *Reader) SetAutomaticPoll(a bool) error {
 	if len(resp) <= 0 {
 		return fmt.Errorf("error in response, nil response")
 	}
+	byteControl := resp[len(resp)-1]
+
 	var apdu1 []byte
+
 	if a {
-		apdu1 = []byte{0x23, 0x01, resp[len(resp)-1] | 0x01}
+		byteControl = (byteControl | 0x4B) & 0xFB
+		apdu1 = []byte{0x23, 0x01, byteControl}
 	} else {
-		apdu1 = []byte{0x23, 0x01, resp[len(resp)-1] & 0xFE}
+		byteControl = byteControl & 0xFA
+		apdu1 = []byte{0x23, 0x01, byteControl}
 	}
 	if _, err := p.ControlApdu(0x42000000+2079, apdu1); err != nil {
 		return err
 	}
+	r.byteControl = byteControl
 	r.pollManuall = !a
 	return nil
 }
@@ -75,6 +115,30 @@ func (r *Reader) SpeedControl(a byte) error {
 	}
 	if resp[len(resp)-1] != a {
 		apdu1 := []byte{0x09, 0x01, a}
+		if _, err := p.ControlApdu(0x42000000+2079, apdu1); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *Reader) PICOperationControl(a byte) error {
+
+	p, err := r.PcscReader.ConnectDirect()
+	if err != nil {
+		return err
+	}
+	defer p.DisconnectCard()
+
+	resp, err := p.ControlApdu(0x42000000+2079, []byte{0x20, 0x00})
+	if err != nil {
+		return err
+	}
+	if len(resp) <= 0 {
+		return fmt.Errorf("error in response, nil response")
+	}
+	if resp[len(resp)-1] != a {
+		apdu1 := []byte{0x20, 0x01, a}
 		if _, err := p.ControlApdu(0x42000000+2079, apdu1); err != nil {
 			return err
 		}
@@ -122,15 +186,20 @@ func (r *Reader) SetEnforceISO14443A_4(a bool) error {
 	if len(resp) <= 0 {
 		return fmt.Errorf("error in response, nil response")
 	}
+	byteControl := resp[len(resp)-1]
+
 	var apdu1 []byte
 	if a {
-		apdu1 = []byte{0x23, 0x01, resp[len(resp)-1] | 0x80}
+		byteControl = (byteControl | 0x8A) & 0xFB
+		apdu1 = []byte{0x23, 0x01, byteControl}
 	} else {
-		apdu1 = []byte{0x23, 0x01, resp[len(resp)-1] & 0x7F}
+		byteControl = (byteControl | 0x0A) & 0x7B
+		apdu1 = []byte{0x23, 0x01, byteControl}
 	}
 	if _, err := p.ControlApdu(0x42000000+2079, apdu1); err != nil {
 		return err
 	}
+	r.byteControl = byteControl
 	r.pollManuall = !a
 	return nil
 }
@@ -153,6 +222,34 @@ func (r *Reader) ConnectCard() (smartcard.ICard, error) {
 			apdu := []byte{0x25, 0x00}
 			if resp, err := p.ControlApdu(0x42000000+2079, apdu); err != nil {
 				return err
+			} else if len(resp) > 0 && resp[len(resp)-1] > 0x01 {
+				return nil
+			}
+			return smartcard.ErrNoSmartcard
+		}(); err != nil {
+			return nil, err
+		}
+	} else if r.verifyRFPicc {
+		if err := func() error {
+			p, err := r.PcscReader.ConnectDirect()
+			if err != nil {
+				return err
+			}
+			defer p.DisconnectCard()
+			// TODO why?
+			// if _, err := p.ControlApdu(0x42000000+2079, []byte{0x22, 0x01, 0x01}); err != nil {
+			// 	// if _, err := p.ControlApdu(0x42000000+2079, []byte{0x22, 0x00}); err != nil {
+			// 	return err
+			// }
+			apdu := []byte{0x25, 0x00}
+			if resp, err := p.ControlApduA(0x42000000+2079, apdu); err != nil {
+				return err
+			} else if len(resp) > 0 && resp[len(resp)-1] == 0x00 {
+				apdu := []byte{0x23, 0x01, r.byteControl}
+				if _, err := p.ControlApduA(0x42000000+2079, apdu); err != nil {
+					return err
+				}
+				return nil
 			} else if len(resp) > 0 && resp[len(resp)-1] > 0x01 {
 				return nil
 			}

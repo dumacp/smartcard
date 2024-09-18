@@ -15,11 +15,12 @@ import (
 type Card interface {
 	smartcard.ICard
 	ControlApdu(ioctl uint32, apdu []byte) ([]byte, error)
+	ControlApduA(ioctl uint32, apdu []byte) ([]byte, error)
 	EndTransaction() error
 	EndTransactionResetCard() error
-	DisconnectResetCard() error
-	DisconnectUnpowerCard() error
-	DisconnectEjectCard() error
+	// DisconnectResetCard() error
+	// DisconnectUnpowerCard() error
+	// DisconnectEjectCard() error
 	TransparentSessionStart() ([]byte, error)
 	TransparentSessionStartOnly() ([]byte, error)
 	TransparentSessionResetRF() ([]byte, error)
@@ -59,24 +60,28 @@ func (c *Scard) EndTransactionResetCard() error {
 // DisconnectCard Disconnect card from context with card with disposition type LeaveCard
 func (c *Scard) DisconnectCard() error {
 	c.State = DISCONNECTED
+	// fmt.Println("DisconnectCard")
 	return c.Disconnect(scard.LeaveCard)
 }
 
 // DiconnectResetCard Disconnect card from context with card with disposition type ResetCard
 func (c *Scard) DisconnectResetCard() error {
 	c.State = DISCONNECTED
+	fmt.Println("DisconnectResetCard")
 	return c.Disconnect(scard.ResetCard)
 }
 
 // DisconnectUnpowerCard Disconnect card from context with card with disposition type UnpowerCard
 func (c *Scard) DisconnectUnpowerCard() error {
 	c.State = DISCONNECTED
+	fmt.Println("DisconnectUnpowerCard")
 	return c.Disconnect(scard.UnpowerCard)
 }
 
 // DisconnectEjectCard Disconnect card from context with card with disposition type EjectCard
 func (c *Scard) DisconnectEjectCard() error {
 	c.State = DISCONNECTED
+	fmt.Println("DisconnectEjectCard")
 	return c.Disconnect(scard.EjectCard)
 }
 
@@ -121,7 +126,7 @@ func (c *Scard) Apdu(apdu []byte) ([]byte, error) {
 			}
 			return nil, smartcard.Error(err)
 		}
-	case <-time.After(5 * time.Second):
+	case <-time.After(3 * time.Second):
 		return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
 	}
 	return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
@@ -163,7 +168,54 @@ func (c *Scard) ControlApdu(ioctl uint32, apdu []byte) ([]byte, error) {
 		if err != nil {
 			return nil, smartcard.Error(fmt.Errorf("%s, %w", err, smartcard.ErrComm))
 		}
-	case <-time.After(5 * time.Second):
+	case <-time.After(3 * time.Second):
+		return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
+	}
+	return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
+
+	// resp, err := c.Control(ioctl, apdu)
+	// if err != nil {
+	// 	return resp, smartcard.Error(fmt.Errorf("%s, %w", err, smartcard.ErrComm))
+	// }
+	// fmt.Printf("Response: [% X], len: %d\n", resp, len(resp))
+	// result := make([]byte, len(resp))
+	// copy(result, resp)
+	// return result, nil
+}
+
+// ControlApdu Primitive function (SCardControl) to send command to card
+func (c *Scard) ControlApduA(ioctl uint32, apdu []byte) ([]byte, error) {
+	if c.State != CONNECTEDDirect {
+		return nil, fmt.Errorf("don't Connect to Card, %w", smartcard.ErrComm)
+	}
+	// fmt.Printf("control APDU: [% X], len: %d\n", apdu, len(apdu))
+
+	ch := make(chan []byte)
+	chErr := make(chan error)
+
+	go func() {
+		defer close(ch)
+		defer close(chErr)
+
+		resp, err := c.Control(ioctl, apdu)
+		if err != nil {
+			chErr <- err
+			return
+		}
+		ch <- resp
+	}()
+
+	select {
+	case resp := <-ch:
+		// fmt.Printf("Response: [% X], len: %d\n", resp, len(resp))
+		result := make([]byte, len(resp))
+		copy(result, resp)
+		return result, nil
+	case err := <-chErr:
+		if err != nil {
+			return nil, smartcard.Error(fmt.Errorf("%s, %w", err, smartcard.ErrComm))
+		}
+	case <-time.After(3 * time.Second):
 		return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
 	}
 	return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
@@ -262,11 +314,11 @@ func (c *Scard) TransparentSessionStartOnly() ([]byte, error) {
 
 // TransparentSessionResetRF start transparent session to send APDU
 func (c *Scard) TransparentSessionResetRF() ([]byte, error) {
-	apdu1 := []byte{0xFF, 0xC2, 0x00, 0x00, 0x02, 0x83, 0x00}
-	resp, err := c.Apdu(apdu1)
-	if err != nil {
-		return resp, smartcard.Error(err)
-	}
+	// apdu1 := []byte{0xFF, 0xC2, 0x00, 0x00, 0x02, 0x83, 0x00}
+	// resp, err := c.Apdu(apdu1)
+	// if err != nil {
+	// 	return resp, smartcard.Error(err)
+	// }
 	apdu2 := []byte{0xFF, 0xC2, 0x00, 0x00, 0x02, 0x84, 0x00}
 	resp2, err := c.Apdu(apdu2)
 	if err != nil {

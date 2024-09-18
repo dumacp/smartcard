@@ -58,17 +58,27 @@ func (c *Card) DisconnectCard() error {
 }
 
 func (c *Card) DisconnectResetCard() error {
-	// if _, err := c.Apdu([]byte("q")); err != nil {
+	if c == nil {
+		return nil
+	}
+	_, err := c.Apdu([]byte("q"))
+	return err
+	// newcard, err := c.Reader.ConnectLegacyCard()
+	// if err != nil {
 	// 	return err
 	// }
-	newcard, err := c.Reader.ConnectLegacyCard()
-	if err != nil {
-		return err
-	}
-	modesend := c.modeSend
-	*c = *newcard
-	c.modeSend = modesend
-	return err
+	// modesend := c.modeSend
+	// *c = *newcard
+	// c.modeSend = modesend
+	// return err
+}
+
+func (c *Card) DisconnectEjectCard() error {
+	return c.DisconnectCard()
+}
+
+func (c *Card) DisconnectUnpowerCard() error {
+	return c.DisconnectCard()
 }
 
 func (c *Card) EndTransactionResetCard() error {

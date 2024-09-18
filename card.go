@@ -22,10 +22,13 @@ type ICard interface {
 	SAK() byte
 	DisconnectCard() error
 	DisconnectResetCard() error
+	DisconnectUnpowerCard() error
+	DisconnectEjectCard() error
 	EndTransactionResetCard() error
 }
 
 var ErrComm = Error(errors.New("error communication"))
+var ErrSecurity = Error(errors.New("error security"))
 var ErrNoSmartcard = Error(errors.New("error no smartcard"))
 var ErrTransmit = Error(errors.New("error transmit"))
 var ErrSharingViolation = Error(errors.New("error sharing violation"))

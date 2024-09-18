@@ -54,6 +54,14 @@ func (c *Card) DisconnectResetCard() error {
 	return nil
 }
 
+func (c *Card) DisconnectEjectCard() error {
+	return nil
+}
+
+func (c *Card) DisconnectUnpowerCard() error {
+	return nil
+}
+
 func (c *Card) EndTransactionResetCard() error {
 	return nil
 }
