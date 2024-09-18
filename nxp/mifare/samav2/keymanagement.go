@@ -335,7 +335,7 @@ func ApduActivateOfflineKey(keyNo, keyVer int, divInput []byte,
 		Le:  false,
 	}
 
-	if divInput != nil {
+	if len(divInput) > 0 {
 		cmd.P1 = 0x01
 	}
 
