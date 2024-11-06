@@ -106,6 +106,9 @@ func (c *Scard) Apdu(apdu []byte) ([]byte, error) {
 		ch <- resp
 	}()
 
+	t0 := time.NewTimer(3 * time.Second)
+	defer t0.Stop()
+
 	select {
 	case resp := <-ch:
 		fmt.Printf("Response: [% X], len: %d\n", resp, len(resp))
@@ -126,7 +129,7 @@ func (c *Scard) Apdu(apdu []byte) ([]byte, error) {
 			}
 			return nil, smartcard.Error(err)
 		}
-	case <-time.After(3 * time.Second):
+	case <-t0.C:
 		return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
 	}
 	return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
@@ -158,6 +161,9 @@ func (c *Scard) ControlApdu(ioctl uint32, apdu []byte) ([]byte, error) {
 		ch <- resp
 	}()
 
+	t0 := time.NewTimer(3 * time.Second)
+	defer t0.Stop()
+
 	select {
 	case resp := <-ch:
 		fmt.Printf("Response: [% X], len: %d\n", resp, len(resp))
@@ -168,7 +174,7 @@ func (c *Scard) ControlApdu(ioctl uint32, apdu []byte) ([]byte, error) {
 		if err != nil {
 			return nil, smartcard.Error(fmt.Errorf("%s, %w", err, smartcard.ErrComm))
 		}
-	case <-time.After(3 * time.Second):
+	case <-t0.C:
 		return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
 	}
 	return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
@@ -205,6 +211,9 @@ func (c *Scard) ControlApduA(ioctl uint32, apdu []byte) ([]byte, error) {
 		ch <- resp
 	}()
 
+	t0 := time.NewTimer(3 * time.Second)
+	defer t0.Stop()
+
 	select {
 	case resp := <-ch:
 		// fmt.Printf("Response: [% X], len: %d\n", resp, len(resp))
@@ -215,7 +224,7 @@ func (c *Scard) ControlApduA(ioctl uint32, apdu []byte) ([]byte, error) {
 		if err != nil {
 			return nil, smartcard.Error(fmt.Errorf("%s, %w", err, smartcard.ErrComm))
 		}
-	case <-time.After(3 * time.Second):
+	case <-t0.C:
 		return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
 	}
 	return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
