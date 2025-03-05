@@ -2,6 +2,7 @@ package multiiso
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -21,7 +22,8 @@ type Device struct {
 	mux     sync.Mutex
 	timeout time.Duration
 	chRecv  chan []byte
-	chQuit  chan int
+	contxt  context.Context
+	cancel  func()
 	mode    int
 }
 
@@ -50,8 +52,9 @@ func NewDevice(portName string, baudRate int, timeout time.Duration) (*Device, e
 		timeout: timeout,
 		// chQuit:  make(chan int),
 	}
-	chQuit := make(chan int)
-	dev.chQuit = chQuit
+	chQuit, cancel := context.WithCancel(context.Background())
+	dev.contxt = chQuit
+	dev.cancel = cancel
 	dev.read()
 	log.Println("port serial Open!")
 	return dev, nil
@@ -60,7 +63,9 @@ func NewDevice(portName string, baudRate int, timeout time.Duration) (*Device, e
 // Close close serial device
 func (dev *Device) Close() bool {
 	dev.Ok = false
-	close(dev.chQuit)
+	if dev.cancel != nil {
+		dev.cancel()
+	}
 	if err := dev.port.Close(); err != nil {
 		log.Printf("close err: %s", err)
 		return false
@@ -186,7 +191,7 @@ func (dev *Device) read() {
 			if b == '\x03' && (indxb >= int(tempb[2])+5) {
 				// fmt.Printf("tempb final: [% X]\n", tempb[:indxb])
 				select {
-				case <-dev.chQuit:
+				case <-dev.contxt.Done():
 					// log.Println("3")
 					return
 				case dev.chRecv <- tempb[0:indxb]:

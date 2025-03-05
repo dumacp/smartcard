@@ -8,7 +8,6 @@ import (
 // CreateApplication creates new application on the PICC. The application is
 // initialized according to the given settings. The application keys of the
 // active key set aer initilized with the default Application key.
-//
 func (d *Desfire) CreateApplication(aid []byte,
 	keyTypeAKS KeyType,
 	changeKey AccessRights,
