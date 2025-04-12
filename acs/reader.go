@@ -25,12 +25,13 @@ func NewReader(ctx *pcsc.Context, readerName string) *Reader {
 	if strings.Contains(strings.ToLower(readerName), "1552") {
 		r.verifyRFPicc = true
 	}
-	resp, err := r.Version()
-	if err != nil {
-		return r
-	}
+	// resp, err := r.Version()
+	// if err != nil {
+	// 	fmt.Printf("error in version: %s\n", err)
+	// 	return r
+	// }
 
-	fmt.Printf("version: [% 02X], %q\n", resp, resp)
+	// fmt.Printf("version: [% 02X], %q\n", resp, resp)
 
 	return r
 
@@ -206,12 +207,12 @@ func (r *Reader) SetEnforceISO14443A_4(a bool) error {
 
 // ConnectCard connect card with protocol T=1
 func (r *Reader) ConnectCard() (smartcard.ICard, error) {
-
 	if r.pollManuall {
 		if err := func() error {
 			p, err := r.PcscReader.ConnectDirect()
 			if err != nil {
-				return err
+				// fmt.Printf("error in connectDirect: %s\n", err)
+				return fmt.Errorf("connectDirect card err = %s, %w", err, smartcard.ErrComm)
 			}
 			defer p.DisconnectCard()
 			// TODO why?
@@ -233,7 +234,7 @@ func (r *Reader) ConnectCard() (smartcard.ICard, error) {
 		if err := func() error {
 			p, err := r.PcscReader.ConnectDirect()
 			if err != nil {
-				return err
+				return fmt.Errorf("connectDirect card err = %s, %w", err, smartcard.ErrComm)
 			}
 			defer p.DisconnectCard()
 			// TODO why?
