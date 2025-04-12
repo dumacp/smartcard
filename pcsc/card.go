@@ -3,6 +3,7 @@ package pcsc
 import (
 	//"fmt"
 
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -61,7 +62,28 @@ func (c *Scard) EndTransactionResetCard() error {
 func (c *Scard) DisconnectCard() error {
 	c.State = DISCONNECTED
 	// fmt.Println("DisconnectCard")
-	return c.Disconnect(scard.LeaveCard)
+	chErr := make(chan error)
+	contxt, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	go func() {
+		defer close(chErr)
+		select {
+		case chErr <- c.Disconnect(scard.LeaveCard):
+		case <-contxt.Done():
+			fmt.Println("Channel is closed, cannot send error")
+		}
+	}()
+
+	select {
+	case err := <-chErr:
+		if err != nil {
+			return err
+		}
+		return nil
+	case <-contxt.Done():
+		return fmt.Errorf("timeout DisconnectCard, %w", smartcard.ErrComm)
+	}
 }
 
 // DiconnectResetCard Disconnect card from context with card with disposition type ResetCard
@@ -90,9 +112,12 @@ func (c *Scard) Apdu(apdu []byte) ([]byte, error) {
 	if c.State != CONNECTED {
 		return nil, fmt.Errorf("don't Connect to Card, %w", smartcard.ErrComm)
 	}
-	fmt.Printf("APDU: [% X], len: %d\n", apdu, len(apdu))
+	// fmt.Printf("APDU: [% X], len: %d\n", apdu, len(apdu))
 	ch := make(chan []byte)
 	chErr := make(chan error)
+
+	contxt, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
 	go func() {
 		defer close(ch)
@@ -100,18 +125,25 @@ func (c *Scard) Apdu(apdu []byte) ([]byte, error) {
 
 		resp, err := c.Transmit(apdu)
 		if err != nil {
-			chErr <- err
+			// chErr <- err
+			select {
+			case chErr <- err:
+			case <-contxt.Done():
+				fmt.Println("Channel is closed, cannot send error")
+			}
 			return
 		}
-		ch <- resp
+		// ch <- resp
+		select {
+		case ch <- resp:
+		case <-contxt.Done():
+			fmt.Println("Channel is closed, cannot send response")
+		}
 	}()
-
-	t0 := time.NewTimer(3 * time.Second)
-	defer t0.Stop()
 
 	select {
 	case resp := <-ch:
-		fmt.Printf("Response: [% X], len: %d\n", resp, len(resp))
+		// fmt.Printf("Response: [% X], len: %d\n", resp, len(resp))
 		result := make([]byte, len(resp))
 		copy(result, resp)
 		return result, nil
@@ -129,7 +161,7 @@ func (c *Scard) Apdu(apdu []byte) ([]byte, error) {
 			}
 			return nil, smartcard.Error(err)
 		}
-	case <-t0.C:
+	case <-contxt.Done():
 		return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
 	}
 	return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
@@ -144,29 +176,37 @@ func (c *Scard) ControlApdu(ioctl uint32, apdu []byte) ([]byte, error) {
 	if c.State != CONNECTEDDirect {
 		return nil, fmt.Errorf("don't Connect to Card, %w", smartcard.ErrComm)
 	}
-	fmt.Printf("control APDU: [% X], len: %d\n", apdu, len(apdu))
+	// fmt.Printf("control APDU: [% X], len: %d\n", apdu, len(apdu))
 
 	ch := make(chan []byte)
 	chErr := make(chan error)
 
+	contxt, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	go func() {
 		defer close(ch)
 		defer close(chErr)
-
 		resp, err := c.Control(ioctl, apdu)
 		if err != nil {
-			chErr <- err
+			select {
+			case chErr <- err:
+			case <-contxt.Done():
+				fmt.Println("timeout, cannot send error")
+			}
 			return
 		}
-		ch <- resp
+		select {
+		case ch <- resp:
+		case <-contxt.Done():
+			fmt.Println("timeout, cannot send response")
+		}
+		// ch <- resp
 	}()
-
-	t0 := time.NewTimer(3 * time.Second)
-	defer t0.Stop()
 
 	select {
 	case resp := <-ch:
-		fmt.Printf("Response: [% X], len: %d\n", resp, len(resp))
+		// fmt.Printf("Response: [% X], len: %d\n", resp, len(resp))
 		result := make([]byte, len(resp))
 		copy(result, resp)
 		return result, nil
@@ -174,7 +214,7 @@ func (c *Scard) ControlApdu(ioctl uint32, apdu []byte) ([]byte, error) {
 		if err != nil {
 			return nil, smartcard.Error(fmt.Errorf("%s, %w", err, smartcard.ErrComm))
 		}
-	case <-t0.C:
+	case <-contxt.Done():
 		return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
 	}
 	return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
@@ -199,20 +239,27 @@ func (c *Scard) ControlApduA(ioctl uint32, apdu []byte) ([]byte, error) {
 	ch := make(chan []byte)
 	chErr := make(chan error)
 
+	contxt, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	go func() {
 		defer close(ch)
 		defer close(chErr)
 
 		resp, err := c.Control(ioctl, apdu)
 		if err != nil {
-			chErr <- err
-			return
+			select {
+			case chErr <- err:
+			case <-contxt.Done():
+				fmt.Println("timeout, cannot send error")
+			}
 		}
-		ch <- resp
+		select {
+		case ch <- resp:
+		case <-contxt.Done():
+			fmt.Println("timeout, cannot send response")
+		}
 	}()
-
-	t0 := time.NewTimer(3 * time.Second)
-	defer t0.Stop()
 
 	select {
 	case resp := <-ch:
@@ -224,7 +271,7 @@ func (c *Scard) ControlApduA(ioctl uint32, apdu []byte) ([]byte, error) {
 		if err != nil {
 			return nil, smartcard.Error(fmt.Errorf("%s, %w", err, smartcard.ErrComm))
 		}
-	case <-t0.C:
+	case <-contxt.Done():
 		return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
 	}
 	return nil, fmt.Errorf("timeout, %w", smartcard.ErrComm)
