@@ -119,7 +119,8 @@ func (r *Reader) ConnectLegacyCard() (*Card, error) {
 		reader:  r,
 		typeTag: TAG_TYPEA,
 	}
-	if sak == 0x04 {
+	fmt.Printf("initial sak: %02X\n", sak)
+	if sak == 0x04 || sak == 0x24 {
 		respAnticoll, err := r.Anticoll2()
 		if err != nil {
 			return nil, err
