@@ -7,7 +7,7 @@ import (
 	"github.com/dumacp/smartcard/nxp/mifare"
 )
 
-//PKIGenerateKeyPair creates a pair of a public and prvate key
+// PKIGenerateKeyPair creates a pair of a public and prvate key
 func (sam *samAv2) PKIGenerateKeyPair(pkiE []byte, pkiSET []byte,
 	pkiKeyNo, pkiKeyNoCEK, pkikeVCEK, pkiRefNoKUC, pkiNLen int) ([]byte, error) {
 
@@ -27,7 +27,7 @@ func (sam *samAv2) PKIGenerateKeyPair(pkiE []byte, pkiSET []byte,
 	return resp, nil
 }
 
-//PKIExportPublicKey exports the public key part of a RSA key pair
+// PKIExportPublicKey exports the public key part of a RSA key pair
 func (sam *samAv2) PKIExportPublicKey(pkiKeyNo int) ([]byte, error) {
 
 	response := make([]byte, 0)
@@ -217,6 +217,7 @@ func ApduPKIUpdateKeyEntries(hashing HashingAlgorithm, keyEntrysNo int,
 
 	data = append(data, pkiEncKeyFrame...)
 	data = append(data, pkiSignature...)
+	// data = append(data, 0x00)
 	if cmd.Le {
 		data = append(data, 0x00)
 	}

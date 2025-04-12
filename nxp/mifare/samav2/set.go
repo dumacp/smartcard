@@ -59,7 +59,7 @@ func push(data uint64, bitwise int, input interface{}) uint64 {
 }
 
 func SETConfigurationSettings(allowDumpSessionKey bool,
-	keepIV bool, keyType KeyType, authKey bool, disableKeyEntry bool,
+	keepIV bool, keyType KeyType, requireAuth, authKey bool, disableKeyEntry bool,
 	lockKey bool, disableWritingKeyPICC bool, disableDecryption bool,
 	disableEncryption bool, disableVerifyMAC bool, disableGenMAC bool) []byte {
 
@@ -73,7 +73,8 @@ func SETConfigurationSettings(allowDumpSessionKey bool,
 	setdata = push(setdata, 1, lockKey)               //10
 	setdata = push(setdata, 1, disableKeyEntry)       //9
 	setdata = push(setdata, 1, authKey)               //8
-	setdata = push(setdata, 2, 0)                     //6 7
+	setdata = push(setdata, 1, requireAuth)           //7 Authhost required
+	setdata = push(setdata, 1, 0)                     //6
 	setdata = push(setdata, 3, int(keyType))          //3 4 5
 	setdata = push(setdata, 1, keepIV)                //2
 	setdata = push(setdata, 1, 0)                     //1
@@ -108,8 +109,8 @@ func SETConfigurationSettingsPKI(privKeyInclude bool,
 	return result
 }
 
-//ExtSETConfigurationSettings
-//keyClass: KeyClass Type, multiple types support (example: OfflineChange_KEY | PICC_KEY)
+// ExtSETConfigurationSettings
+// keyClass: KeyClass Type, multiple types support (example: OfflineChange_KEY | PICC_KEY)
 func ExtSETConfigurationSettings(keyClass KeyClass,
 	allowDumpSecretKey bool, restrictToDiversifiedUse bool) byte {
 
