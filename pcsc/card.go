@@ -15,13 +15,11 @@ import (
 // Card Interface
 type Card interface {
 	smartcard.ICard
+	SetTimeout(timeout time.Duration)
 	ControlApdu(ioctl uint32, apdu []byte) ([]byte, error)
 	ControlApduA(ioctl uint32, apdu []byte) ([]byte, error)
 	EndTransaction() error
 	EndTransactionResetCard() error
-	// DisconnectResetCard() error
-	// DisconnectUnpowerCard() error
-	// DisconnectEjectCard() error
 	TransparentSessionStart() ([]byte, error)
 	TransparentSessionStartOnly() ([]byte, error)
 	TransparentSessionResetRF() ([]byte, error)
@@ -40,10 +38,16 @@ const (
 )
 
 type Scard struct {
-	State State
 	*scard.Card
-	sak byte
-	atr []byte
+	State   State
+	timeout time.Duration
+	sak     byte
+	atr     []byte
+}
+
+// SetTimeout Set timeout to wait for card response. Default is 3 seconds
+func (c *Scard) SetTimeout(timeout time.Duration) {
+	c.timeout = timeout
 }
 
 // EndTransactionn End transaccion with card with disposition type LeaveCard
@@ -63,7 +67,7 @@ func (c *Scard) DisconnectCard() error {
 	c.State = DISCONNECTED
 	// fmt.Println("DisconnectCard")
 	chErr := make(chan error)
-	contxt, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	contxt, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 
 	go func() {
@@ -116,7 +120,7 @@ func (c *Scard) Apdu(apdu []byte) ([]byte, error) {
 	ch := make(chan []byte)
 	chErr := make(chan error)
 
-	contxt, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	contxt, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 
 	go func() {
@@ -181,7 +185,7 @@ func (c *Scard) ControlApdu(ioctl uint32, apdu []byte) ([]byte, error) {
 	ch := make(chan []byte)
 	chErr := make(chan error)
 
-	contxt, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	contxt, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 
 	go func() {
@@ -239,7 +243,7 @@ func (c *Scard) ControlApduA(ioctl uint32, apdu []byte) ([]byte, error) {
 	ch := make(chan []byte)
 	chErr := make(chan error)
 
-	contxt, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	contxt, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 
 	go func() {

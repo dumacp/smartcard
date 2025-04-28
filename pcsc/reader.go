@@ -14,6 +14,7 @@ package pcsc
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/dumacp/smartcard"
 	"github.com/ebfe/scard"
@@ -100,10 +101,11 @@ func (r *reader) ConnectCardPCSC() (Card, error) {
 	}
 	sak := byte(0xFF)
 	cardS := &Scard{
-		CONNECTED,
-		c,
-		sak,
-		nil,
+		State:   CONNECTED,
+		timeout: 3 * time.Second,
+		Card:    c,
+		sak:     sak,
+		atr:     nil,
 	}
 	return cardS, nil
 }
@@ -120,10 +122,11 @@ func (r *reader) ConnectCardPCSC_T0() (Card, error) {
 	}
 	sak := byte(0xFF)
 	cardS := &Scard{
-		CONNECTED,
-		c,
-		sak,
-		nil,
+		State:   CONNECTED,
+		timeout: 3 * time.Second,
+		Card:    c,
+		sak:     sak,
+		atr:     nil,
 	}
 	return cardS, nil
 }
@@ -140,10 +143,11 @@ func (r *reader) ConnectCardPCSC_Tany() (Card, error) {
 	}
 	sak := byte(0xFF)
 	cardS := &Scard{
-		CONNECTED,
-		c,
-		sak,
-		nil,
+		State:   CONNECTED,
+		timeout: 3 * time.Second,
+		Card:    c,
+		sak:     sak,
+		atr:     nil,
 	}
 	return cardS, nil
 }
@@ -169,10 +173,11 @@ func (r *reader) ConnectCard() (smartcard.ICard, error) {
 	}
 	sak := byte(0xFF)
 	cardS := &Scard{
-		CONNECTED,
-		c,
-		sak,
-		nil,
+		State:   CONNECTED,
+		timeout: 3 * time.Second,
+		Card:    c,
+		sak:     sak,
+		atr:     nil,
 	}
 	return cardS, nil
 }
@@ -199,10 +204,11 @@ func (r *reader) connectCard() (*Scard, error) {
 	}
 	sak := byte(0xFF)
 	cardS := &Scard{
-		CONNECTED,
-		c,
-		sak,
-		nil,
+		State:   CONNECTED,
+		timeout: 3 * time.Second,
+		Card:    c,
+		sak:     sak,
+		atr:     nil,
 	}
 	return cardS, nil
 }
@@ -218,10 +224,11 @@ func (r *reader) ConnectDirect() (Card, error) {
 	}
 	sak := byte(0xFF)
 	cardS := &Scard{
-		CONNECTEDDirect,
-		c,
-		sak,
-		nil,
+		State:   CONNECTEDDirect,
+		timeout: 3 * time.Second,
+		Card:    c,
+		sak:     sak,
+		atr:     nil,
 	}
 	return cardS, nil
 }
