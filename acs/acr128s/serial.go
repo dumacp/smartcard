@@ -91,7 +91,7 @@ func (dev *Device) read(contxt context.Context, waitResponse bool) ([]byte, erro
 	bb := make([]byte, 0)
 	indxb := 0
 	lendata := uint32(0)
-	t0 := time.Now()
+	// t0 := time.Now()
 	rd := bufio.NewReader(dev.port)
 	for {
 
@@ -105,7 +105,7 @@ func (dev *Device) read(contxt context.Context, waitResponse bool) ([]byte, erro
 		// fmt.Println("execute read")
 
 		// n, err := dev.port.Read(tempb)
-		t1 := time.Now()
+		// t1 := time.Now()
 		tempb, err := rd.ReadBytes('\x03')
 		n := len(tempb)
 		if err != nil && n <= 0 {
@@ -115,7 +115,7 @@ func (dev *Device) read(contxt context.Context, waitResponse bool) ([]byte, erro
 			}
 			continue
 		}
-		fmt.Printf("len: %v, [% X], (%s), (%s)\n", len(tempb[:n]), tempb[:n], time.Since(t0), time.Since(t1))
+		// fmt.Printf("len: %v, [% X], (%s), (%s)\n", len(tempb[:n]), tempb[:n], time.Since(t0), time.Since(t1))
 
 		// prepareBuffer := make([]byte, len(tempb[:n]))
 
@@ -142,7 +142,7 @@ func (dev *Device) read(contxt context.Context, waitResponse bool) ([]byte, erro
 					indxb++
 					bb = append(bb, last)
 				} else {
-					fmt.Printf("err readByte: %s\n", err)
+					// fmt.Printf("err readByte: %s\n", err)
 					break
 				}
 				// fmt.Printf("len: %v, last: %X, [% X]\n", len(bb), last, bb[:])
@@ -153,14 +153,14 @@ func (dev *Device) read(contxt context.Context, waitResponse bool) ([]byte, erro
 					// fmt.Printf("len data: %d\n", lendata)
 				}
 				if last == '\x03' && len(bb) == 4 && bb[1] == bb[2] {
-					fmt.Printf("tempb final 0: [% X]\n", bb[:])
+					// fmt.Printf("tempb final 0: [% X]\n", bb[:])
 					result = make([]byte, len(bb))
 					copy(result, bb[:])
 					bb = make([]byte, 0)
 					continue
 				}
 				if last == '\x03' && len(bb) >= int(lendata)+1+10+1+1 {
-					fmt.Printf("tempb final 1, (%d): [% X], lwn: %d\n", lendata, bb[:], len(bb))
+					// fmt.Printf("tempb final 1, (%d): [% X], lwn: %d\n", lendata, bb[:], len(bb))
 
 					result = make([]byte, len(bb))
 					copy(result, bb[:])
@@ -168,7 +168,7 @@ func (dev *Device) read(contxt context.Context, waitResponse bool) ([]byte, erro
 					continue
 				}
 				if last == '\x03' {
-					fmt.Printf("tempb final 2: [% X]\n", bb[:])
+					// fmt.Printf("tempb final 2: [% X]\n", bb[:])
 					return result
 				}
 			}
@@ -190,7 +190,7 @@ func (dev *Device) read(contxt context.Context, waitResponse bool) ([]byte, erro
 			}
 		}
 
-		fmt.Printf("resul final: [% X]\n", b[:])
+		// fmt.Printf("resul final: [% X]\n", b[:])
 
 		// if indxb <= 0 {
 		// 	if b == '\x02' {
@@ -221,7 +221,7 @@ func (dev *Device) read(contxt context.Context, waitResponse bool) ([]byte, erro
 		// }
 		dest := make([]byte, len(b))
 		copy(dest, b[:])
-		fmt.Printf("recv data: %v, [% X]\n", len(b), b[:])
+		// fmt.Printf("recv data: %v, [% X]\n", len(b), b[:])
 		return dest, nil
 
 	}
@@ -246,7 +246,7 @@ func (dev *Device) SendRecv(data []byte, timeout time.Duration) ([]byte, error) 
 	buff := make([]byte, 0)
 	buff = append(buff, data[:]...)
 
-	fmt.Printf("data send: [% X]\n", data)
+	// fmt.Printf("data send: [% X]\n", data)
 	if n, err := dev.port.Write(buff); err != nil {
 		return nil, fmt.Errorf("dont write in SendRecv command err: %s, %w", err, smartcard.ErrComm)
 	} else if n <= 0 {
