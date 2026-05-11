@@ -19,4 +19,8 @@ type IReader interface {
 	ConnectSamCard_T0() (ICard, error)
 	//ConnectSamCard_Tany ConnectCard connect card with protocol T=any.
 	ConnectSamCard_Tany() (ICard, error)
+	//Close close the reader
+	Close() error
+	//Name return the name of the reader
+	Name() string
 }

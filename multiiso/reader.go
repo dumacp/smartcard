@@ -118,6 +118,15 @@ func NewReader(dev *Device, readerName string, idx int) *Reader {
 	return r
 }
 
+func (r *Reader) Close() error {
+	err := r.device.Close()
+	return err
+}
+
+func (r *Reader) Name() string {
+	return r.readerName
+}
+
 func checksum(data []byte) byte {
 	sum := byte(0)
 	for _, v := range data {
@@ -344,6 +353,8 @@ func (r *Reader) ConnectLegacyCard() (*Card, error) {
 	if !r.device.Ok {
 		return nil, fmt.Errorf("serial device is not ready, %w", smartcard.ErrComm)
 	}
+
+	r.blocknumber = 0x00
 
 	cmd := []byte(highspeedselect)
 	apdu := make([]byte, 0)

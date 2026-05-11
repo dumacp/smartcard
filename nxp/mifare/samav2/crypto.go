@@ -8,7 +8,7 @@ import (
 	"github.com/dumacp/smartcard/nxp/mifare"
 )
 
-//ApduEncipher_Data SAM_EncipherOffile_Data command encrypts data received from any other system based on the given cipher text data andt the current valid cryptographic OfflineCrypto Key.
+// ApduEncipher_Data SAM_EncipherOffile_Data command encrypts data received from any other system based on the given cipher text data andt the current valid cryptographic OfflineCrypto Key.
 func ApduEncipher_Data(last bool, offset int, dataPlain []byte) []byte {
 	p1 := byte(0x00)
 	if !last {
@@ -22,7 +22,7 @@ func ApduEncipher_Data(last bool, offset int, dataPlain []byte) []byte {
 	return aid1
 }
 
-//ApduDecipher_Data
+// ApduDecipher_Data
 func ApduDecipher_Data(last bool, mifare int, cipher []byte) []byte {
 	p1 := byte(0x00)
 	if !last {
@@ -40,7 +40,7 @@ func ApduDecipher_Data(last bool, mifare int, cipher []byte) []byte {
 	return aid1
 }
 
-//ApduEncipherOffline_Data SAM_EncipherOffile_Data command encrypts data received from any other system based on the given cipher text data andt the current valid cryptographic OfflineCrypto Key.
+// ApduEncipherOffline_Data SAM_EncipherOffile_Data command encrypts data received from any other system based on the given cipher text data andt the current valid cryptographic OfflineCrypto Key.
 func ApduEncipherOffline_Data(last bool, dataPlain []byte) []byte {
 	p1 := byte(0x00)
 	if !last {
@@ -54,7 +54,7 @@ func ApduEncipherOffline_Data(last bool, dataPlain []byte) []byte {
 	return aid1
 }
 
-//ApduGenerateCmac_Data SAM_EncipherOffile_Data command encrypts data received from any other system based on the given cipher text data andt the current valid cryptographic OfflineCrypto Key.
+// ApduGenerateCmac_Data SAM_EncipherOffile_Data command encrypts data received from any other system based on the given cipher text data andt the current valid cryptographic OfflineCrypto Key.
 func ApduGenerateCmac_Data(last bool, dataPlain []byte) []byte {
 	p1 := byte(0x00)
 	if !last {
@@ -71,7 +71,7 @@ func ApduGenerateCmac_Data(last bool, dataPlain []byte) []byte {
 	return aid1
 }
 
-//ApduDecipherOffline_Data
+// ApduDecipherOffline_Data
 func ApduDecipherOffline_Data(last bool, cipher []byte) []byte {
 	p1 := byte(0x00)
 	if !last {
@@ -85,8 +85,8 @@ func ApduDecipherOffline_Data(last bool, cipher []byte) []byte {
 	return aid1
 }
 
-//SAMEncipherData SAM_Encipher_Data
-func (sam *samAv2) SAMEncipherData(alg CrytoAlgorithm, data []byte) ([]byte, error) {
+// SAMEncipherData SAM_Encipher_Data
+func (sam *CsamAv2) SAMEncipherData(alg CrytoAlgorithm, data []byte) ([]byte, error) {
 
 	dataCopy := make([]byte, len(data))
 	copy(dataCopy, data)
@@ -137,8 +137,8 @@ func (sam *samAv2) SAMEncipherData(alg CrytoAlgorithm, data []byte) ([]byte, err
 	return result, nil
 }
 
-//SAMEncipherOfflineData SAM_EncipherOffline_Data
-func (sam *samAv2) SAMEncipherOfflineData(alg CrytoAlgorithm, data []byte) ([]byte, error) {
+// SAMEncipherOfflineData SAM_EncipherOffline_Data
+func (sam *CsamAv2) SAMEncipherOfflineData(alg CrytoAlgorithm, data []byte) ([]byte, error) {
 	dataCopy := make([]byte, len(data))
 	copy(dataCopy, data)
 
@@ -188,8 +188,8 @@ func (sam *samAv2) SAMEncipherOfflineData(alg CrytoAlgorithm, data []byte) ([]by
 	return result, nil
 }
 
-//SAMGenerateCMAC SAM_EncipherOffline_Data
-func (sam *samAv2) SAMGenerateMAC(alg CrytoAlgorithm, data []byte) ([]byte, error) {
+// SAMGenerateCMAC SAM_EncipherOffline_Data
+func (sam *CsamAv2) SAMGenerateMAC(alg CrytoAlgorithm, data []byte) ([]byte, error) {
 	dataCopy := make([]byte, len(data))
 	copy(dataCopy, data)
 
@@ -240,14 +240,14 @@ func (sam *samAv2) SAMGenerateMAC(alg CrytoAlgorithm, data []byte) ([]byte, erro
 	return result, nil
 }
 
-//SAMDecipherData SAM_Decipher_Data
-func (sam *samAv2) SAMDecipherData(alg CrytoAlgorithm, data []byte) ([]byte, error) {
+// SAMDecipherData SAM_Decipher_Data
+func (sam *CsamAv2) SAMDecipherData(alg CrytoAlgorithm, data []byte) ([]byte, error) {
 
 	return nil, fmt.Errorf("not support")
 }
 
-//SAMDecipherOfflineData SAM_DecipherOffline_Data
-func (sam *samAv2) SAMDecipherOfflineData(alg CrytoAlgorithm, data []byte) ([]byte, error) {
+// SAMDecipherOfflineData SAM_DecipherOffline_Data
+func (sam *CsamAv2) SAMDecipherOfflineData(alg CrytoAlgorithm, data []byte) ([]byte, error) {
 	dataCopy := make([]byte, len(data))
 	copy(dataCopy, data)
 
@@ -299,8 +299,8 @@ func (sam *samAv2) SAMDecipherOfflineData(alg CrytoAlgorithm, data []byte) ([]by
 	return result, nil
 }
 
-//ApduSAMLoadInitVector SAM_LoadInitVector
-func (sam *samAv2) ApduSAMLoadInitVector(alg CrytoAlgorithm, data []byte) []byte {
+// ApduSAMLoadInitVector SAM_LoadInitVector
+func (sam *CsamAv2) ApduSAMLoadInitVector(alg CrytoAlgorithm, data []byte) []byte {
 
 	cmd := smartcard.ISO7816cmd{
 		CLA: 0x80,
@@ -338,8 +338,8 @@ func (sam *samAv2) ApduSAMLoadInitVector(alg CrytoAlgorithm, data []byte) []byte
 	return apdu
 }
 
-//SAMLoadInitVector SAM_LoadInitVector
-func (sam *samAv2) SAMLoadInitVector(alg CrytoAlgorithm, data []byte) ([]byte, error) {
+// SAMLoadInitVector SAM_LoadInitVector
+func (sam *CsamAv2) SAMLoadInitVector(alg CrytoAlgorithm, data []byte) ([]byte, error) {
 	switch alg {
 	case AES_ALG:
 	case DES_ALG:

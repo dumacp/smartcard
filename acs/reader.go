@@ -12,6 +12,7 @@ type Reader struct {
 	PcscReader   pcsc.Reader
 	pollManuall  bool
 	byteControl  byte
+	bytePolling  byte
 	readerName   string
 	verifyRFPicc bool
 }
@@ -19,10 +20,14 @@ type Reader struct {
 func NewReader(ctx *pcsc.Context, readerName string) *Reader {
 
 	r := &Reader{
-		PcscReader: pcsc.NewReader(ctx, readerName),
-		readerName: readerName,
+		PcscReader:  pcsc.NewReader(ctx, readerName),
+		readerName:  readerName,
+		bytePolling: 0x01,
 	}
-	if strings.Contains(strings.ToLower(readerName), "1552") {
+	if r.readerName == "" {
+		r.readerName = r.PcscReader.Name()
+	}
+	if strings.Contains(strings.ToUpper(r.readerName), "1552") {
 		r.verifyRFPicc = true
 	}
 	// resp, err := r.Version()
@@ -40,10 +45,17 @@ func NewReader(ctx *pcsc.Context, readerName string) *Reader {
 func NewReaderFromPcscReader(r pcsc.Reader) *Reader {
 
 	reader := &Reader{
-		PcscReader: r,
+		PcscReader:  r,
+		readerName:  r.Name(),
+		bytePolling: 0x01,
 	}
 	return reader
 
+}
+
+func (r *Reader) Close() error {
+	err := r.PcscReader.Close()
+	return err
 }
 
 func (r *Reader) Version() ([]byte, error) {
@@ -96,6 +108,10 @@ func (r *Reader) SetAutomaticPoll(a bool) error {
 	}
 	r.byteControl = byteControl
 	r.pollManuall = !a
+	// fmt.Printf("Reader %s, byteControl: %02X\n", r.readerName, r.byteControl)
+	if len(r.readerName) > 0 && strings.Contains(strings.ToUpper(r.readerName), "ACR1281") {
+		r.bytePolling = 0x0A
+	}
 	return nil
 }
 
@@ -216,7 +232,7 @@ func (r *Reader) ConnectCard() (smartcard.ICard, error) {
 			}
 			defer p.DisconnectCard()
 			// TODO why?
-			if _, err := p.ControlApdu(0x42000000+2079, []byte{0x22, 0x01, 0x01}); err != nil {
+			if _, err := p.ControlApdu(0x42000000+2079, []byte{0x22, 0x01, r.bytePolling}); err != nil {
 				// if _, err := p.ControlApdu(0x42000000+2079, []byte{0x22, 0x00}); err != nil {
 				return err
 			}

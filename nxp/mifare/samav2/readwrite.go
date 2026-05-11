@@ -43,8 +43,8 @@ func ApduSAMCombinedReadMFP(typeMFPdata TypeMFPdata, isLastFrame bool, data []by
 	return apdu
 }
 
-//SAMCombinedReadMFP SAM_CombinedReadMFP command
-func (sam *samAv2) SAMCombinedReadMFP(typeMFPdata TypeMFPdata, isLastFrame bool, data []byte,
+// SAMCombinedReadMFP SAM_CombinedReadMFP command
+func (sam *CsamAv2) SAMCombinedReadMFP(typeMFPdata TypeMFPdata, isLastFrame bool, data []byte,
 ) ([]byte, error) {
 	apdu := ApduSAMCombinedReadMFP(typeMFPdata, isLastFrame, data)
 	// log.Printf("apdu: [ % X ], time: %f", apdu, float64(time.Now().UnixNano())/1000000000)
@@ -86,8 +86,8 @@ func ApduSAMCombinedWriteMFP(typeMFPdata TypeMFPdata, data []byte,
 	return apdu
 }
 
-//SAMCombinedWriteMFP SAM_CombinedWriteMFP command
-func (sam *samAv2) SAMCombinedWriteMFP(typeMFPdata TypeMFPdata, data []byte,
+// SAMCombinedWriteMFP SAM_CombinedWriteMFP command
+func (sam *CsamAv2) SAMCombinedWriteMFP(typeMFPdata TypeMFPdata, data []byte,
 ) ([]byte, error) {
 	apdu := ApduSAMCombinedWriteMFP(typeMFPdata, data)
 	// log.Printf("debuggg drop, ApduSAMCombinedWriteMFP: [% X]", apdu)

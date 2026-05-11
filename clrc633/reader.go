@@ -22,6 +22,15 @@ func NewReader(dev *Device, readerName string) *Reader {
 	return r
 }
 
+func (r *Reader) Close() error {
+	err := r.dev.Close()
+	return err
+}
+
+func (r *Reader) Name() string {
+	return r.readerName
+}
+
 func (r *Reader) Transceive(apdu []byte) ([]byte, error) {
 
 	return r.dev.Transceive(apdu, 300*time.Millisecond)

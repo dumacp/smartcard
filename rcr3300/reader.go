@@ -24,6 +24,11 @@ func NewReader(dev *Device, readerName string) *Reader {
 	return r
 }
 
+func (r *Reader) Close() error {
+	err := r.dev.Close()
+	return err
+}
+
 func (r *Reader) TransmitA(apdu []byte) ([]byte, error) {
 
 	data := BuildFrame_SendTypeA(apdu)

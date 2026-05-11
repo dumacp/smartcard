@@ -3,6 +3,7 @@ package ev2
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 )
 
 // ReadData reads data from File Type StandardData, FileType.BcakupData or
@@ -105,6 +106,7 @@ func (d *Desfire) ReadData(fileNo int, targetSecondaryApp SecondAppIndicator,
 
 	switch d.evMode {
 	case EV2:
+		fmt.Printf("response ReadData (file: %d) ev2: [% 02X] (len = %d)\n", fileNo, response, len(response))
 		return response, nil
 	default:
 		return nil, errors.New("only EV2 mode support")
@@ -591,10 +593,15 @@ func (d *Desfire) ReadRecords(fileNo int, targetSecondaryApp SecondAppIndicator,
 	binary.LittleEndian.PutUint32(recNo_bytes, uint32(recNo))
 	binary.LittleEndian.PutUint32(recCount_bytes, uint32(recCount))
 
+	fmt.Printf("read record fileID: %d, recNo: %d, recCount: %d, sizeRec: %d\n", fileNo, recNo, recCount, sizeRecord)
+	fmt.Printf("read record fileID: %d, recNo_bytes: [% 02X], recCount_bytes: [% 02X]\n", fileNo, recNo_bytes, recCount_bytes)
+
 	cmdHeader = append(cmdHeader, recNo_bytes[:3]...)
 	cmdHeader = append(cmdHeader, recCount_bytes[:3]...)
 
 	apdu = append(apdu, cmdHeader...)
+
+	fmt.Printf("apdu read record fileID: %d, apdu: [% 02X]\n", fileNo, apdu)
 
 	response := make([]byte, 0)
 
@@ -610,6 +617,7 @@ func (d *Desfire) ReadRecords(fileNo int, targetSecondaryApp SecondAppIndicator,
 					return nil, err
 				}
 				apdu = append(apdu, cmacT...)
+				fmt.Printf("apdu read record fileID: %d, apdu with MAC: [% 02X]\n", fileNo, apdu)
 			case PLAIN:
 			default:
 			}

@@ -78,7 +78,7 @@ func apduChangeKeyEntryAv1(hostMode, keyNbr, proMax, cmdCtr int,
 }
 
 // ChangeKeyEntry SAM_ApduChangeKeyEntry command
-func (sam *samAv2) ChangeKeyEntryAv1(keyNbr, proMax int,
+func (sam *CsamAv2) ChangeKeyEntryAv1(keyNbr, proMax int,
 	keyVA, keyVB, keyVC []byte,
 	dfKeyNr, ceKNo, ceKV, kuc, verA, verB, verC byte,
 	dfAid, set []byte,
@@ -271,7 +271,7 @@ func ApduChangeKeyEntryFullMode(keyNbr, proMax, cmdCtr int,
 }
 
 // ChangeKeyEntry SAM_ApduChangeKeyEntry command
-func (sam *samAv2) ChangeKeyEntry(keyNbr, proMax int,
+func (sam *CsamAv2) ChangeKeyEntry(keyNbr, proMax int,
 	keyVA, keyVB, keyVC []byte,
 	dfKeyNr, ceKNo, ceKV, kuc, verA, verB, verC, extSet byte,
 	dfAid, set []byte,
@@ -298,7 +298,7 @@ func (sam *samAv2) ChangeKeyEntry(keyNbr, proMax int,
 }
 
 // ChangeKeyEntryOffline SAM_ApduChangeKeyEntry command
-func (sam *samAv2) ChangeKeyEntryOffline(keyNbr, proMax, changeCtr int,
+func (sam *CsamAv2) ChangeKeyEntryOffline(keyNbr, proMax, changeCtr int,
 	keyVA, keyVB, keyVC []byte,
 	dfKeyNr, ceKNo, ceKV, kuc, verA, verB, verC, extSet byte,
 	dfAid, set []byte,
@@ -363,7 +363,7 @@ func ApduActivateOfflineKey(keyNo, keyVer int, divInput []byte,
 }
 
 // ActiveOfflineKey SAM_ActiveOfflineKey command
-func (sam *samAv2) ActivateOfflineKey(keyNo, keyVer int,
+func (sam *CsamAv2) ActivateOfflineKey(keyNo, keyVer int,
 	divInput []byte,
 ) ([]byte, error) {
 	apdu := ApduActivateOfflineKey(keyNo, keyVer, divInput)
@@ -380,7 +380,7 @@ func (sam *samAv2) ActivateOfflineKey(keyNo, keyVer int,
 }
 
 // GetKeyEntry SAM_GetKeyEntry command allows reading the contents of the key entry
-func (sam *samAv2) SAMGetKeyEntry(keyNo int) ([]byte, error) {
+func (sam *CsamAv2) SAMGetKeyEntry(keyNo int) ([]byte, error) {
 
 	response, err := sam.Apdu(sam.ApduSAMGetKeyEntry(keyNo))
 	if err != nil {
@@ -395,7 +395,7 @@ func (sam *samAv2) SAMGetKeyEntry(keyNo int) ([]byte, error) {
 }
 
 // ApduSAMGetKeyEntry ApduSAMGetKeyEntry command allows reading the contents of the key entry
-func (sam *samAv2) ApduSAMGetKeyEntry(keyNo int) []byte {
+func (sam *CsamAv2) ApduSAMGetKeyEntry(keyNo int) []byte {
 	cmd := smartcard.ISO7816cmd{
 		CLA: 0x80,
 		INS: 0x64,

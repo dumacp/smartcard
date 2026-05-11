@@ -61,16 +61,16 @@ func NewDevice(portName string, baudRate int, timeout time.Duration) (*Device, e
 }
 
 // Close close serial device
-func (dev *Device) Close() bool {
+func (dev *Device) Close() error {
 	dev.Ok = false
 	if dev.cancel != nil {
 		dev.cancel()
 	}
 	if err := dev.port.Close(); err != nil {
 		log.Printf("close err: %s", err)
-		return false
+		return err
 	}
-	return true
+	return nil
 }
 
 // Read read serial device with a channel
@@ -99,7 +99,7 @@ func (dev *Device) read() {
 			if err == nil {
 				return nil
 			}
-			log.Printf("funcread err: %s", err)
+			// log.Printf("funcread err: %s", err)
 			switch {
 			case errors.Is(err, os.ErrClosed):
 				dev.Ok = false

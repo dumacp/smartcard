@@ -12,8 +12,6 @@ projects on which it is based:
 package multiiso
 
 import (
-	"fmt"
-
 	"github.com/dumacp/smartcard"
 )
 
@@ -92,7 +90,7 @@ func (c *Card) Apdu(apdu []byte) ([]byte, error) {
 	if c.State != CONNECTED {
 		return nil, smartcard.Error(smartcard.ErrComm)
 	}
-	fmt.Printf("APDU: [% 02X]\n", apdu)
+	// fmt.Printf("APDU: [% 02X]\n", apdu)
 	var response []byte
 	var err error
 	switch c.modeSend {
@@ -115,7 +113,7 @@ func (c *Card) Apdu(apdu []byte) ([]byte, error) {
 			return response, err
 		}
 	}
-	fmt.Printf("RESP: [% 02X]\n", response[:])
+	// fmt.Printf("RESP: [% 02X]\n", response[:])
 	return response[:], nil
 
 }

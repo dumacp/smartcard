@@ -77,7 +77,7 @@ type SamAv2 interface {
 		pkiSET, pkie, pkiN, pkip, pkiq, pkidP, pkidQ, pkiipq []byte) ([]byte, error)
 }
 
-type samAv2 struct {
+type CsamAv2 struct {
 	smartcard.ICard
 	UUID     []byte
 	Kex      []byte
@@ -89,34 +89,34 @@ type samAv2 struct {
 }
 
 // ConnectSamAv2 Create SamAv2 interface
-func ConnectSamAv2(r smartcard.IReader) (SamAv2, error) {
+func ConnectSamAv2(r smartcard.IReader) (*CsamAv2, error) {
 
 	c, err := r.ConnectCard()
 	if err != nil {
 		return nil, err
 	}
-	sam := &samAv2{
+	sam := &CsamAv2{
 		ICard: c,
 	}
 	return sam, nil
 }
 
 // ConnectSam Create SamAv2 interface
-func ConnectSam(r smartcard.IReader) (SamAv2, error) {
+func ConnectSam(r smartcard.IReader) (*CsamAv2, error) {
 
 	c, err := r.ConnectSamCard()
 	if err != nil {
 		return nil, err
 	}
-	sam := &samAv2{
+	sam := &CsamAv2{
 		ICard: c,
 	}
 	return sam, nil
 }
 
 // SamAV2 Create SAM from Card
-func SamAV2(c smartcard.ICard) SamAv2 {
-	sam := new(samAv2)
+func SamAV2(c smartcard.ICard) *CsamAv2 {
+	sam := new(CsamAv2)
 	sam.ICard = c
 	return sam
 }
@@ -125,11 +125,11 @@ func SamAV2(c smartcard.ICard) SamAv2 {
 func ApduGetVersion() []byte {
 	return []byte{0x80, 0x60, 0x00, 0x00, 0x00}
 }
-func (sam *samAv2) GetVersion() ([]byte, error) {
+func (sam *CsamAv2) GetVersion() ([]byte, error) {
 	return sam.Apdu(ApduGetVersion())
 }
 
-func (sam *samAv2) UID() ([]byte, error) {
+func (sam *CsamAv2) UID() ([]byte, error) {
 	if sam.UUID != nil {
 		return sam.UUID, nil
 	}
@@ -153,7 +153,7 @@ func rotate(data []byte, rot int) []byte {
 }
 
 // AuthHostAV2 SAM_AuthenticationHost AV2 mode
-func (sam *samAv2) AuthHostAV1(block cipher.Block, keyNo, keyVer, authMode int) ([]byte, error) {
+func (sam *CsamAv2) AuthHostAV1(block cipher.Block, keyNo, keyVer, authMode int) ([]byte, error) {
 	rand.Seed(time.Now().UnixNano())
 	iv := make([]byte, block.BlockSize())
 
@@ -249,7 +249,7 @@ func ApduLockUnlockPart2(cmacb, rnd []byte) []byte {
 	return aid2
 }
 
-func (sam *samAv2) LockUnlock(key, maxchainBlocks []byte, keyNr, keyVr, unlockKeyNo, unlockKeyVer, p1 int) ([]byte, error) {
+func (sam *CsamAv2) LockUnlock(key, maxchainBlocks []byte, keyNr, keyVr, unlockKeyNo, unlockKeyVer, p1 int) ([]byte, error) {
 	rand.Seed(time.Now().UnixNano())
 	iv := make([]byte, len(key))
 	block, err := aes.NewCipher(key)
@@ -394,12 +394,12 @@ func (sam *samAv2) LockUnlock(key, maxchainBlocks []byte, keyNr, keyVr, unlockKe
 	return response, nil
 }
 
-func (sam *samAv2) SwitchToAV2(key []byte, keyNr, keyVr int) ([]byte, error) {
+func (sam *CsamAv2) SwitchToAV2(key []byte, keyNr, keyVr int) ([]byte, error) {
 	return sam.LockUnlock(key, make([]byte, 3), keyNr, keyVr, 0, 0, 0x03)
 }
 
 // AuthHostAV2 SAM_AuthenticationHost AV2 modeAuthHostAV2
-func (sam *samAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte, error) {
+func (sam *CsamAv2) AuthHostAV2(key []byte, keyNo, keyVer, hostMode int) ([]byte, error) {
 	rand.Seed(time.Now().UnixNano())
 	iv := make([]byte, 16)
 	block, err := aes.NewCipher(key)
@@ -657,7 +657,7 @@ func ApduNonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte) 
 }
 
 // NonXauthMFPf1 SAM_AuthenticationMFP (non-X-mode) first part
-func (sam *samAv2) NonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte) ([]byte, error) {
+func (sam *CsamAv2) NonXauthMFPf1(first bool, sl, keyNo, keyVer int, data, dataDiv []byte) ([]byte, error) {
 	return sam.Apdu(ApduNonXauthMFPf1(first, sl, keyNo, keyVer, data, dataDiv))
 }
 
@@ -673,7 +673,7 @@ func ApduNonXauthMFPf2(data []byte) []byte {
 }
 
 // NonXauthMFPf2 SAM_AuthenticationMFP (non-X-mode) second part
-func (sam *samAv2) NonXauthMFPf2(data []byte) ([]byte, error) {
+func (sam *CsamAv2) NonXauthMFPf2(data []byte) ([]byte, error) {
 	return sam.Apdu(ApduNonXauthMFPf2(data))
 }
 
@@ -708,7 +708,7 @@ func ApduDumpSecretKey(keyNo, keyVer int, divInput []byte) []byte {
 }
 
 // DumpSessionKey SAM_DumpSessionKey (session key of an established authentication with a DESFire or MIFARE Plus PICC)
-func (sam *samAv2) DumpSessionKey() ([]byte, error) {
+func (sam *CsamAv2) DumpSessionKey() ([]byte, error) {
 	response, err := sam.Apdu(ApduDumpSessionKey())
 	if err != nil {
 		return nil, err
@@ -720,7 +720,7 @@ func (sam *samAv2) DumpSessionKey() ([]byte, error) {
 }
 
 // DumpSecretKey SAM_DumpSecretKey (allows dumping any of PICC keys or OfflineCrypto keys)
-func (sam *samAv2) DumpSecretKey(keyNo, keyVer int, divInput []byte) ([]byte, error) {
+func (sam *CsamAv2) DumpSecretKey(keyNo, keyVer int, divInput []byte) ([]byte, error) {
 	response, err := sam.Apdu(ApduDumpSecretKey(keyNo, keyVer, divInput))
 	if err != nil {
 		return nil, err

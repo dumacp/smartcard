@@ -8,7 +8,7 @@ import (
 )
 
 // PKIGenerateKeyPair creates a pair of a public and prvate key
-func (sam *samAv2) PKIGenerateKeyPair(pkiE []byte, pkiSET []byte,
+func (sam *CsamAv2) PKIGenerateKeyPair(pkiE []byte, pkiSET []byte,
 	pkiKeyNo, pkiKeyNoCEK, pkikeVCEK, pkiRefNoKUC, pkiNLen int) ([]byte, error) {
 
 	var resp []byte
@@ -28,7 +28,7 @@ func (sam *samAv2) PKIGenerateKeyPair(pkiE []byte, pkiSET []byte,
 }
 
 // PKIExportPublicKey exports the public key part of a RSA key pair
-func (sam *samAv2) PKIExportPublicKey(pkiKeyNo int) ([]byte, error) {
+func (sam *CsamAv2) PKIExportPublicKey(pkiKeyNo int) ([]byte, error) {
 
 	response := make([]byte, 0)
 	resp, err := sam.Apdu(ApduPKIExportPublicKey(pkiKeyNo))
@@ -164,7 +164,7 @@ const (
 	SHA256
 )
 
-func (sam *samAv2) PKIUpdateKeyEntries(hashing HashingAlgorithm, keyEntrysNo int,
+func (sam *CsamAv2) PKIUpdateKeyEntries(hashing HashingAlgorithm, keyEntrysNo int,
 	pkiKeyNoEnc, pkiKeyNoSign int, pkiEncKeyFrame, pkiSignature []byte) ([]byte, error) {
 
 	apdus := ApduPKIUpdateKeyEntries(hashing, keyEntrysNo, pkiKeyNoEnc, pkiKeyNoSign, pkiEncKeyFrame, pkiSignature)
@@ -349,7 +349,7 @@ func ApduPKIImportKey(pkiKeyNo, pkiKeyNoCEK, pkiKeyVCEK, pkiRefNoKUC int,
 	return apdus
 }
 
-func (sam *samAv2) PKIImportKey(pkiKeyNo, pkiKeyNoCEK, pkiKeyVCEK, pkiRefNoKUC int,
+func (sam *CsamAv2) PKIImportKey(pkiKeyNo, pkiKeyNoCEK, pkiKeyVCEK, pkiRefNoKUC int,
 	pkiSET, pkie, pkiN, pkip, pkiq, pkidP, pkidQ, pkiipq []byte) ([]byte, error) {
 
 	apdus := ApduPKIImportKey(pkiKeyNo, pkiKeyNoCEK, pkiKeyVCEK, pkiRefNoKUC,

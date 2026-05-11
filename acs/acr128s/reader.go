@@ -25,6 +25,15 @@ func NewReader(dev *Device, readerName string, slot Slot) *Reader {
 	return r
 }
 
+func (r *Reader) Close() error {
+	err := r.dev.Close()
+	return err
+}
+
+func (r *Reader) Name() string {
+	return r.readerName
+}
+
 // Transmit Primitive function transceive to send apdu
 func (r *Reader) Transmit(apdu []byte) ([]byte, error) {
 

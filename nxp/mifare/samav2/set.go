@@ -73,9 +73,9 @@ func SETConfigurationSettings(allowDumpSessionKey bool,
 	setdata = push(setdata, 1, lockKey)               //10
 	setdata = push(setdata, 1, disableKeyEntry)       //9
 	setdata = push(setdata, 1, authKey)               //8
-	setdata = push(setdata, 1, requireAuth)           //7 Authhost required Plc
-	setdata = push(setdata, 1, 0)                     //6
-	// setdata = push(setdata, 2, 0)                     //6 7
+	// setdata = push(setdata, 1, requireAuth)           //7 Authhost required Plc
+	// setdata = push(setdata, 1, 0)                     //6
+	setdata = push(setdata, 2, 0)                   //6 7
 	setdata = push(setdata, 3, int(keyType))        //3 4 5
 	setdata = push(setdata, 1, keepIV)              //2
 	setdata = push(setdata, 1, 0)                   //1

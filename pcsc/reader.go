@@ -75,6 +75,11 @@ func newReader(ctx *Context, readerName string) *reader {
 	return r
 }
 
+func (r *reader) Close() error {
+	err := r.Context.Release()
+	return err
+}
+
 func (r *reader) Name() string {
 	return r.ReaderName
 }
