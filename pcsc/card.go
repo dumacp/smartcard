@@ -4,12 +4,10 @@ import (
 	//"fmt"
 
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/dumacp/smartcard"
-	"github.com/ebfe/scard"
 )
 
 // Card Interface
@@ -38,7 +36,7 @@ const (
 )
 
 type Scard struct {
-	*scard.Card
+	card    backendCard
 	State   State
 	timeout time.Duration
 	sak     byte
@@ -53,13 +51,13 @@ func (c *Scard) SetTimeout(timeout time.Duration) {
 // EndTransactionn End transaccion with card with disposition type LeaveCard
 func (c *Scard) EndTransaction() error {
 	c.State = DISCONNECTED
-	return c.Card.EndTransaction(scard.LeaveCard)
+	return c.card.EndTransaction(dispositionLeaveCard)
 }
 
 // EndTransactionResetCard End transaccion with card with disposition type ResetCard
 func (c *Scard) EndTransactionResetCard() error {
 	c.State = DISCONNECTED
-	return c.Card.EndTransaction(scard.ResetCard)
+	return c.card.EndTransaction(dispositionResetCard)
 }
 
 // DisconnectCard Disconnect card from context with card with disposition type LeaveCard
@@ -73,7 +71,7 @@ func (c *Scard) DisconnectCard() error {
 	go func() {
 		defer close(chErr)
 		select {
-		case chErr <- c.Disconnect(scard.LeaveCard):
+		case chErr <- c.card.Disconnect(dispositionLeaveCard):
 		case <-contxt.Done():
 			fmt.Println("Channel is closed, cannot send error")
 		}
@@ -94,21 +92,21 @@ func (c *Scard) DisconnectCard() error {
 func (c *Scard) DisconnectResetCard() error {
 	c.State = DISCONNECTED
 	fmt.Println("DisconnectResetCard")
-	return c.Disconnect(scard.ResetCard)
+	return c.card.Disconnect(dispositionResetCard)
 }
 
 // DisconnectUnpowerCard Disconnect card from context with card with disposition type UnpowerCard
 func (c *Scard) DisconnectUnpowerCard() error {
 	c.State = DISCONNECTED
 	fmt.Println("DisconnectUnpowerCard")
-	return c.Disconnect(scard.UnpowerCard)
+	return c.card.Disconnect(dispositionUnpowerCard)
 }
 
 // DisconnectEjectCard Disconnect card from context with card with disposition type EjectCard
 func (c *Scard) DisconnectEjectCard() error {
 	c.State = DISCONNECTED
 	fmt.Println("DisconnectEjectCard")
-	return c.Disconnect(scard.EjectCard)
+	return c.card.Disconnect(dispositionEjectCard)
 }
 
 // Apdu Primitive function (SCardTransmit) to send command to card
@@ -116,7 +114,7 @@ func (c *Scard) Apdu(apdu []byte) ([]byte, error) {
 	if c.State != CONNECTED {
 		return nil, fmt.Errorf("don't Connect to Card, %w", smartcard.ErrComm)
 	}
-	fmt.Printf("APDU: [% X], len: %d\n", apdu, len(apdu))
+	// fmt.Printf("APDU: [% X], len: %d\n", apdu, len(apdu))
 	ch := make(chan []byte)
 	chErr := make(chan error)
 
@@ -127,7 +125,7 @@ func (c *Scard) Apdu(apdu []byte) ([]byte, error) {
 		defer close(ch)
 		defer close(chErr)
 
-		resp, err := c.Transmit(apdu)
+		resp, err := c.card.Transmit(apdu)
 		if err != nil {
 			// chErr <- err
 			select {
@@ -147,19 +145,14 @@ func (c *Scard) Apdu(apdu []byte) ([]byte, error) {
 
 	select {
 	case resp := <-ch:
-		fmt.Printf("Response: [% X], len: %d\n", resp, len(resp))
+		// fmt.Printf("Response: [% X], len: %d\n", resp, len(resp))
 		result := make([]byte, len(resp))
 		copy(result, resp)
 		return result, nil
 	case err := <-chErr:
 		if err != nil {
 			switch {
-			case errors.Is(err, scard.ErrNoSmartcard):
-			case errors.Is(err, scard.ErrCardUnsupported):
-			case errors.Is(err, scard.ErrRemovedCard):
-			case errors.Is(err, scard.ErrUnsupportedCard):
-			case errors.Is(err, scard.ErrResetCard):
-			case errors.Is(err, scard.ErrNotTransacted):
+			case isKnownCardError(err):
 			default:
 				return nil, smartcard.Error(fmt.Errorf("%s, %w", err, smartcard.ErrComm))
 			}
@@ -191,7 +184,7 @@ func (c *Scard) ControlApdu(ioctl uint32, apdu []byte) ([]byte, error) {
 	go func() {
 		defer close(ch)
 		defer close(chErr)
-		resp, err := c.Control(ioctl, apdu)
+		resp, err := c.card.Control(ioctl, apdu)
 		if err != nil {
 			select {
 			case chErr <- err:
@@ -250,7 +243,7 @@ func (c *Scard) ControlApduA(ioctl uint32, apdu []byte) ([]byte, error) {
 		defer close(ch)
 		defer close(chErr)
 
-		resp, err := c.Control(ioctl, apdu)
+		resp, err := c.card.Control(ioctl, apdu)
 		if err != nil {
 			select {
 			case chErr <- err:
@@ -295,7 +288,7 @@ func (c *Scard) ATR() ([]byte, error) {
 	if c.State != CONNECTED {
 		return nil, fmt.Errorf("don't Connect to Card, %w", smartcard.ErrComm)
 	}
-	status, err := c.Status()
+	status, err := c.card.Status()
 	if err != nil {
 		return nil, smartcard.Error(err)
 	}

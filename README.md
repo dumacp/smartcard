@@ -115,3 +115,22 @@ func main() {
 	}
 }
 ```
+
+## smoke test (PCSC PICC + SAM)
+Run a fast hardware validation for:
+- context and reader discovery
+- PICC direct control commands
+- PICC ATR + UID + ATS APDU checks
+- SAM ATR + SAM_GetVersion (`80 60 00 00 00`)
+
+Command:
+```
+CGO_ENABLED=0 go run ./pcsc/cmd/smoke
+```
+
+Useful flags:
+```
+-require-card=true   # fail if no PICC card is present
+-require-sam=false   # do not fail if SAM reader is not present
+-require-picc=false  # do not fail if PICC reader is not present
+```

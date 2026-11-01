@@ -6,6 +6,21 @@ import (
 	"fmt"
 )
 
+func dataResponseEV2(resp []byte, commMode CommMode) ([]byte, error) {
+	switch commMode {
+	case MAC:
+		if len(resp) < 9 {
+			return nil, fmt.Errorf("invalid MAC response length %d, response: [% X]", len(resp), resp)
+		}
+		return resp[1 : len(resp)-8], nil
+	default:
+		if len(resp) < 1 {
+			return nil, errors.New("invalid response length 0")
+		}
+		return resp[1:], nil
+	}
+}
+
 // ReadData reads data from File Type StandardData, FileType.BcakupData or
 // FileType.TransactionMAC files.
 func (d *Desfire) ReadData(fileNo int, targetSecondaryApp SecondAppIndicator,
@@ -80,11 +95,22 @@ func (d *Desfire) ReadData(fileNo int, targetSecondaryApp SecondAppIndicator,
 				if err != nil {
 					return nil, err
 				}
-				responseData = getDataOnFullModeResponseEV2(d.block, iv, resp)
+				responseData, err = getDataOnFullModeResponseEV2(d.block, iv, resp)
+				if err != nil {
+					return nil, fmt.Errorf("read data file %d: %w", fileNo, err)
+				}
 			case MAC:
-				responseData = resp[1 : len(resp)-8]
+				var err error
+				responseData, err = dataResponseEV2(resp, commMode)
+				if err != nil {
+					return nil, fmt.Errorf("read data file %d: %w", fileNo, err)
+				}
 			default:
-				responseData = resp[1:]
+				var err error
+				responseData, err = dataResponseEV2(resp, commMode)
+				if err != nil {
+					return nil, fmt.Errorf("read data file %d: %w", fileNo, err)
+				}
 			}
 		case EV1:
 			return nil, errors.New("only desfire EV2 mode support")
@@ -277,11 +303,22 @@ func (d *Desfire) GetValue(fileNo int, targetSecondaryApp SecondAppIndicator,
 			if err != nil {
 				return nil, err
 			}
-			responseData = getDataOnFullModeResponseEV2(d.block, iv, resp)
+			responseData, err = getDataOnFullModeResponseEV2(d.block, iv, resp)
+			if err != nil {
+				return nil, fmt.Errorf("get value file %d: %w", fileNo, err)
+			}
 		case MAC:
-			responseData = resp[1 : len(resp)-8]
+			var err error
+			responseData, err = dataResponseEV2(resp, commMode)
+			if err != nil {
+				return nil, fmt.Errorf("get value file %d: %w", fileNo, err)
+			}
 		default:
-			responseData = resp[1:]
+			var err error
+			responseData, err = dataResponseEV2(resp, commMode)
+			if err != nil {
+				return nil, fmt.Errorf("get value file %d: %w", fileNo, err)
+			}
 		}
 	case EV1:
 		return nil, errors.New("only desfire EV2 mode support")
@@ -294,6 +331,9 @@ func (d *Desfire) GetValue(fileNo int, targetSecondaryApp SecondAppIndicator,
 
 	switch d.evMode {
 	case EV2:
+		if len(responseData) < 4 {
+			return nil, fmt.Errorf("get value file %d: invalid data length %d, response data: [% X]", fileNo, len(responseData), responseData)
+		}
 		return responseData[0:4], nil
 	default:
 		return nil, errors.New("only EV2 mode support")
@@ -455,9 +495,17 @@ func (d *Desfire) LimitedCredit(fileNo int, targetSecondaryApp SecondAppIndicato
 	case EV2:
 		switch commMode {
 		case FULL, MAC:
-			responseData = resp[1 : len(resp)-8]
+			var err error
+			responseData, err = dataResponseEV2(resp, MAC)
+			if err != nil {
+				return nil, fmt.Errorf("limited credit file %d: %w", fileNo, err)
+			}
 		default:
-			responseData = resp[1:]
+			var err error
+			responseData, err = dataResponseEV2(resp, commMode)
+			if err != nil {
+				return nil, fmt.Errorf("limited credit file %d: %w", fileNo, err)
+			}
 		}
 	case EV1:
 		return nil, errors.New("only desfire EV2 mode support")
@@ -649,11 +697,22 @@ func (d *Desfire) ReadRecords(fileNo int, targetSecondaryApp SecondAppIndicator,
 				if err != nil {
 					return nil, err
 				}
-				responseData = getDataOnFullModeResponseEV2(d.block, iv, resp)
+				responseData, err = getDataOnFullModeResponseEV2(d.block, iv, resp)
+				if err != nil {
+					return nil, fmt.Errorf("read records file %d: %w", fileNo, err)
+				}
 			case MAC:
-				responseData = resp[1 : len(resp)-8]
+				var err error
+				responseData, err = dataResponseEV2(resp, commMode)
+				if err != nil {
+					return nil, fmt.Errorf("read records file %d: %w", fileNo, err)
+				}
 			default:
-				responseData = resp[1:]
+				var err error
+				responseData, err = dataResponseEV2(resp, commMode)
+				if err != nil {
+					return nil, fmt.Errorf("read records file %d: %w", fileNo, err)
+				}
 			}
 		case EV1:
 			return nil, errors.New("only desfire EV2 mode support")

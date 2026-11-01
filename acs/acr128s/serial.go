@@ -26,7 +26,7 @@ type Device struct {
 
 // NewDevice create new serial device
 func NewDevice(portName string, baudRate int, timeout time.Duration) (*Device, error) {
-	log.Println("port serial config ...")
+	fmt.Println("port serial config ...")
 	config := &serial.Config{
 		Name: portName,
 		Baud: baudRate,
@@ -43,7 +43,7 @@ func NewDevice(portName string, baudRate int, timeout time.Duration) (*Device, e
 		port:    s,
 		timeout: timeout,
 	}
-	log.Println("port serial Open!")
+	fmt.Println("port serial Open!")
 	return dev, nil
 }
 

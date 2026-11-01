@@ -77,6 +77,51 @@ func (r *Reader) Version() ([]byte, error) {
 	return resp, nil
 }
 
+func (r *Reader) GetFirmwareVersion() ([]byte, error) {
+	return r.Version()
+}
+
+func (r *Reader) GetRFPowerSetting() (byte, error) {
+
+	p, err := r.PcscReader.ConnectDirect()
+	if err != nil {
+		return 0, err
+	}
+	defer p.DisconnectCard()
+
+	resp, err := p.ControlApdu(0x42000000+2079, []byte{0x50, 0x00})
+	if err != nil {
+		return 0, err
+	}
+	if len(resp) <= 0 {
+		return 0, fmt.Errorf("error in response, nil response")
+	}
+
+	return resp[len(resp)-1], nil
+}
+
+func (r *Reader) SetRFPowerSetting(a byte) error {
+
+	p, err := r.PcscReader.ConnectDirect()
+	if err != nil {
+		return err
+	}
+	defer p.DisconnectCard()
+
+	resp, err := p.ControlApdu(0x42000000+2079, []byte{0x50, 0x01, a})
+	if err != nil {
+		return err
+	}
+	if len(resp) <= 0 {
+		return fmt.Errorf("error in response, nil response")
+	}
+	if resp[len(resp)-1] != a {
+		return fmt.Errorf("not equal response (%d): [% X]", a, resp)
+	}
+
+	return nil
+}
+
 func (r *Reader) SetAutomaticPoll(a bool) error {
 
 	p, err := r.PcscReader.ConnectDirect()

@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"hash/crc32"
 
 	"github.com/aead/cmac"
@@ -141,12 +142,27 @@ func calcMacOnResponseEV2(block cipher.Block, ti []byte,
 }
 
 func getDataOnFullModeResponseEV2(block cipher.Block, iv []byte,
-	reponse []byte) []byte {
+	reponse []byte) ([]byte, error) {
+
+	if block == nil {
+		return nil, errors.New("invalid nil cipher block")
+	}
+	if len(iv) != block.BlockSize() {
+		return nil, fmt.Errorf("invalid IV length %d, expected %d", len(iv), block.BlockSize())
+	}
+	if len(reponse) < 9 {
+		return nil, fmt.Errorf("invalid FULL response length %d, response: [% X]", len(reponse), reponse)
+	}
+
+	cryptogram := reponse[1 : len(reponse)-8]
+	if len(cryptogram)%block.BlockSize() != 0 {
+		return nil, fmt.Errorf("invalid FULL cryptogram length %d, block size %d, response: [% X]", len(cryptogram), block.BlockSize(), reponse)
+	}
 
 	mode := cipher.NewCBCDecrypter(block, iv)
 
-	dest := make([]byte, len(reponse[1:len(reponse)-8]))
-	mode.CryptBlocks(dest, reponse[1:len(reponse)-8])
+	dest := make([]byte, len(cryptogram))
+	mode.CryptBlocks(dest, cryptogram)
 	// log.Printf("palindata EV2: [% X], len: %d", dest, len(dest))
 
 	for i := range dest {
@@ -154,11 +170,11 @@ func getDataOnFullModeResponseEV2(block cipher.Block, iv []byte,
 			continue
 		}
 		if i != 0 && dest[len(dest)-1-i] == 0x80 {
-			return dest[:len(dest)-i-1]
+			return dest[:len(dest)-i-1], nil
 		}
 		break
 	}
-	return dest
+	return dest, nil
 }
 
 func calcCryptogramEV2(block cipher.Block, plaindata, iv []byte) []byte {

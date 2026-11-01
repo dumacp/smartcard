@@ -2,6 +2,7 @@ package ev2
 
 import (
 	"errors"
+	"fmt"
 )
 
 // Returns the free memory avalaible on the card
@@ -229,7 +230,10 @@ func (d *Desfire) GetCardUID() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		responseData = getDataOnFullModeResponseEV2(d.block, iv, resp)
+		responseData, err = getDataOnFullModeResponseEV2(d.block, iv, resp)
+		if err != nil {
+			return nil, fmt.Errorf("get card UID: %w", err)
+		}
 	case EV1:
 		iv, err := calcResponseIVOnFullModeEV1(d.block, cmd, nil, nil)
 		if err != nil {
